@@ -1,7 +1,15 @@
 node_modules/
 *.bak
 backup_phase1/
-storage/uploads/*
+backup_*/
+*.db
+*.sqlite
+*.sqlite3
+storage/uploads/**
 !storage/uploads/.gitkeep
-storage/thumbnails/*
+storage/thumbnails/**
 !storage/thumbnails/.gitkeep
+storage/extracted_images/**
+!storage/extracted_images/.gitkeep
+.env
+.env.*

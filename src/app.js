@@ -3,6 +3,7 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const path = require('path');
 const config = require('./config');
+const { csrfProtection } = require('./middlewares/csrfProtection');
 
 const authRoutes = require('./routes/authRoutes');
 const manufacturerRoutes = require('./routes/manufacturerRoutes');
@@ -19,6 +20,7 @@ app.use(cors());
 app.use(cookieParser());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(csrfProtection);
 
 // Static asset serving
 app.use('/storage', express.static(config.STORAGE_DIR));

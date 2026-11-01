@@ -2,8 +2,48 @@ const express = require('express');
 const router = express.Router();
 const { getDb } = require('../db/database');
 const { authMiddleware } = require('../middlewares/auth');
-const { generateToken, verifyPassword, serializeUser, serializeAdminManufacturer } = require('../utils/authUtils');
+const {
+    generateToken,
+    verifyPassword,
+    needsRehash,
+    hashPassword,
+    DUMMY_HASH,
+    generateCsrfToken,
+    serializeUser,
+    serializeAdminManufacturer
+} = require('../utils/authUtils');
 const config = require('../config');
+
+// In-memory rate limiting map for login attempts: ip/email -> { count, lockUntil }
+const loginAttempts = new Map();
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCKOUT_PERIOD_MS = 15 * 60 * 1000; // 15 minutes
+
+function checkRateLimit(key) {
+    const record = loginAttempts.get(key);
+    if (!record) return { blocked: false };
+    if (record.lockUntil && Date.now() < record.lockUntil) {
+        const remainingMinutes = Math.ceil((record.lockUntil - Date.now()) / 60000);
+        return { blocked: true, remainingMinutes };
+    }
+    if (record.lockUntil && Date.now() >= record.lockUntil) {
+        loginAttempts.delete(key);
+    }
+    return { blocked: false };
+}
+
+function recordFailedAttempt(key) {
+    const record = loginAttempts.get(key) || { count: 0 };
+    record.count += 1;
+    if (record.count >= MAX_FAILED_ATTEMPTS) {
+        record.lockUntil = Date.now() + LOCKOUT_PERIOD_MS;
+    }
+    loginAttempts.set(key, record);
+}
+
+function clearFailedAttempts(key) {
+    loginAttempts.delete(key);
+}
 
 // Get current user and active role
 router.get('/me', authMiddleware, (req, res) => {
@@ -25,29 +65,67 @@ router.post('/login', (req, res) => {
         });
     }
 
+    const clientIp = req.ip || req.connection.remoteAddress || 'unknown';
+    const rateLimitKey = `${clientIp}:${email.trim().toLowerCase()}`;
+    const limitStatus = checkRateLimit(rateLimitKey);
+
+    if (limitStatus.blocked) {
+        return res.status(429).json({
+            success: false,
+            error: `تم تجاوز الحد الأقصى لمحاولات الدخول الفاشلة. يرجى المحاولة بعد ${limitStatus.remainingMinutes} دقيقة.`
+        });
+    }
+
     const db = getDb();
     const user = db.prepare('SELECT * FROM users WHERE LOWER(email) = LOWER(?)').get(email.trim());
 
     if (!user || user.is_active !== 1) {
+        // Run dummy hash check to mitigate timing side-channel user enumeration
+        verifyPassword(password, DUMMY_HASH);
+        recordFailedAttempt(rateLimitKey);
         return res.status(401).json({
             success: false,
             error: 'بيانات الدخول غير صحيحة أو الحساب غير نشط'
         });
     }
 
-    // Check password
-    if (!user.password_hash || !verifyPassword(password, user.password_hash)) {
+    // Timing-safe password verification
+    const isValid = verifyPassword(password, user.password_hash);
+    if (!isValid) {
+        recordFailedAttempt(rateLimitKey);
         return res.status(401).json({
             success: false,
             error: 'بيانات الدخول غير صحيحة أو الحساب غير نشط'
         });
+    }
+
+    // Successful login: clear failed attempts
+    clearFailedAttempts(rateLimitKey);
+
+    // Gradual rehash: If hash is legacy or under 210,000 iterations, upgrade seamlessly
+    if (needsRehash(user.password_hash)) {
+        try {
+            const upgradedHash = hashPassword(password);
+            db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(upgradedHash, user.id);
+        } catch (rehashErr) {
+            console.error('Failed to automatically upgrade password hash:', rehashErr);
+        }
     }
 
     const token = generateToken(user);
+    const csrfToken = generateCsrfToken();
 
-    // Set secure HTTP-only cookie
+    // Set secure HTTP-only auth cookie
     res.cookie(config.AUTH_COOKIE_NAME, token, {
         httpOnly: true,
+        secure: config.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 24 * 3600 * 1000
+    });
+
+    // Set CSRF token cookie readable by client JS
+    res.cookie(config.CSRF_COOKIE_NAME, csrfToken, {
+        httpOnly: false,
         secure: config.NODE_ENV === 'production',
         sameSite: 'lax',
         maxAge: 24 * 3600 * 1000
@@ -56,6 +134,7 @@ router.post('/login', (req, res) => {
     res.json({
         success: true,
         token,
+        csrf_token: csrfToken,
         user: serializeUser(user)
     });
 });
@@ -89,6 +168,7 @@ router.post('/dev-login', (req, res) => {
     }
 
     const token = generateToken(user);
+    const csrfToken = generateCsrfToken();
 
     res.cookie(config.AUTH_COOKIE_NAME, token, {
         httpOnly: true,
@@ -97,9 +177,17 @@ router.post('/dev-login', (req, res) => {
         maxAge: 24 * 3600 * 1000
     });
 
+    res.cookie(config.CSRF_COOKIE_NAME, csrfToken, {
+        httpOnly: false,
+        secure: false,
+        sameSite: 'lax',
+        maxAge: 24 * 3600 * 1000
+    });
+
     res.json({
         success: true,
         token,
+        csrf_token: csrfToken,
         user: serializeUser(user)
     });
 });
@@ -107,6 +195,7 @@ router.post('/dev-login', (req, res) => {
 // Logout endpoint
 router.post('/logout', (req, res) => {
     res.clearCookie(config.AUTH_COOKIE_NAME);
+    res.clearCookie(config.CSRF_COOKIE_NAME);
     res.json({
         success: true,
         message: 'تم تسجيل الخروج بنجاح'

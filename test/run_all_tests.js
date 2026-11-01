@@ -5,6 +5,7 @@ const { runDuplicateDetectionTests } = require('./test_duplicate_detection');
 const { runApprovalWorkflowTests } = require('./test_approval_workflow');
 const { runE2EVerification } = require('./e2e_flow_verification');
 const { runSecurityP0Tests } = require('./test_security_p0');
+const { runRemediationTests } = require('./test_phase1_1_remediation');
 
 async function main() {
     console.log('================================================================');
@@ -20,10 +21,11 @@ async function main() {
     await runApprovalWorkflowTests();
     await runE2EVerification();
     await runSecurityP0Tests();
+    await runRemediationTests();
 
     const elapsed = ((Date.now() - start) / 1000).toFixed(2);
     console.log('================================================================');
-    console.log(`🎉 ALL 7 TEST SUITES (INCLUDING P0 SECURITY) PASSED IN ${elapsed}s!`);
+    console.log(`🎉 ALL 8 TEST SUITES (INCLUDING REMEDIATION) PASSED IN ${elapsed}s!`);
     console.log('================================================================');
 }
 

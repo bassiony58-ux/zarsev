@@ -40,8 +40,15 @@ async function switchDevPersona(userId) {
     }
 }
 
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return null;
+}
+
 /**
- * Enhanced fetch wrapper attaching signed Authorization Bearer token and credentials
+ * Enhanced fetch wrapper attaching signed Authorization Bearer token, CSRF headers, and credentials
  */
 async function zarsevFetch(url, options = {}) {
     options.headers = options.headers || {};
@@ -49,6 +56,13 @@ async function zarsevFetch(url, options = {}) {
 
     if (!(options.body instanceof FormData)) {
         options.headers['Content-Type'] = options.headers['Content-Type'] || 'application/json';
+    }
+
+    // Attach custom header and CSRF token for mutating requests
+    options.headers['x-requested-with'] = 'XMLHttpRequest';
+    const csrfToken = getCookie('zarsev_csrf_token');
+    if (csrfToken) {
+        options.headers['x-csrf-token'] = csrfToken;
     }
 
     const token = getAuthToken();

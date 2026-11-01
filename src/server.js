@@ -3,6 +3,9 @@ const config = require('./config');
 const { initDb } = require('./db/database');
 const { seedDatabase } = require('./db/seed');
 
+// Validate critical security settings before boot
+config.validateStartupSettings();
+
 // Initialize database
 initDb();
 
