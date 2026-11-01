@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>ZARSEV - تقدم المعالجة والاستخراج الذكي</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#001830",
+                        "primary-container": "#172D46",
+                        secondary: "#1F686E",
+                        "secondary-container": "#A8EBF2",
+                        tertiary: "#C5A46D",
+                        background: "#F9F9FF",
+                        surface: "#F9F9FF",
+                        "surface-container-low": "#F0F3FF",
+                        "surface-container": "#E7EEFF",
+                        "surface-container-lowest": "#FFFFFF",
+                        "on-surface": "#0F1C2E",
+                        "on-surface-variant": "#43474D",
+                        outline: "#74777E",
+                        "outline-variant": "#E4E7EC"
+                    },
+                    fontFamily: {
+                        sans: ["IBM Plex Sans Arabic", "IBM Plex Sans", "sans-serif"]
+                    }
+                }
+            }
+        };
+    </script>
+</head>
+<body class="bg-background font-sans text-on-surface antialiased min-h-screen flex flex-col">
+    <div id="zarsev-header-mount"></div>
+
+    <main class="flex-1 w-full max-w-[1440px] mx-auto px-6 py-10">
+        <!-- Progress Container -->
+        <div class="max-w-3xl mx-auto space-y-8">
+            <div class="text-center space-y-3">
+                <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-secondary/10 text-secondary text-xs font-bold">
+                    <span class="w-2 h-2 rounded-full bg-secondary animate-ping"></span>
+                    <span>معالجة حزمة البيانات في الخلفية (Background Asynchronous Job)</span>
+                </div>
+                <h1 class="text-3xl font-bold text-primary">المعالجة الذكية للكتالوج واستخراج الأصناف</h1>
+                <p class="text-sm text-on-surface-variant">
+                    يقوم المحرك الآن بتحليل الملفات، استخراج الجداول، فهرسة الصور، ومطابقة التصنيفات دون إغلاق أو تعطيل الصفحة.
+                </p>
+            </div>
+
+            <!-- Visual Progress Card -->
+            <div class="bg-surface-container-lowest p-8 rounded-2xl border border-outline-variant shadow-lg space-y-6">
+                <!-- Percentage & Status Strip -->
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="text-xs uppercase text-on-surface-variant font-bold">حالة العملية الراهنة</span>
+                        <h3 id="status-title" class="text-xl font-bold text-primary mt-1">جاري قراءة وتفكيك المستندات...</h3>
+                    </div>
+                    <div class="text-left font-mono">
+                        <span id="percent-label" class="text-3xl font-bold text-secondary">0%</span>
+                    </div>
+                </div>
+
+                <!-- Animated Progress Bar -->
+                <div class="w-full h-3 bg-surface-container rounded-full overflow-hidden p-0.5">
+                    <div id="progress-bar" class="h-full bg-gradient-to-l from-secondary to-[#172D46] rounded-full transition-all duration-500" style="width: 5%;"></div>
+                </div>
+
+                <!-- 4 Stages Visual Pipeline -->
+                <div class="grid grid-cols-4 gap-2 text-center text-xs pt-4 border-t border-outline-variant/60">
+                    <div id="step-1" class="space-y-1">
+                        <div class="w-8 h-8 mx-auto rounded-full bg-secondary text-white flex items-center justify-center font-bold">1</div>
+                        <span class="font-bold text-primary">استلام وفحص</span>
+                    </div>
+                    <div id="step-2" class="space-y-1 opacity-50">
+                        <div class="w-8 h-8 mx-auto rounded-full bg-surface-container text-on-surface-variant flex items-center justify-center font-bold">2</div>
+                        <span class="font-bold text-on-surface-variant">قراءة الجداول</span>
+                    </div>
+                    <div id="step-3" class="space-y-1 opacity-50">
+                        <div class="w-8 h-8 mx-auto rounded-full bg-surface-container text-on-surface-variant flex items-center justify-center font-bold">3</div>
+                        <span class="font-bold text-on-surface-variant">تجميع الصور</span>
+                    </div>
+                    <div id="step-4" class="space-y-1 opacity-50">
+                        <div class="w-8 h-8 mx-auto rounded-full bg-surface-container text-on-surface-variant flex items-center justify-center font-bold">4</div>
+                        <span class="font-bold text-on-surface-variant">جاهز للمراجعة</span>
+                    </div>
+                </div>
+
+                <!-- Action Button (appears when finished) -->
+                <div id="completion-action" class="pt-4 border-t border-outline-variant/60 text-center hidden">
+                    <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs mb-4 flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined text-[20px]">task_alt</span>
+                        <span id="detected-summary-text" class="font-bold">اكتمل الاستخراج بنجاح! تم رصد الأصناف وإتاحتها للمراجعة.</span>
+                    </div>
+                    <a id="review-link" href="#" class="inline-flex items-center justify-center gap-2 w-full md:w-auto px-8 h-12 rounded-lg bg-secondary hover:bg-secondary/90 text-white font-bold text-sm shadow-md transition-all">
+                        <span>الانتقال إلى مراجعة وتدقيق الأصناف المستخرجة</span>
+                        <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Live Telemetry Logs Terminal -->
+            <div class="bg-[#001830] text-emerald-400 p-6 rounded-xl font-mono text-xs border border-white/10 shadow-md">
+                <div class="flex items-center justify-between pb-3 border-b border-white/10 mb-3 text-white/60">
+                    <span class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span>سجل أحداث المعالجة والذكاء الاصطناعي (Live Audit Telemetry)</span>
+                    </span>
+                    <span id="log-count">0 سجلات</span>
+                </div>
+                <div id="logs-terminal" class="space-y-1.5 max-h-56 overflow-y-auto pr-2">
+                    <div class="text-white/40">جاري الاتصال بخدمة مراقبة الوظيفة...</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/public/js/common.js"></script>
+    <script>
+        const importId = window.location.pathname.split('/').pop();
+        let pollingTimer = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await renderZarsevHeader('upload');
+            startPolling();
+        });
+
+        function startPolling() {
+            pollStatus();
+            pollingTimer = setInterval(pollStatus, 1500);
+        }
+
+        async function pollStatus() {
+            try {
+                const res = await zarsevFetch(`/api/imports/status/${importId}`);
+                const imp = res.import;
+                const logs = res.logs;
+
+                // Update UI elements
+                const percent = imp.progress_percent || 0;
+                document.getElementById('percent-label').textContent = percent + '%';
+                document.getElementById('progress-bar').style.width = Math.max(5, percent) + '%';
+                document.getElementById('status-title').textContent = getStatusTitle(imp.status);
+
+                // Update steps
+                updateStepBadges(percent, imp.status);
+
+                // Render logs
+                renderLogs(logs);
+
+                // Check completion or failure
+                if (imp.status === 'REVIEW_READY' || imp.status === 'SAVED_DRAFT' || imp.status === 'SUBMITTED') {
+                    clearInterval(pollingTimer);
+                    document.getElementById('completion-action').classList.remove('hidden');
+                    document.getElementById('review-link').href = `/importer/review/${importId}`;
+                    document.getElementById('detected-summary-text').textContent = 
+                        `تم اكتمال الاستخراج بنجاح! تم رصد (${imp.total_detected}) صنف، منها (${imp.total_valid}) صنف صالح للمراجعة.`;
+                } else if (imp.status === 'FAILED') {
+                    clearInterval(pollingTimer);
+                    document.getElementById('completion-action').classList.remove('hidden');
+                    document.getElementById('completion-action').innerHTML = `
+                        <div class="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs mb-4">
+                            <strong>حدث خطأ أثناء معالجة الملفات:</strong> ${imp.error_summary || 'خطأ غير محدد'}
+                        </div>
+                        <a href="/importer/failed/${importId}" class="inline-flex items-center gap-2 px-6 py-2.5 rounded bg-rose-700 text-white font-bold text-xs">
+                            <span>عرض تقرير الأخطاء وإعادة المحاولة</span>
+                        </a>
+                    `;
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function getStatusTitle(status) {
+            switch (status) {
+                case 'PENDING': return 'استلام الملفات وفحص الامتثال للباقة...';
+                case 'PARSING': return 'تفكيك الجداول وقراءة مستندات الكتالوج...';
+                case 'EXTRACTING': return 'استخراج المواصفات، الأسعار، وتجميع حزم الصور...';
+                case 'REVIEW_READY': return 'اكتملت المعالجة بنجاح! الكتالوج جاهز للمراجعة والتدقيق.';
+                case 'FAILED': return 'تعثرت المعالجة لوجود أخطاء غير قابلة للتجاوز في الملف.';
+                default: return 'جاري معالجة البيانات...';
+            }
+        }
+
+        function updateStepBadges(percent, status) {
+            const steps = [
+                { id: 'step-1', threshold: 10 },
+                { id: 'step-2', threshold: 35 },
+                { id: 'step-3', threshold: 65 },
+                { id: 'step-4', threshold: 95 }
+            ];
+
+            steps.forEach((s, idx) => {
+                const el = document.getElementById(s.id);
+                if (percent >= s.threshold) {
+                    el.classList.remove('opacity-50');
+                    const badge = el.querySelector('div');
+                    badge.className = 'w-8 h-8 mx-auto rounded-full bg-secondary text-white flex items-center justify-center font-bold';
+                }
+            });
+        }
+
+        function renderLogs(logs) {
+            const terminal = document.getElementById('logs-terminal');
+            const count = document.getElementById('log-count');
+            count.textContent = logs.length + ' سجلات';
+            terminal.innerHTML = '';
+
+            logs.forEach(l => {
+                const timeStr = new Date(l.timestamp).toLocaleTimeString('ar-EG');
+                const row = document.createElement('div');
+                const color = l.severity === 'ERROR' ? 'text-rose-400' : l.severity === 'WARNING' ? 'text-amber-300' : 'text-emerald-400';
+                row.className = `flex items-start gap-2 ${color}`;
+                row.innerHTML = `
+                    <span class="text-white/40 shrink-0 font-mono text-[10px]">[${timeStr}]</span>
+                    <span class="text-secondary-fixed shrink-0 font-bold">[${l.step}]</span>
+                    <span class="text-white/90">${l.message}</span>
+                `;
+                terminal.appendChild(row);
+            });
+
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+    </script>
+</body>
+</html>

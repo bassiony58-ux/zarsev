@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>ZARSEV - رفع الملفات والكتالوجات والصور</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#001830",
+                        "primary-container": "#172D46",
+                        secondary: "#1F686E",
+                        "secondary-container": "#A8EBF2",
+                        tertiary: "#C5A46D",
+                        background: "#F9F9FF",
+                        surface: "#F9F9FF",
+                        "surface-container-low": "#F0F3FF",
+                        "surface-container": "#E7EEFF",
+                        "surface-container-lowest": "#FFFFFF",
+                        "on-surface": "#0F1C2E",
+                        "on-surface-variant": "#43474D",
+                        outline: "#74777E",
+                        "outline-variant": "#E4E7EC"
+                    },
+                    fontFamily: {
+                        sans: ["IBM Plex Sans Arabic", "IBM Plex Sans", "sans-serif"]
+                    }
+                }
+            }
+        };
+    </script>
+</head>
+<body class="bg-background font-sans text-on-surface antialiased min-h-screen flex flex-col">
+    <div id="zarsev-header-mount"></div>
+
+    <main class="flex-1 w-full max-w-[1440px] mx-auto px-6 py-8">
+        <!-- Breadcrumb & Step Navigation -->
+        <div class="flex items-center justify-between flex-wrap gap-4 mb-8">
+            <nav class="flex items-center gap-2 text-xs text-on-surface-variant">
+                <a href="/importer" class="hover:text-primary transition-colors">بوابة الاستيراد</a>
+                <span class="material-symbols-outlined text-[14px]">chevron_left</span>
+                <span class="text-primary font-bold">رفع الملفات والكتالوجات (الخطوة 1 من 3)</span>
+            </nav>
+            <div class="flex items-center gap-2 text-xs font-semibold text-secondary bg-secondary/10 px-3 py-1.5 rounded-full">
+                <span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+                <span>المحرك جاهز لاستقبال الملفات ومعالجة الجداول والصور</span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <!-- Left 8 Columns: Upload Area -->
+            <div class="lg:col-span-8 space-y-6">
+                <!-- Dropzone Card -->
+                <div class="bg-surface-container-lowest p-8 rounded-2xl border-2 border-dashed border-outline-variant hover:border-secondary transition-all text-center relative group" id="drop-zone">
+                    <input type="file" id="file-input" multiple class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" accept=".xlsx,.xls,.csv,.pdf,.docx,.doc,.png,.jpg,.jpeg,.webp,.zip"/>
+                    
+                    <div class="flex flex-col items-center justify-center pointer-events-none py-8">
+                        <div class="w-20 h-20 rounded-2xl bg-surface-container-low group-hover:bg-secondary/10 flex items-center justify-center text-secondary mb-4 transition-all transform group-hover:scale-105">
+                            <span class="material-symbols-outlined text-[44px]">cloud_upload</span>
+                        </div>
+                        <h2 class="text-xl font-bold text-primary mb-2">اسحب وأفلت الملفات والكتالوجات هنا، أو انقر للاختيار</h2>
+                        <p class="text-sm text-on-surface-variant max-w-lg mb-6 leading-relaxed">
+                            يمكنك رفع ملفات متعددة معاً: جداول إكسل، ملفات CSV، كتالوجات PDF، مستندات Word، صور المنتجات التصديرية، أو أرشيف ZIP مدمج.
+                        </p>
+                        <div class="flex flex-wrap items-center justify-center gap-2 text-[11px] text-on-surface-variant">
+                            <span class="px-2.5 py-1 rounded bg-surface-container font-mono font-bold">.XLSX</span>
+                            <span class="px-2.5 py-1 rounded bg-surface-container font-mono font-bold">.CSV</span>
+                            <span class="px-2.5 py-1 rounded bg-surface-container font-mono font-bold">.PDF</span>
+                            <span class="px-2.5 py-1 rounded bg-surface-container font-mono font-bold">.DOCX</span>
+                            <span class="px-2.5 py-1 rounded bg-surface-container font-mono font-bold">.ZIP</span>
+                            <span class="px-2.5 py-1 rounded bg-surface-container font-mono font-bold">.PNG / .JPG</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Selected Files List -->
+                <div id="files-list-container" class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm hidden">
+                    <div class="flex items-center justify-between pb-4 border-b border-outline-variant/60 mb-4">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-secondary">inventory_2</span>
+                            <h3 class="font-bold text-primary text-base">الملفات المختارة للرفع (<span id="files-count">0</span>)</h3>
+                        </div>
+                        <button type="button" onclick="clearSelectedFiles()" class="text-xs text-rose-600 hover:text-rose-800 font-semibold flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[16px]">delete_sweep</span>
+                            <span>إلغاء الكل</span>
+                        </button>
+                    </div>
+
+                    <div id="files-list" class="space-y-2.5 max-h-80 overflow-y-auto pr-1"></div>
+                </div>
+            </div>
+
+            <!-- Right 4 Columns: Manufacturer Association & Settings -->
+            <div class="lg:col-span-4 space-y-6">
+                <!-- Manufacturer Selection Card -->
+                <div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm">
+                    <div class="flex items-center gap-2 mb-4 pb-3 border-b border-outline-variant/60">
+                        <span class="material-symbols-outlined text-secondary">factory</span>
+                        <h3 class="font-bold text-primary text-base">تعيين المصنع المعتمد</h3>
+                    </div>
+
+                    <!-- Notice for Marketing Manufacturers -->
+                    <div id="mfg-locked-notice" class="p-4 rounded-lg bg-teal-50 border border-teal-200 text-xs text-teal-800 leading-relaxed mb-4 hidden">
+                        <div class="font-bold mb-1 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[16px]">lock</span>
+                            <span>الربط الحصري بحساب المصنع</span>
+                        </div>
+                        بصفتك مصنعاً مسجلاً، سيتم ربط كافة المنتجات المستوردة بحسابك تلقائياً دون إمكانية تغيير المالك.
+                    </div>
+
+                    <!-- Dropdown for Super Admin & Logistics -->
+                    <div id="mfg-select-group" class="space-y-3">
+                        <label class="block text-xs font-bold text-primary">المصنع المستهدف للاستيراد:</label>
+                        <select id="manufacturer-dropdown" class="w-full h-11 px-3 rounded-lg border border-outline-variant bg-surface-container-low text-xs font-medium text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary">
+                            <option value="">-- كشف واقتراح المصنع تلقائياً من المستند --</option>
+                        </select>
+                        <p class="text-[11px] text-on-surface-variant leading-tight">
+                            يمكنك اختيار المصنع الآن أو ترك المحرك يكتشف اسم المحطة التصديرية من داخل الكتالوج تلقائياً.
+                        </p>
+                        <div class="pt-2">
+                            <a href="/importer/manufacturer-select" class="text-xs text-secondary font-bold hover:underline inline-flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[16px]">add_business</span>
+                                <span>إضافة مصنع جديد أو مطابقة الموردين</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Button Card -->
+                <div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm space-y-4">
+                    <button type="button" id="start-import-btn" onclick="submitImport()" disabled class="w-full h-12 rounded-lg bg-[#1F686E] disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-[#1F686E]/90 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md transition-all">
+                        <span class="material-symbols-outlined text-[20px]">bolt</span>
+                        <span>بدء المعالجة والاستخراج الذكي</span>
+                    </button>
+                    <p class="text-[11px] text-center text-on-surface-variant leading-tight">
+                        ستتم معالجة الملفات في الخلفية دون تجميد المتصفح، مع إمكانية مراجعة كافة النتائج قبل الحفظ.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/public/js/common.js"></script>
+    <script>
+        let selectedFiles = [];
+        let currentUser = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await renderZarsevHeader('upload');
+
+            try {
+                const me = await zarsevFetch('/api/auth/me');
+                currentUser = me.user;
+
+                if (currentUser.role === 'MANUFACTURER') {
+                    document.getElementById('mfg-locked-notice').classList.remove('hidden');
+                    document.getElementById('mfg-select-group').classList.add('hidden');
+                } else {
+                    // Populate manufacturers dropdown
+                    const mfgs = await zarsevFetch('/api/manufacturers');
+                    const select = document.getElementById('manufacturer-dropdown');
+                    mfgs.manufacturers.forEach(m => {
+                        const opt = document.createElement('option');
+                        opt.value = m.id;
+                        opt.textContent = `${m.name_ar} (${m.business_model === 'DIRECT_CONTRACT' ? 'عقد مباشر' : 'اشتراك تسويقي'})`;
+                        select.appendChild(opt);
+                    });
+                }
+            } catch (err) {
+                console.error(err);
+            }
+
+            // File input change handler
+            const fileInput = document.getElementById('file-input');
+            fileInput.addEventListener('change', (e) => {
+                handleFilesSelected(Array.from(e.target.files));
+            });
+
+            // Drag and drop handlers
+            const dropZone = document.getElementById('drop-zone');
+            ['dragenter', 'dragover'].forEach(name => {
+                dropZone.addEventListener(name, (e) => {
+                    e.preventDefault();
+                    dropZone.classList.add('border-secondary', 'bg-secondary/5');
+                });
+            });
+            ['dragleave', 'drop'].forEach(name => {
+                dropZone.addEventListener(name, (e) => {
+                    e.preventDefault();
+                    dropZone.classList.remove('border-secondary', 'bg-secondary/5');
+                });
+            });
+            dropZone.addEventListener('drop', (e) => {
+                if (e.dataTransfer.files) {
+                    handleFilesSelected(Array.from(e.dataTransfer.files));
+                }
+            });
+        });
+
+        function handleFilesSelected(newFiles) {
+            // Append and filter duplicates by name & size
+            newFiles.forEach(nf => {
+                if (!selectedFiles.some(f => f.name === nf.name && f.size === nf.size)) {
+                    selectedFiles.push(nf);
+                }
+            });
+            renderFilesList();
+        }
+
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            renderFilesList();
+        }
+
+        function clearSelectedFiles() {
+            selectedFiles = [];
+            renderFilesList();
+        }
+
+        function getFileIcon(filename) {
+            const ext = filename.split('.').pop().toLowerCase();
+            if (['xlsx', 'xls', 'csv'].includes(ext)) return { icon: 'table_chart', color: 'text-emerald-600' };
+            if (ext === 'pdf') return { icon: 'picture_as_pdf', color: 'text-rose-600' };
+            if (['doc', 'docx'].includes(ext)) return { icon: 'description', color: 'text-blue-600' };
+            if (['png', 'jpg', 'jpeg', 'webp'].includes(ext)) return { icon: 'image', color: 'text-amber-600' };
+            if (ext === 'zip') return { icon: 'folder_zip', color: 'text-purple-600' };
+            return { icon: 'draft', color: 'text-gray-600' };
+        }
+
+        function renderFilesList() {
+            const container = document.getElementById('files-list-container');
+            const list = document.getElementById('files-list');
+            const countSpan = document.getElementById('files-count');
+            const startBtn = document.getElementById('start-import-btn');
+
+            if (selectedFiles.length === 0) {
+                container.classList.add('hidden');
+                startBtn.disabled = true;
+                return;
+            }
+
+            container.classList.remove('hidden');
+            startBtn.disabled = false;
+            countSpan.textContent = selectedFiles.length;
+            list.innerHTML = '';
+
+            selectedFiles.forEach((file, idx) => {
+                const iconInfo = getFileIcon(file.name);
+                const item = document.createElement('div');
+                item.className = 'flex items-center justify-between p-3 rounded-lg bg-surface-container-low border border-outline-variant/40 text-xs';
+                item.innerHTML = `
+                    <div class="flex items-center gap-3 truncate">
+                        <span class="material-symbols-outlined ${iconInfo.color} text-[22px]">${iconInfo.icon}</span>
+                        <div class="flex flex-col truncate">
+                            <span class="font-bold text-primary truncate">${file.name}</span>
+                            <span class="text-on-surface-variant font-mono text-[11px]">${formatBytes(file.size)}</span>
+                        </div>
+                    </div>
+                    <button type="button" onclick="removeFile(${idx})" class="text-outline hover:text-rose-600 transition-colors p-1">
+                        <span class="material-symbols-outlined text-[18px]">close</span>
+                    </button>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        async function submitImport() {
+            if (selectedFiles.length === 0) return;
+
+            const startBtn = document.getElementById('start-import-btn');
+            startBtn.disabled = true;
+            startBtn.innerHTML = `
+                <span class="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
+                <span>جاري رفع الملفات وبدء المعالجة...</span>
+            `;
+
+            try {
+                const formData = new FormData();
+                selectedFiles.forEach(f => formData.append('files', f));
+
+                if (currentUser && currentUser.role !== 'MANUFACTURER') {
+                    const mfgId = document.getElementById('manufacturer-dropdown').value;
+                    if (mfgId) formData.append('manufacturer_id', mfgId);
+                }
+
+                const res = await zarsevFetch('/api/imports/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                showToast('تم رفع الملفات وبدأت المعالجة بنجاح!', 'success');
+                // Redirect to progress telemetry screen
+                window.location.href = `/importer/progress/${res.import_id}`;
+            } catch (err) {
+                showToast(err.message, 'error');
+                startBtn.disabled = false;
+                startBtn.innerHTML = `
+                    <span class="material-symbols-outlined text-[20px]">bolt</span>
+                    <span>بدء المعالجة والاستخراج الذكي</span>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

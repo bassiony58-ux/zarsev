@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>ZARSEV - سجل عمليات الاستيراد والتقارير</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#001830",
+                        "primary-container": "#172D46",
+                        secondary: "#1F686E",
+                        "secondary-container": "#A8EBF2",
+                        tertiary: "#C5A46D",
+                        background: "#F9F9FF",
+                        surface: "#F9F9FF",
+                        "surface-container-low": "#F0F3FF",
+                        "surface-container": "#E7EEFF",
+                        "surface-container-lowest": "#FFFFFF",
+                        "on-surface": "#0F1C2E",
+                        "on-surface-variant": "#43474D",
+                        outline: "#74777E",
+                        "outline-variant": "#E4E7EC"
+                    },
+                    fontFamily: {
+                        sans: ["IBM Plex Sans Arabic", "IBM Plex Sans", "sans-serif"]
+                    }
+                }
+            }
+        };
+    </script>
+</head>
+<body class="bg-background font-sans text-on-surface antialiased min-h-screen flex flex-col">
+    <div id="zarsev-header-mount"></div>
+
+    <main class="flex-1 w-full max-w-[1440px] mx-auto px-6 py-8">
+        <div class="flex items-center justify-between flex-wrap gap-4 mb-8">
+            <div>
+                <h1 class="text-2xl font-bold text-primary">سجل عمليات الاستيراد وأرشيف الكتالوجات</h1>
+                <p class="text-xs text-on-surface-variant mt-1">تتبع كافة حزم الاستيراد السابقة، تحميل تقارير الأخطاء، وإعادة محاولة السجلات المتعثرة</p>
+            </div>
+
+            <a href="/importer/upload" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-secondary hover:bg-secondary/90 text-white font-bold text-xs shadow-sm transition-all">
+                <span class="material-symbols-outlined text-[18px]">cloud_upload</span>
+                <span>استيراد ملفات جديدة</span>
+            </a>
+        </div>
+
+        <!-- History Table Card -->
+        <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-right text-xs">
+                    <thead class="bg-surface-container-low text-primary font-bold border-b border-outline-variant">
+                        <tr>
+                            <th class="p-4">كود العملية (Import ID)</th>
+                            <th class="p-4">المستخدم والجهة</th>
+                            <th class="p-4">المصنع المستهدف</th>
+                            <th class="p-4">الملفات المرفوعة</th>
+                            <th class="p-4">التاريخ والتوقيت</th>
+                            <th class="p-4 text-center">إجمالي الأصناف</th>
+                            <th class="p-4 text-center">الناجحة</th>
+                            <th class="p-4 text-center">بانتظار المراجعة</th>
+                            <th class="p-4 text-center">الفاشلة</th>
+                            <th class="p-4 text-center">الحالة</th>
+                            <th class="p-4 text-center">الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-body" class="divide-y divide-outline-variant/60"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script src="/public/js/common.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            await renderZarsevHeader('history');
+            loadHistory();
+        });
+
+        async function loadHistory() {
+            try {
+                const res = await zarsevFetch('/api/imports/history');
+                const list = res.history;
+                const tbody = document.getElementById('history-body');
+                tbody.innerHTML = '';
+
+                if (list.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="11" class="p-8 text-center text-on-surface-variant text-sm">لا توجد عمليات استيراد سابقة مسجلة</td></tr>';
+                    return;
+                }
+
+                list.forEach(imp => {
+                    const statusBadge = getStatusBadge(imp.status);
+                    const filesStr = (imp.source_files || []).map(f => f.originalname).join(', ');
+
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-surface-container-low transition-colors';
+                    tr.innerHTML = `
+                        <td class="p-4 font-mono font-bold text-secondary" dir="ltr">
+                            ${imp.id}
+                        </td>
+                        <td class="p-4">
+                            <strong class="text-primary">${imp.user_name || '-'}</strong>
+                            <div class="text-[11px] text-on-surface-variant font-mono" dir="ltr">${imp.user_email || ''}</div>
+                        </td>
+                        <td class="p-4 font-semibold text-primary">
+                            ${imp.manufacturer_name || '<span class="text-on-surface-variant font-normal">كشف تلقائي</span>'}
+                        </td>
+                        <td class="p-4 text-on-surface-variant max-w-xs truncate" title="${filesStr}">
+                            <div class="flex items-center gap-1.5 truncate">
+                                <span class="material-symbols-outlined text-[16px] text-outline">attach_file</span>
+                                <span class="truncate">${filesStr || '-'}</span>
+                            </div>
+                        </td>
+                        <td class="p-4 text-on-surface-variant font-mono">
+                            ${formatDate(imp.created_at)}
+                        </td>
+                        <td class="p-4 text-center font-bold font-mono">
+                            ${imp.total_detected}
+                        </td>
+                        <td class="p-4 text-center font-bold font-mono text-emerald-700">
+                            ${imp.total_valid}
+                        </td>
+                        <td class="p-4 text-center font-bold font-mono text-amber-700">
+                            ${imp.awaiting_count ?? 0}
+                        </td>
+                        <td class="p-4 text-center font-bold font-mono text-rose-700">
+                            ${imp.total_failed}
+                        </td>
+                        <td class="p-4 text-center">
+                            ${statusBadge}
+                        </td>
+                        <td class="p-4 text-center">
+                            <div class="flex items-center justify-center gap-2">
+                                <a href="/importer/review/${imp.id}" title="مراجعة الأصناف" class="p-1.5 rounded hover:bg-surface-container text-secondary font-bold">
+                                    <span class="material-symbols-outlined text-[18px]">rate_review</span>
+                                </a>
+                                <a href="/api/imports/${imp.id}/error-report" target="_blank" title="تحميل تقرير الأخطاء CSV" class="p-1.5 rounded hover:bg-surface-container text-outline hover:text-primary">
+                                    <span class="material-symbols-outlined text-[18px]">download</span>
+                                </a>
+                                ${imp.total_failed > 0 ? `
+                                    <a href="/importer/failed/${imp.id}" title="شاشة إعادة المحاولة" class="p-1.5 rounded hover:bg-rose-100 text-rose-700">
+                                        <span class="material-symbols-outlined text-[18px]">replay</span>
+                                    </a>
+                                ` : ''}
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function getStatusBadge(status) {
+            switch (status) {
+                case 'REVIEW_READY':
+                    return '<span class="px-2.5 py-1 rounded bg-teal-100 text-teal-800 text-[11px] font-bold">جاهز للمراجعة</span>';
+                case 'SAVED_DRAFT':
+                    return '<span class="px-2.5 py-1 rounded bg-gray-100 text-gray-800 text-[11px] font-bold">محفوظ كمسودة</span>';
+                case 'SUBMITTED':
+                    return '<span class="px-2.5 py-1 rounded bg-emerald-100 text-emerald-800 text-[11px] font-bold">تم التقديم</span>';
+                case 'PARSING':
+                case 'EXTRACTING':
+                    return '<span class="px-2.5 py-1 rounded bg-blue-100 text-blue-800 text-[11px] font-bold animate-pulse">قيد المعالجة</span>';
+                case 'FAILED':
+                    return '<span class="px-2.5 py-1 rounded bg-rose-100 text-rose-800 text-[11px] font-bold">فشل كلي</span>';
+                default:
+                    return `<span class="px-2.5 py-1 rounded bg-gray-100 text-gray-800 text-[11px] font-bold">${status}</span>`;
+            }
+        }
+    </script>
+</body>
+</html>

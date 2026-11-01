@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>ZARSEV - مراجعة وتدقيق المنتجات المستخرجة</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#001830",
+                        "primary-container": "#172D46",
+                        secondary: "#1F686E",
+                        "secondary-container": "#A8EBF2",
+                        tertiary: "#C5A46D",
+                        background: "#F9F9FF",
+                        surface: "#F9F9FF",
+                        "surface-container-low": "#F0F3FF",
+                        "surface-container": "#E7EEFF",
+                        "surface-container-lowest": "#FFFFFF",
+                        "on-surface": "#0F1C2E",
+                        "on-surface-variant": "#43474D",
+                        outline: "#74777E",
+                        "outline-variant": "#E4E7EC"
+                    },
+                    fontFamily: {
+                        sans: ["IBM Plex Sans Arabic", "IBM Plex Sans", "sans-serif"]
+                    }
+                }
+            }
+        };
+    </script>
+</head>
+<body class="bg-background font-sans text-on-surface antialiased min-h-screen flex flex-col">
+    <div id="zarsev-header-mount"></div>
+
+    <main class="flex-1 w-full max-w-[1440px] mx-auto px-6 py-8">
+        <!-- Breadcrumb & Workflow Header -->
+        <div class="flex items-center justify-between flex-wrap gap-4 mb-6">
+            <nav class="flex items-center gap-2 text-xs text-on-surface-variant">
+                <a href="/importer" class="hover:text-primary transition-colors">بوابة الاستيراد</a>
+                <span class="material-symbols-outlined text-[14px]">chevron_left</span>
+                <span class="text-primary font-bold">شاشة المراجعة والتدقيق (الخطوة 2 من 3)</span>
+            </nav>
+
+            <div class="flex items-center gap-3">
+                <a id="bulk-edit-link" href="#" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-primary text-xs font-bold transition-all border border-outline-variant">
+                    <span class="material-symbols-outlined text-[18px]">edit_note</span>
+                    <span>التعديل الجماعي والتصنيف المجمع</span>
+                </a>
+                <button type="button" onclick="saveAllDraft()" class="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg bg-surface-container-lowest hover:bg-surface-container-low text-primary text-xs font-bold border border-outline-variant shadow-sm transition-all">
+                    <span class="material-symbols-outlined text-[18px]">drafts</span>
+                    <span>حفظ كمسودات (Save as Draft)</span>
+                </button>
+                <button type="button" onclick="submitApprovalModal()" class="inline-flex items-center gap-1.5 px-6 py-2 rounded-lg bg-secondary hover:bg-secondary/90 text-white text-xs font-bold shadow-md transition-all">
+                    <span class="material-symbols-outlined text-[18px]">verified</span>
+                    <span>تقديم المنتجات للاعتماد</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Metrics & Filter Bar -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div class="p-4 rounded-xl bg-surface-container-lowest border border-outline-variant shadow-sm flex items-center justify-between">
+                <div>
+                    <span class="text-xs text-on-surface-variant">إجمالي الأصناف المستخرجة</span>
+                    <h3 id="stat-total" class="text-2xl font-bold text-primary mt-0.5">0</h3>
+                </div>
+                <span class="material-symbols-outlined text-secondary text-[28px]">inventory_2</span>
+            </div>
+            <div class="p-4 rounded-xl bg-surface-container-lowest border border-outline-variant shadow-sm flex items-center justify-between">
+                <div>
+                    <span class="text-xs text-emerald-700 font-semibold">أصناف مكتملة المواصفات</span>
+                    <h3 id="stat-valid" class="text-2xl font-bold text-emerald-800 mt-0.5">0</h3>
+                </div>
+                <span class="material-symbols-outlined text-emerald-600 text-[28px]">check_circle</span>
+            </div>
+            <div class="p-4 rounded-xl bg-surface-container-lowest border border-outline-variant shadow-sm flex items-center justify-between">
+                <div>
+                    <span class="text-xs text-amber-700 font-semibold">أصناف تحتاج مراجعة يدوية</span>
+                    <h3 id="stat-warnings" class="text-2xl font-bold text-amber-800 mt-0.5">0</h3>
+                </div>
+                <span class="material-symbols-outlined text-amber-600 text-[28px]">warning</span>
+            </div>
+            <div class="p-4 rounded-xl bg-surface-container-lowest border border-outline-variant shadow-sm flex items-center justify-between">
+                <div>
+                    <span class="text-xs text-rose-700 font-semibold">تحذيرات تكرار مكتشفة</span>
+                    <h3 id="stat-duplicates" class="text-2xl font-bold text-rose-800 mt-0.5">0</h3>
+                </div>
+                <span class="material-symbols-outlined text-rose-600 text-[28px]">content_copy</span>
+            </div>
+        </div>
+
+        <!-- Selection Controls & Filters -->
+        <div class="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant shadow-sm mb-6 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <label class="flex items-center gap-2 text-xs font-bold text-primary cursor-pointer">
+                    <input type="checkbox" id="select-all-checkbox" onchange="toggleSelectAll(this)" class="w-4 h-4 rounded text-secondary focus:ring-secondary"/>
+                    <span>تحديد كافة الأصناف (<span id="selected-count">0</span> محدد)</span>
+                </label>
+                <span class="text-outline-variant">|</span>
+                <div class="flex items-center gap-2 text-xs">
+                    <span class="text-on-surface-variant">تصفية العرض:</span>
+                    <select id="filter-status" onchange="renderItemsList()" class="h-8 px-2.5 rounded bg-surface-container-low border border-outline-variant text-xs">
+                        <option value="ALL">عرض الكل</option>
+                        <option value="WARNINGS">أصناف بها تنبيهات فقط</option>
+                        <option value="DUPLICATES">أصناف مكررة فقط</option>
+                        <option value="VALID">الأصناف المكتملة فقط</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button type="button" onclick="addNewProductModal()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-surface-container text-primary text-xs font-bold hover:bg-surface-container-high transition-all">
+                    <span class="material-symbols-outlined text-[16px]">add</span>
+                    <span>إضافة منتج يدوياً</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Items Container -->
+        <div id="items-list" class="space-y-6"></div>
+    </main>
+
+    <!-- Submit Approval Modal -->
+    <div id="approval-modal" class="fixed inset-0 z-50 bg-primary/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-surface-container-lowest rounded-2xl max-w-md w-full p-6 shadow-2xl border border-outline-variant space-y-4">
+            <h3 class="font-bold text-primary text-base flex items-center gap-2">
+                <span class="material-symbols-outlined text-secondary">verified</span>
+                <span>تأكيد تقديم المنتجات للاعتماد</span>
+            </h3>
+            <p class="text-xs text-on-surface-variant leading-relaxed">
+                سيتم إرسال المنتجات المحددة والصالحة إلى دورة حياة الاعتماد في المنصة. لن تصبح المنتجات معروضة للجمهور إلا بعد مراجعتها واعتمادها.
+            </p>
+
+            <div id="superadmin-publish-option" class="p-3 rounded-lg bg-surface-container-low border border-outline-variant/60 text-xs hidden">
+                <label class="flex items-start gap-2 cursor-pointer font-bold text-primary">
+                    <input type="checkbox" id="direct-publish-chk" class="w-4 h-4 rounded text-secondary focus:ring-secondary mt-0.5"/>
+                    <span>نشر مباشر في الكتالوج العام (Direct Publish) بصفتك المدير العام دون انتظار موافقة إضافية.</span>
+                </label>
+            </div>
+
+            <div class="pt-4 border-t border-outline-variant flex justify-end gap-3">
+                <button type="button" onclick="closeApprovalModal()" class="px-4 py-2 rounded bg-surface-container text-on-surface-variant text-xs font-semibold">إلغاء</button>
+                <button type="button" onclick="confirmSubmitApproval()" class="px-6 py-2 rounded bg-secondary hover:bg-secondary/90 text-white text-xs font-bold shadow-sm">
+                    تأكيد التقديم
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/public/js/common.js"></script>
+    <script>
+        const importId = window.location.pathname.split('/').pop();
+        let itemsData = [];
+        let categoriesData = [];
+        let manufacturersData = [];
+        let currentUser = null;
+        let selectedItemIds = new Set();
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await renderZarsevHeader('upload');
+            document.getElementById('bulk-edit-link').href = `/importer/bulk-edit/${importId}`;
+
+            try {
+                const me = await zarsevFetch('/api/auth/me');
+                currentUser = me.user;
+
+                if (currentUser.role === 'SUPER_ADMIN') {
+                    document.getElementById('superadmin-publish-option').classList.remove('hidden');
+                }
+
+                // Load categories & manufacturers
+                const [cats, mfgs, items] = await Promise.all([
+                    zarsevFetch('/api/categories'),
+                    zarsevFetch('/api/manufacturers'),
+                    zarsevFetch(`/api/imports/${importId}/items`)
+                ]);
+
+                categoriesData = cats.flat;
+                manufacturersData = mfgs.manufacturers;
+                itemsData = items.items;
+
+                // Pre-select all ready items
+                itemsData.forEach(it => {
+                    if (it.status !== 'SKIPPED') selectedItemIds.add(it.id);
+                });
+
+                updateSummaryStats();
+                renderItemsList();
+            } catch (err) {
+                console.error(err);
+            }
+        });
+
+        function updateSummaryStats() {
+            document.getElementById('stat-total').textContent = itemsData.length;
+            const valid = itemsData.filter(i => (i.validation_warnings || []).length === 0 && !i.is_duplicate).length;
+            const warnings = itemsData.filter(i => (i.validation_warnings || []).length > 0).length;
+            const duplicates = itemsData.filter(i => i.is_duplicate).length;
+
+            document.getElementById('stat-valid').textContent = valid;
+            document.getElementById('stat-warnings').textContent = warnings;
+            document.getElementById('stat-duplicates').textContent = duplicates;
+            document.getElementById('selected-count').textContent = selectedItemIds.size;
+        }
+
+        function toggleSelectAll(master) {
+            if (master.checked) {
+                itemsData.forEach(i => selectedItemIds.add(i.id));
+            } else {
+                selectedItemIds.clear();
+            }
+            updateSummaryStats();
+            document.querySelectorAll('.item-checkbox').forEach(cb => { cb.checked = master.checked; });
+        }
+
+        function toggleItemSelect(id, chk) {
+            if (chk.checked) selectedItemIds.add(id);
+            else selectedItemIds.delete(id);
+            updateSummaryStats();
+        }
+
+        function renderItemsList() {
+            const list = document.getElementById('items-list');
+            list.innerHTML = '';
+
+            const filter = document.getElementById('filter-status').value;
+            let displayItems = itemsData;
+
+            if (filter === 'WARNINGS') {
+                displayItems = itemsData.filter(i => (i.validation_warnings || []).length > 0);
+            } else if (filter === 'DUPLICATES') {
+                displayItems = itemsData.filter(i => i.is_duplicate);
+            } else if (filter === 'VALID') {
+                displayItems = itemsData.filter(i => (i.validation_warnings || []).length === 0 && !i.is_duplicate);
+            }
+
+            if (displayItems.length === 0) {
+                list.innerHTML = '<div class="p-12 text-center text-on-surface-variant bg-surface-container-lowest rounded-xl border border-outline-variant">لا توجد أصناف تطابق معايير التصفية المحددة</div>';
+                return;
+            }
+
+            displayItems.forEach((item, index) => {
+                const ext = item.extracted_data || {};
+                const warnings = item.validation_warnings || [];
+                const images = item.assigned_images || [];
+                const isSelected = selectedItemIds.has(item.id);
+
+                // Confidence badge
+                let confBadge = '';
+                const confScore = Math.round((item.confidence_score || 0.8) * 100);
+                if (confScore >= 85) {
+                    confBadge = `<span class="px-2.5 py-1 rounded bg-emerald-100 text-emerald-800 text-[11px] font-bold">ثقة الاستخراج: ${confScore}%</span>`;
+                } else if (confScore >= 65) {
+                    confBadge = `<span class="px-2.5 py-1 rounded bg-amber-100 text-amber-800 text-[11px] font-bold">ثقة متوسطة: ${confScore}%</span>`;
+                } else {
+                    confBadge = `<span class="px-2.5 py-1 rounded bg-rose-100 text-rose-800 text-[11px] font-bold">بحاجة لتدقيق: ${confScore}%</span>`;
+                }
+
+                // Duplicate badge
+                let dupAlert = '';
+                if (item.is_duplicate) {
+                    dupAlert = `
+                        <div class="p-3 rounded-lg bg-rose-50 border border-rose-300 text-rose-800 text-xs flex items-center gap-2 mb-3">
+                            <span class="material-symbols-outlined text-[18px]">warning</span>
+                            <span><strong>تنبيه تكرار:</strong> ${item.duplicate_reason || 'منتج مطابق مسجل مسبقاً'}</span>
+                        </div>
+                    `;
+                }
+
+                // Warnings pill list
+                let warningsHtml = '';
+                if (warnings.length > 0) {
+                    warningsHtml = `
+                        <div class="flex flex-wrap gap-1.5 mb-3">
+                            ${warnings.map(w => `<span class="px-2 py-0.5 rounded bg-amber-50 border border-amber-200 text-amber-800 text-[11px] flex items-center gap-1 font-medium"><span class="material-symbols-outlined text-[14px]">info</span>${w}</span>`).join('')}
+                        </div>
+                    `;
+                }
+
+                // Category options
+                const catOptions = categoriesData.map(c => `
+                    <option value="${c.id}" ${c.id === item.suggested_category_id ? 'selected' : ''}>
+                        ${c.parent_id ? '— ' : ''}${c.name_ar}
+                    </option>
+                `).join('');
+
+                // Manufacturer options
+                const isMfgLocked = currentUser && currentUser.role === 'MANUFACTURER';
+                const mfgOptions = manufacturersData.map(m => `
+                    <option value="${m.id}" ${m.id === item.suggested_manufacturer_id ? 'selected' : ''}>
+                        ${m.name_ar} (${m.code})
+                    </option>
+                `).join('');
+
+                // Image gallery thumbnails
+                let imagesHtml = '';
+                if (images.length > 0) {
+                    imagesHtml = `
+                        <div class="flex items-center gap-2 overflow-x-auto pb-2">
+                            ${images.map((img, imgIdx) => `
+                                <div class="relative w-20 h-20 rounded-lg overflow-hidden border ${img.is_primary ? 'border-2 border-secondary ring-2 ring-secondary/20' : 'border-outline-variant'} shrink-0 group">
+                                    <img src="${img.thumbnail_url || img.url}" class="w-full h-full object-cover"/>
+                                    ${img.is_primary ? '<span class="absolute top-1 right-1 px-1 bg-secondary text-white text-[9px] font-bold rounded">رئيسية</span>' : `
+                                        <button type="button" onclick="setPrimaryImage('${item.id}', '${img.url}')" class="absolute inset-0 bg-primary/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-[10px] font-bold transition-opacity">
+                                            اجعلها رئيسية
+                                        </button>
+                                    `}
+                                    <button type="button" onclick="removeImage('${item.id}', '${img.url}')" class="absolute bottom-1 left-1 bg-rose-700/80 hover:bg-rose-800 text-white rounded p-0.5 opacity-0 group-hover:opacity-100">
+                                        <span class="material-symbols-outlined text-[12px]">delete</span>
+                                    </button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                } else {
+                    imagesHtml = '<div class="text-[11px] text-on-surface-variant py-2 flex items-center gap-1.5"><span class="material-symbols-outlined text-[16px]">no_photography</span>لم يتم ربط صور بهذا الصنف</div>';
+                }
+
+                const card = document.createElement('div');
+                card.id = `card-${item.id}`;
+                card.className = `p-6 rounded-2xl bg-surface-container-lowest border ${item.is_duplicate ? 'border-rose-300' : 'border-outline-variant'} shadow-sm space-y-4 transition-all`;
+                card.innerHTML = `
+                    <div class="flex items-center justify-between flex-wrap gap-3 pb-3 border-b border-outline-variant/60">
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" class="item-checkbox w-4 h-4 rounded text-secondary" ${isSelected ? 'checked' : ''} onchange="toggleItemSelect('${item.id}', this)"/>
+                            <span class="font-bold text-primary text-base">صنف #${index + 1}</span>
+                            <span class="font-mono text-xs text-on-surface-variant" dir="ltr">${ext.sku ? `[${ext.sku}]` : '[بدون كود صنف]'}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            ${confBadge}
+                            <button type="button" onclick="toggleSkipItem('${item.id}')" class="text-xs ${item.status === 'SKIPPED' ? 'text-secondary font-bold' : 'text-outline hover:text-rose-700'}">
+                                ${item.status === 'SKIPPED' ? 'استرجاع الصنف' : 'استبعاد (Skip)'}
+                            </button>
+                        </div>
+                    </div>
+
+                    ${dupAlert}
+                    ${warningsHtml}
+
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+                        <!-- Right 8 Cols: Editable Fields -->
+                        <div class="md:col-span-8 space-y-4 text-xs">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block font-bold text-primary mb-1">اسم المنتج بالعربية *</label>
+                                    <input type="text" id="name-${item.id}" value="${ext.name_ar || ''}" class="w-full h-10 px-3 rounded border border-outline-variant bg-surface-container-low font-medium"/>
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-primary mb-1">كود الصنف / SKU</label>
+                                    <input type="text" id="sku-${item.id}" value="${ext.sku || ''}" class="w-full h-10 px-3 rounded border border-outline-variant bg-surface-container-low font-mono" dir="ltr"/>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block font-bold text-primary mb-1">التصنيف المقترح</label>
+                                    <select id="cat-${item.id}" class="w-full h-10 px-3 rounded border border-outline-variant bg-surface-container-low font-medium">
+                                        <option value="">-- اختر التصنيف --</option>
+                                        ${catOptions}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-primary mb-1">المصنع المعتمد ${isMfgLocked ? '(مقفل)' : ''}</label>
+                                    <select id="mfg-${item.id}" ${isMfgLocked ? 'disabled' : ''} class="w-full h-10 px-3 rounded border border-outline-variant bg-surface-container-low font-medium ${isMfgLocked ? 'opacity-70 bg-gray-100 cursor-not-allowed' : ''}">
+                                        ${mfgOptions}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-3 gap-3">
+                                <div>
+                                    <label class="block font-bold text-primary mb-1">السعر التصديري</label>
+                                    <input type="number" step="0.01" id="price-${item.id}" value="${ext.price ?? ''}" placeholder="غير محدد" class="w-full h-10 px-3 rounded border border-outline-variant bg-surface-container-low font-mono font-bold"/>
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-primary mb-1">العملة</label>
+                                    <select id="curr-${item.id}" class="w-full h-10 px-3 rounded border border-outline-variant bg-surface-container-low font-bold">
+                                        <option value="USD" ${ext.currency === 'USD' ? 'selected' : ''}>USD ($)</option>
+                                        <option value="EUR" ${ext.currency === 'EUR' ? 'selected' : ''}>EUR (€)</option>
+                                        <option value="EGP" ${ext.currency === 'EGP' ? 'selected' : ''}>EGP (ج.م)</option>
+                                        <option value="SAR" ${ext.currency === 'SAR' ? 'selected' : ''}>SAR (ر.س)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-primary mb-1">وحدة القياس</label>
+                                    <select id="unit-${item.id}" class="w-full h-10 px-3 rounded border border-outline-variant bg-surface-container-low font-bold">
+                                        <option value="MT" ${ext.price_unit === 'MT' ? 'selected' : ''}>طن متري (MT)</option>
+                                        <option value="KG" ${ext.price_unit === 'KG' ? 'selected' : ''}>كيلوجرام (KG)</option>
+                                        <option value="Carton" ${ext.price_unit === 'Carton' ? 'selected' : ''}>كرتونة (Carton)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block font-bold text-primary mb-1">الحد الأدنى للطلب (MOQ)</label>
+                                    <input type="text" id="moq-${item.id}" value="${ext.moq || ''}" placeholder="مثال: 1 Container (24 MT)" class="w-full h-10 px-3 rounded border border-outline-variant bg-surface-container-low"/>
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-primary mb-1">نمط التعبئة والتغليف</label>
+                                    <input type="text" id="pkg-${item.id}" value="${ext.packaging_info || ''}" placeholder="مثال: كرتون مقوى تلسكوبي 15 كجم" class="w-full h-10 px-3 rounded border border-outline-variant bg-surface-container-low"/>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block font-bold text-primary mb-1">الوصف التصديري</label>
+                                <textarea id="desc-${item.id}" rows="2" class="w-full p-2.5 rounded border border-outline-variant bg-surface-container-low">${ext.description_ar || ''}</textarea>
+                            </div>
+                        </div>
+
+                        <!-- Left 4 Cols: Images & Quick Actions -->
+                        <div class="md:col-span-4 space-y-4">
+                            <label class="block font-bold text-primary text-xs">صور المنتج المرتبطة:</label>
+                            ${imagesHtml}
+
+                            <div class="pt-4 border-t border-outline-variant/60 flex items-center justify-between">
+                                <button type="button" onclick="saveItemChanges('${item.id}')" class="px-4 py-2 rounded bg-secondary hover:bg-secondary/90 text-white text-xs font-bold transition-all shadow-sm">
+                                    حفظ تعديلات الصنف
+                                </button>
+                                <span id="save-indicator-${item.id}" class="text-[11px] text-emerald-700 font-bold hidden">تم الحفظ!</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        async function saveItemChanges(itemId) {
+            const ext = {
+                name_ar: document.getElementById(`name-${itemId}`).value,
+                sku: document.getElementById(`sku-${itemId}`).value,
+                price: parseFloat(document.getElementById(`price-${itemId}`).value) || null,
+                currency: document.getElementById(`curr-${itemId}`).value,
+                price_unit: document.getElementById(`unit-${itemId}`).value,
+                moq: document.getElementById(`moq-${itemId}`).value,
+                packaging_info: document.getElementById(`pkg-${itemId}`).value,
+                description_ar: document.getElementById(`desc-${itemId}`).value
+            };
+
+            const catId = document.getElementById(`cat-${itemId}`).value;
+            const mfgId = document.getElementById(`mfg-${itemId}`).value;
+
+            try {
+                await zarsevFetch(`/api/imports/${importId}/items/${itemId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        extracted_data: ext,
+                        suggested_category_id: catId,
+                        suggested_manufacturer_id: mfgId
+                    })
+                });
+
+                // Update local memory
+                const local = itemsData.find(i => i.id === itemId);
+                if (local) {
+                    local.extracted_data = ext;
+                    local.suggested_category_id = catId;
+                    local.suggested_manufacturer_id = mfgId;
+                }
+
+                const indicator = document.getElementById(`save-indicator-${itemId}`);
+                indicator.classList.remove('hidden');
+                setTimeout(() => indicator.classList.add('hidden'), 2500);
+                showToast('تم حفظ التعديلات بنجاح', 'success');
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function setPrimaryImage(itemId, imageUrl) {
+            try {
+                await zarsevFetch(`/api/imports/${importId}/reassign-image`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        from_item_id: itemId,
+                        to_item_id: itemId,
+                        image_url: imageUrl,
+                        make_primary: true
+                    })
+                });
+
+                // Update memory and re-render
+                const it = itemsData.find(i => i.id === itemId);
+                if (it && it.assigned_images) {
+                    it.assigned_images.forEach(img => { img.is_primary = (img.url === imageUrl); });
+                }
+                renderItemsList();
+                showToast('تم تعيين الصورة كصورة رئيسية للصنف', 'success');
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function removeImage(itemId, imageUrl) {
+            try {
+                await zarsevFetch(`/api/imports/${importId}/reassign-image`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        from_item_id: itemId,
+                        image_url: imageUrl,
+                        remove_image: true
+                    })
+                });
+
+                const it = itemsData.find(i => i.id === itemId);
+                if (it && it.assigned_images) {
+                    it.assigned_images = it.assigned_images.filter(img => img.url !== imageUrl);
+                }
+                renderItemsList();
+                showToast('تمت إزالة الصورة بنجاح', 'info');
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function toggleSkipItem(itemId) {
+            const it = itemsData.find(i => i.id === itemId);
+            if (!it) return;
+            const newStat = it.status === 'SKIPPED' ? 'AWAITING_REVIEW' : 'SKIPPED';
+            try {
+                await zarsevFetch(`/api/imports/${importId}/items/${itemId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ status: newStat })
+                });
+                it.status = newStat;
+                if (newStat === 'SKIPPED') selectedItemIds.delete(itemId);
+                else selectedItemIds.add(itemId);
+                renderItemsList();
+                updateSummaryStats();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function saveAllDraft() {
+            if (selectedItemIds.size === 0) {
+                showToast('يرجى تحديد صنف واحد على الأقل للحفظ كمسودة', 'warning');
+                return;
+            }
+
+            try {
+                const res = await zarsevFetch(`/api/imports/${importId}/save-draft`, {
+                    method: 'POST',
+                    body: JSON.stringify({ selected_item_ids: Array.from(selectedItemIds) })
+                });
+                showToast(res.message, 'success');
+                setTimeout(() => window.location.href = '/catalog', 1200);
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        function submitApprovalModal() {
+            if (selectedItemIds.size === 0) {
+                showToast('يرجى تحديد صنف واحد على الأقل لتقديمه للاعتماد', 'warning');
+                return;
+            }
+            document.getElementById('approval-modal').classList.remove('hidden');
+        }
+
+        function closeApprovalModal() {
+            document.getElementById('approval-modal').classList.add('hidden');
+        }
+
+        async function confirmSubmitApproval() {
+            const directPublish = document.getElementById('direct-publish-chk')?.checked || false;
+            try {
+                const res = await zarsevFetch(`/api/imports/${importId}/submit-approval`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        selected_item_ids: Array.from(selectedItemIds),
+                        direct_publish: directPublish
+                    })
+                });
+                closeApprovalModal();
+                showToast(res.message, 'success');
+                setTimeout(() => window.location.href = '/importer/history', 1500);
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

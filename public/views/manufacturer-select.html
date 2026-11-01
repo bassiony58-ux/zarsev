@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>ZARSEV - اختيار وتعيين المصنع المعتمد</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#001830",
+                        "primary-container": "#172D46",
+                        secondary: "#1F686E",
+                        "secondary-container": "#A8EBF2",
+                        tertiary: "#C5A46D",
+                        background: "#F9F9FF",
+                        surface: "#F9F9FF",
+                        "surface-container-low": "#F0F3FF",
+                        "surface-container": "#E7EEFF",
+                        "surface-container-lowest": "#FFFFFF",
+                        "on-surface": "#0F1C2E",
+                        "on-surface-variant": "#43474D",
+                        outline: "#74777E",
+                        "outline-variant": "#E4E7EC"
+                    },
+                    fontFamily: {
+                        sans: ["IBM Plex Sans Arabic", "IBM Plex Sans", "sans-serif"]
+                    }
+                }
+            }
+        };
+    </script>
+</head>
+<body class="bg-background font-sans text-on-surface antialiased min-h-screen flex flex-col">
+    <div id="zarsev-header-mount"></div>
+
+    <main class="flex-1 w-full max-w-[1440px] mx-auto px-6 py-8">
+        <div class="flex items-center justify-between flex-wrap gap-4 mb-8">
+            <nav class="flex items-center gap-2 text-xs text-on-surface-variant">
+                <a href="/importer" class="hover:text-primary transition-colors">بوابة الاستيراد</a>
+                <span class="material-symbols-outlined text-[14px]">chevron_left</span>
+                <span class="text-primary font-bold">إدارة واختيار المصنعين</span>
+            </nav>
+
+            <div class="flex items-center gap-3">
+                <button type="button" onclick="openCreateModal()" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary hover:bg-primary-container text-white text-xs font-semibold shadow-sm transition-all">
+                    <span class="material-symbols-outlined text-[18px]">add_business</span>
+                    <span>إضافة ملف مصنع جديد</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Smart Detection & Test Matcher Box -->
+        <div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm mb-8">
+            <div class="flex items-center gap-2 mb-3">
+                <span class="material-symbols-outlined text-secondary">psychology</span>
+                <h3 class="font-bold text-primary text-base">مطابقة أسماء المصانع الذكية ومنع التكرار</h3>
+            </div>
+            <p class="text-xs text-on-surface-variant mb-4 leading-relaxed">
+                إذا كان اسم المحطة التصديرية أو الشركة مدوناً في الكتالوج، يطابقه المحرك مع المنشآت المسجلة ويمنع تكرار فتح ملف للمصنع نفسه تلقائياً دون تأكيد صريح.
+            </p>
+            <div class="flex items-center gap-3 max-w-xl">
+                <input type="text" id="detector-input" placeholder="جرّب كتابة اسم مصنع (مثال: محطة البستان، ثمار النيل، دلتا...)" class="flex-1 h-11 px-4 rounded-lg bg-surface-container-low border border-outline-variant text-xs text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary"/>
+                <button type="button" onclick="testMatcher()" class="px-5 h-11 rounded-lg bg-secondary text-white text-xs font-bold hover:bg-secondary/90 transition-all">
+                    فحص المطابقة
+                </button>
+            </div>
+            <div id="matcher-result" class="mt-4 p-4 rounded-lg bg-surface-container-low border border-outline-variant/60 text-xs hidden"></div>
+        </div>
+
+        <!-- Filter tabs: All, Direct Contract, Marketing Subscription -->
+        <div class="flex items-center gap-2 mb-6">
+            <button type="button" onclick="filterModel('ALL')" id="tab-ALL" class="px-4 py-2 rounded-lg bg-primary text-white text-xs font-bold transition-all shadow-sm">
+                كافة المنشآت المعتمدة
+            </button>
+            <button type="button" onclick="filterModel('DIRECT_CONTRACT')" id="tab-DIRECT_CONTRACT" class="px-4 py-2 rounded-lg bg-surface-container-lowest text-on-surface-variant hover:text-primary text-xs font-semibold transition-all">
+                المصانع بعقود مباشرة (Direct Contract)
+            </button>
+            <button type="button" onclick="filterModel('MARKETING_SUBSCRIPTION')" id="tab-MARKETING_SUBSCRIPTION" class="px-4 py-2 rounded-lg bg-surface-container-lowest text-on-surface-variant hover:text-primary text-xs font-semibold transition-all">
+                المصانع باشتراك تسويقي (Marketing Subscription)
+            </button>
+        </div>
+
+        <!-- Manufacturers Grid -->
+        <div id="manufacturers-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </main>
+
+    <!-- Create Manufacturer Modal -->
+    <div id="create-modal" class="fixed inset-0 z-50 bg-primary/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-surface-container-lowest rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-outline-variant space-y-4">
+            <div class="flex items-center justify-between pb-3 border-b border-outline-variant">
+                <h3 class="font-bold text-primary text-base flex items-center gap-2">
+                    <span class="material-symbols-outlined text-secondary">domain_add</span>
+                    <span>إضافة ملف تعريفي لمصنع جديد</span>
+                </h3>
+                <button type="button" onclick="closeCreateModal()" class="text-outline hover:text-rose-600">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <form id="create-mfg-form" onsubmit="handleCreateMfg(event)" class="space-y-4 text-xs">
+                <div>
+                    <label class="block font-bold text-primary mb-1">اسم المصنع / المنشأة بالعربية *</label>
+                    <input type="text" id="mfg-name-ar" required class="w-full h-10 px-3 rounded border border-outline-variant bg-surface-container-low"/>
+                </div>
+                <div>
+                    <label class="block font-bold text-primary mb-1">اسم المصنع بالإنجليزية</label>
+                    <input type="text" id="mfg-name-en" class="w-full h-10 px-3 rounded border border-outline-variant bg-surface-container-low" dir="ltr"/>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold text-primary mb-1">كود المنشأة التصديري</label>
+                        <input type="text" id="mfg-code" placeholder="تلقائي إذا ترك فارغاً" class="w-full h-10 px-3 rounded border border-outline-variant bg-surface-container-low font-mono" dir="ltr"/>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-primary mb-1">المدينة / الميناء *</label>
+                        <input type="text" id="mfg-city" required class="w-full h-10 px-3 rounded border border-outline-variant bg-surface-container-low"/>
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-bold text-primary mb-1">نموذج العمل التجاري *</label>
+                    <select id="mfg-business-model" required class="w-full h-10 px-3 rounded border border-outline-variant bg-surface-container-low">
+                        <option value="DIRECT_CONTRACT">عقد مباشر مع زارسيف (Direct Contract - لا يحتاج تسجيل دخول)</option>
+                        <option value="MARKETING_SUBSCRIPTION">اشتراك تسويقي ذاتي (Marketing Subscription)</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold text-primary mb-1">البريد الإلكتروني للاتصال</label>
+                        <input type="email" id="mfg-email" class="w-full h-10 px-3 rounded border border-outline-variant bg-surface-container-low" dir="ltr"/>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-primary mb-1">الهاتف الرسمي</label>
+                        <input type="text" id="mfg-phone" class="w-full h-10 px-3 rounded border border-outline-variant bg-surface-container-low" dir="ltr"/>
+                    </div>
+                </div>
+
+                <div class="pt-3 border-t border-outline-variant flex justify-end gap-3">
+                    <button type="button" onclick="closeCreateModal()" class="px-4 py-2 rounded bg-surface-container text-on-surface-variant font-semibold">إلغاء</button>
+                    <button type="submit" class="px-6 py-2 rounded bg-secondary hover:bg-secondary/90 text-white font-bold shadow-sm">حفظ المصنع</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/public/js/common.js"></script>
+    <script>
+        let allMfgs = [];
+        let currentFilter = 'ALL';
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await renderZarsevHeader('upload');
+            await loadManufacturers();
+        });
+
+        async function loadManufacturers() {
+            try {
+                const res = await zarsevFetch('/api/manufacturers');
+                allMfgs = res.manufacturers;
+                renderManufacturersGrid();
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function filterModel(model) {
+            currentFilter = model;
+            ['ALL', 'DIRECT_CONTRACT', 'MARKETING_SUBSCRIPTION'].forEach(m => {
+                const btn = document.getElementById(`tab-${m}`);
+                if (m === model) {
+                    btn.className = 'px-4 py-2 rounded-lg bg-primary text-white text-xs font-bold transition-all shadow-sm';
+                } else {
+                    btn.className = 'px-4 py-2 rounded-lg bg-surface-container-lowest text-on-surface-variant hover:text-primary text-xs font-semibold transition-all';
+                }
+            });
+            renderManufacturersGrid();
+        }
+
+        function renderManufacturersGrid() {
+            const grid = document.getElementById('manufacturers-grid');
+            grid.innerHTML = '';
+
+            const filtered = currentFilter === 'ALL' 
+                ? allMfgs 
+                : allMfgs.filter(m => m.business_model === currentFilter);
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '<div class="col-span-3 text-center py-12 text-on-surface-variant text-sm">لا توجد منشآت مسجلة في هذا التصنيف</div>';
+                return;
+            }
+
+            filtered.forEach(m => {
+                const isDirect = m.business_model === 'DIRECT_CONTRACT';
+                const card = document.createElement('div');
+                card.className = 'bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm hover:shadow-md transition-all flex flex-col justify-between';
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="px-2.5 py-0.5 rounded text-[11px] font-bold ${isDirect ? 'bg-blue-100 text-blue-800' : 'bg-teal-100 text-teal-800'}">
+                                ${isDirect ? 'عقد مباشر (Direct Contract)' : 'اشتراك تسويقي (Subscription)'}
+                            </span>
+                            <span class="font-mono text-xs text-on-surface-variant">${m.code}</span>
+                        </div>
+                        <h4 class="font-bold text-primary text-base mb-1">${m.name_ar}</h4>
+                        <div class="text-xs text-on-surface-variant font-mono mb-4" dir="ltr">${m.name_en || ''}</div>
+                        <div class="space-y-1.5 text-xs text-on-surface-variant border-t border-outline-variant/40 pt-3">
+                            <div class="flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-[16px] text-secondary">location_on</span>
+                                <span>${m.city} - ${m.country}</span>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-[16px] text-secondary">inventory_2</span>
+                                <span>المنتجات المسجلة: <strong>${m.products_count || 0}</strong> صنف</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pt-5 border-t border-outline-variant/40 mt-5 flex items-center justify-between">
+                        <a href="/importer/upload" class="inline-flex items-center gap-1 text-xs font-bold text-secondary hover:underline">
+                            <span>استيراد منتجات لهذا المصنع</span>
+                            <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+                        </a>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        async function testMatcher() {
+            const val = document.getElementById('detector-input').value.trim();
+            const resBox = document.getElementById('matcher-result');
+            if (!val) return;
+
+            try {
+                const res = await zarsevFetch(`/api/manufacturers/match?name=${encodeURIComponent(val)}`);
+                resBox.classList.remove('hidden');
+                if (res.match) {
+                    resBox.innerHTML = `
+                        <div class="flex items-start gap-3">
+                            <span class="material-symbols-outlined text-emerald-600 text-[24px]">verified</span>
+                            <div>
+                                <strong class="text-emerald-800 text-sm">تم العثور على مصنع مطابق بنسبة (${Math.round(res.match.match_confidence * 100)}%):</strong>
+                                <div class="text-primary font-bold mt-1">${res.match.name_ar} (${res.match.code})</div>
+                                <div class="text-on-surface-variant text-[11px] mt-0.5">نموذج العمل: ${res.match.business_model === 'DIRECT_CONTRACT' ? 'عقد مباشر' : 'اشتراك تسويقي'}</div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    resBox.innerHTML = `
+                        <div class="flex items-center gap-2 text-on-surface-variant">
+                            <span class="material-symbols-outlined text-amber-600">info</span>
+                            <span>لم يتم العثور على مصنع مطابق بنفس الاسم. سيطلب النظام من المستخدم اختيار المصنع أو إنشائه تأكيداً لعدم تكرار السجلات.</span>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function openCreateModal() {
+            document.getElementById('create-modal').classList.remove('hidden');
+        }
+        function closeCreateModal() {
+            document.getElementById('create-modal').classList.add('hidden');
+        }
+
+        async function handleCreateMfg(e) {
+            e.preventDefault();
+            const payload = {
+                name_ar: document.getElementById('mfg-name-ar').value,
+                name_en: document.getElementById('mfg-name-en').value,
+                code: document.getElementById('mfg-code').value,
+                city: document.getElementById('mfg-city').value,
+                business_model: document.getElementById('mfg-business-model').value,
+                contact_email: document.getElementById('mfg-email').value,
+                contact_phone: document.getElementById('mfg-phone').value
+            };
+
+            try {
+                await zarsevFetch('/api/manufacturers', {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                showToast('تم إنشاء ملف المصنع بنجاح', 'success');
+                closeCreateModal();
+                await loadManufacturers();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

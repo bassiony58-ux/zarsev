@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>ZARSEV - السجلات المتعثرة وإعادة المحاولة الذكية</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#001830",
+                        "primary-container": "#172D46",
+                        secondary: "#1F686E",
+                        "secondary-container": "#A8EBF2",
+                        tertiary: "#C5A46D",
+                        background: "#F9F9FF",
+                        surface: "#F9F9FF",
+                        "surface-container-low": "#F0F3FF",
+                        "surface-container": "#E7EEFF",
+                        "surface-container-lowest": "#FFFFFF",
+                        "on-surface": "#0F1C2E",
+                        "on-surface-variant": "#43474D",
+                        outline: "#74777E",
+                        "outline-variant": "#E4E7EC"
+                    },
+                    fontFamily: {
+                        sans: ["IBM Plex Sans Arabic", "IBM Plex Sans", "sans-serif"]
+                    }
+                }
+            }
+        };
+    </script>
+</head>
+<body class="bg-background font-sans text-on-surface antialiased min-h-screen flex flex-col">
+    <div id="zarsev-header-mount"></div>
+
+    <main class="flex-1 w-full max-w-[1440px] mx-auto px-6 py-8">
+        <div class="flex items-center justify-between flex-wrap gap-4 mb-8">
+            <nav class="flex items-center gap-2 text-xs text-on-surface-variant">
+                <a href="/importer" class="hover:text-primary transition-colors">بوابة الاستيراد</a>
+                <span class="material-symbols-outlined text-[14px]">chevron_left</span>
+                <a href="/importer/history" class="hover:text-primary transition-colors">سجل العمليات</a>
+                <span class="material-symbols-outlined text-[14px]">chevron_left</span>
+                <span class="text-primary font-bold">تشخيص السجلات المتعثرة وإعادة المحاولة</span>
+            </nav>
+
+            <div class="flex items-center gap-3">
+                <a id="csv-download-btn" href="#" target="_blank" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-primary text-xs font-bold border border-outline-variant transition-all">
+                    <span class="material-symbols-outlined text-[18px]">download</span>
+                    <span>تحميل تقرير الأخطاء (CSV)</span>
+                </a>
+                <button type="button" onclick="retryFailedRecords()" class="inline-flex items-center gap-1.5 px-6 py-2 rounded-lg bg-secondary hover:bg-secondary/90 text-white text-xs font-bold shadow-md transition-all">
+                    <span class="material-symbols-outlined text-[18px]">replay</span>
+                    <span>إعادة محاولة معالجة السجلات المتعثرة دون تكرار</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Banner Info Card -->
+        <div class="p-6 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 mb-8 flex items-start gap-4">
+            <div class="w-12 h-12 rounded-xl bg-amber-200 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-amber-800 text-[28px]">healing</span>
+            </div>
+            <div>
+                <h3 class="text-base font-bold mb-1">المعالجة الاسترجاعية الذكية (Smart Self-Healing Recovery)</h3>
+                <p class="text-xs leading-relaxed text-amber-800/90">
+                    عند إعادة محاولة معالجة السجلات المتعثرة، يقوم النظام باستخلاص البيانات بصورة متساهلة ونقل السجلات إلى شاشة المراجعة اليدوية، <strong>مع الحفاظ التام على الأصناف الناجحة مسبقاً ودون إنشاء أي سجلات مكررة</strong>.
+                </p>
+            </div>
+        </div>
+
+        <!-- Diagnostic List -->
+        <div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden">
+            <div class="p-5 border-b border-outline-variant flex items-center justify-between">
+                <h4 class="font-bold text-primary text-sm flex items-center gap-2">
+                    <span class="material-symbols-outlined text-rose-600">error</span>
+                    <span>السجلات التي واجهت أخطاء أو تحذيرات (<span id="failed-count">0</span>)</span>
+                </h4>
+            </div>
+            <div id="failed-records-list" class="divide-y divide-outline-variant/60"></div>
+        </div>
+    </main>
+
+    <script src="/public/js/common.js"></script>
+    <script>
+        const importId = window.location.pathname.split('/').pop();
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await renderZarsevHeader('history');
+            document.getElementById('csv-download-btn').href = `/api/imports/${importId}/error-report`;
+            loadFailedDetails();
+        });
+
+        async function loadFailedDetails() {
+            try {
+                const res = await zarsevFetch(`/api/imports/${importId}/items`);
+                const all = res.items;
+                const failed = all.filter(i => i.status === 'FAILED' || (i.validation_warnings || []).length > 0);
+                
+                document.getElementById('failed-count').textContent = failed.length;
+                const container = document.getElementById('failed-records-list');
+                container.innerHTML = '';
+
+                if (failed.length === 0) {
+                    container.innerHTML = '<div class="p-8 text-center text-emerald-700 font-bold text-sm">تهانينا! لا توجد سجلات متعثرة في هذه العملية.</div>';
+                    return;
+                }
+
+                failed.forEach((item, idx) => {
+                    const ext = item.extracted_data || {};
+                    const warnings = item.validation_warnings || [];
+                    const row = document.createElement('div');
+                    row.className = 'p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 hover:bg-surface-container-low transition-colors';
+                    row.innerHTML = `
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2">
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${item.status === 'FAILED' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'}">
+                                    ${item.status}
+                                </span>
+                                <strong class="text-primary text-sm">${ext.name_ar || 'صنف غير معرف الاسم'}</strong>
+                            </div>
+                            <div class="text-xs text-on-surface-variant font-mono">
+                                المرجع الأصلي: ${item.source_reference || 'سطر غير محدد'}
+                            </div>
+                            <div class="text-xs text-rose-700 font-semibold pt-1">
+                                سبب التعثر: ${item.error_message || warnings.join(' | ') || 'بيانات المنتج غير كاملة'}
+                            </div>
+                        </div>
+                        <div class="shrink-0">
+                            <a href="/importer/review/${importId}#card-${item.id}" class="inline-flex items-center gap-1 text-xs font-bold text-secondary hover:underline">
+                                <span>تدقيق يدوي في شاشة المراجعة</span>
+                                <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+                            </a>
+                        </div>
+                    `;
+                    container.appendChild(row);
+                });
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function retryFailedRecords() {
+            try {
+                const res = await zarsevFetch(`/api/imports/${importId}/retry-failed`, {
+                    method: 'POST'
+                });
+                showToast(res.message, 'success');
+                setTimeout(() => window.location.href = `/importer/review/${importId}`, 1500);
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

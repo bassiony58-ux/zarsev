@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>ZARSEV - التعديل الجماعي والتصنيف المجمع</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#001830",
+                        "primary-container": "#172D46",
+                        secondary: "#1F686E",
+                        "secondary-container": "#A8EBF2",
+                        tertiary: "#C5A46D",
+                        background: "#F9F9FF",
+                        surface: "#F9F9FF",
+                        "surface-container-low": "#F0F3FF",
+                        "surface-container": "#E7EEFF",
+                        "surface-container-lowest": "#FFFFFF",
+                        "on-surface": "#0F1C2E",
+                        "on-surface-variant": "#43474D",
+                        outline: "#74777E",
+                        "outline-variant": "#E4E7EC"
+                    },
+                    fontFamily: {
+                        sans: ["IBM Plex Sans Arabic", "IBM Plex Sans", "sans-serif"]
+                    }
+                }
+            }
+        };
+    </script>
+</head>
+<body class="bg-background font-sans text-on-surface antialiased min-h-screen flex flex-col">
+    <div id="zarsev-header-mount"></div>
+
+    <main class="flex-1 w-full max-w-[1440px] mx-auto px-6 py-8">
+        <div class="flex items-center justify-between flex-wrap gap-4 mb-6">
+            <nav class="flex items-center gap-2 text-xs text-on-surface-variant">
+                <a href="/importer" class="hover:text-primary transition-colors">بوابة الاستيراد</a>
+                <span class="material-symbols-outlined text-[14px]">chevron_left</span>
+                <a id="back-review-link" href="#" class="hover:text-primary transition-colors">شاشة المراجعة</a>
+                <span class="material-symbols-outlined text-[14px]">chevron_left</span>
+                <span class="text-primary font-bold">التعديل الجماعي المجمع</span>
+            </nav>
+
+            <a id="return-review-btn" href="#" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-primary text-xs font-bold border border-outline-variant transition-all">
+                <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+                <span>العودة لشاشة تدقيق المنتجات</span>
+            </a>
+        </div>
+
+        <!-- Bulk Modification Toolbox Card -->
+        <div class="bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant shadow-sm mb-8 space-y-4">
+            <div class="flex items-center gap-2 pb-3 border-b border-outline-variant">
+                <span class="material-symbols-outlined text-secondary text-[24px]">tune</span>
+                <div>
+                    <h2 class="font-bold text-primary text-base">لوحة التحكم في التعديل والتصنيف الجماعي</h2>
+                    <p class="text-xs text-on-surface-variant">حدد الأصناف من الجدول أدناه، واختر الحقول المطلوب تطبيقها دفعة واحدة</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
+                <!-- Bulk Category -->
+                <div>
+                    <label class="block font-bold text-primary mb-1">تعيين التصنيف لكافة المحدد:</label>
+                    <select id="bulk-category" class="w-full h-10 px-3 rounded border border-outline-variant bg-surface-container-low font-medium">
+                        <option value="">-- بدون تغيير --</option>
+                    </select>
+                </div>
+
+                <!-- Bulk Manufacturer (if authorized) -->
+                <div>
+                    <label class="block font-bold text-primary mb-1">تعيين المصنع المعتمد:</label>
+                    <select id="bulk-manufacturer" class="w-full h-10 px-3 rounded border border-outline-variant bg-surface-container-low font-medium">
+                        <option value="">-- بدون تغيير --</option>
+                    </select>
+                </div>
+
+                <!-- Bulk Currency -->
+                <div>
+                    <label class="block font-bold text-primary mb-1">توحيد عملة التسعير:</label>
+                    <select id="bulk-currency" class="w-full h-10 px-3 rounded border border-outline-variant bg-surface-container-low font-bold">
+                        <option value="">-- بدون تغيير --</option>
+                        <option value="USD">الدولار الأمريكي (USD $)</option>
+                        <option value="EUR">اليورو الأوروبي (EUR €)</option>
+                        <option value="EGP">الجنيه المصري (EGP)</option>
+                        <option value="SAR">الريال السعودي (SAR)</option>
+                    </select>
+                </div>
+
+                <!-- Bulk Price Multiplier -->
+                <div>
+                    <label class="block font-bold text-primary mb-1">تعديل الأسعار بنسبة مئوية:</label>
+                    <select id="bulk-price-factor" class="w-full h-10 px-3 rounded border border-outline-variant bg-surface-container-low">
+                        <option value="">-- بدون تعديل أسعار --</option>
+                        <option value="1.05">زيادة بنسبة +5% (هوامش شحن)</option>
+                        <option value="1.10">زيادة بنسبة +10%</option>
+                        <option value="0.95">خصم بنسبة -5% (عروض تصدير)</option>
+                        <option value="0.90">خصم بنسبة -10%</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="pt-3 border-t border-outline-variant flex items-center justify-between flex-wrap gap-3">
+                <span class="text-xs text-on-surface-variant">
+                    عدد الأصناف المحددة للتعديل: <strong id="selected-badge" class="text-secondary font-mono text-sm">0</strong> صنف
+                </span>
+                <button type="button" onclick="applyBulkModifications()" class="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-secondary hover:bg-secondary/90 text-white font-bold text-xs shadow-md transition-all">
+                    <span class="material-symbols-outlined text-[18px]">done_all</span>
+                    <span>تطبيق التعديلات على الأصناف المحددة</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Table View -->
+        <div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-right text-xs">
+                    <thead class="bg-surface-container-low text-primary font-bold border-b border-outline-variant">
+                        <tr>
+                            <th class="p-3.5 w-12 text-center">
+                                <input type="checkbox" id="master-check" onchange="toggleMaster(this)" class="w-4 h-4 rounded text-secondary"/>
+                            </th>
+                            <th class="p-3.5">المنتج / الصنف</th>
+                            <th class="p-3.5">كود SKU</th>
+                            <th class="p-3.5">التصنيف الحالي</th>
+                            <th class="p-3.5">المصنع</th>
+                            <th class="p-3.5">السعر والعملة</th>
+                            <th class="p-3.5">الحد الأدنى (MOQ)</th>
+                            <th class="p-3.5 text-center">الحالة</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body" class="divide-y divide-outline-variant/60"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script src="/public/js/common.js"></script>
+    <script>
+        const importId = window.location.pathname.split('/').pop();
+        let itemsData = [];
+        let selectedItemIds = new Set();
+        let currentUser = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await renderZarsevHeader('upload');
+            document.getElementById('back-review-link').href = `/importer/review/${importId}`;
+            document.getElementById('return-review-btn').href = `/importer/review/${importId}`;
+
+            try {
+                const [me, cats, mfgs, items] = await Promise.all([
+                    zarsevFetch('/api/auth/me'),
+                    zarsevFetch('/api/categories'),
+                    zarsevFetch('/api/manufacturers'),
+                    zarsevFetch(`/api/imports/${importId}/items`)
+                ]);
+
+                currentUser = me.user;
+                itemsData = items.items;
+
+                // Populate categories dropdown
+                const catSelect = document.getElementById('bulk-category');
+                cats.flat.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.id;
+                    opt.textContent = `${c.parent_id ? '— ' : ''}${c.name_ar}`;
+                    catSelect.appendChild(opt);
+                });
+
+                // Populate manufacturers dropdown
+                const mfgSelect = document.getElementById('bulk-manufacturer');
+                if (currentUser.role === 'MANUFACTURER') {
+                    mfgSelect.disabled = true;
+                    mfgSelect.innerHTML = `<option value="${currentUser.manufacturer_id}">مقفل بحساب المصنع الحالي</option>`;
+                } else {
+                    mfgs.manufacturers.forEach(m => {
+                        const opt = document.createElement('option');
+                        opt.value = m.id;
+                        opt.textContent = `${m.name_ar} (${m.code})`;
+                        mfgSelect.appendChild(opt);
+                    });
+                }
+
+                // Default: select all
+                itemsData.forEach(i => selectedItemIds.add(i.id));
+                document.getElementById('master-check').checked = true;
+                updateSelectedBadge();
+                renderTable();
+            } catch (err) {
+                console.error(err);
+            }
+        });
+
+        function updateSelectedBadge() {
+            document.getElementById('selected-badge').textContent = selectedItemIds.size;
+        }
+
+        function toggleMaster(master) {
+            if (master.checked) {
+                itemsData.forEach(i => selectedItemIds.add(i.id));
+            } else {
+                selectedItemIds.clear();
+            }
+            updateSelectedBadge();
+            document.querySelectorAll('.row-check').forEach(cb => { cb.checked = master.checked; });
+        }
+
+        function toggleRow(id, chk) {
+            if (chk.checked) selectedItemIds.add(id);
+            else selectedItemIds.delete(id);
+            updateSelectedBadge();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+
+            itemsData.forEach(item => {
+                const ext = item.extracted_data || {};
+                const isChecked = selectedItemIds.has(item.id);
+
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-surface-container-low transition-colors';
+                tr.innerHTML = `
+                    <td class="p-3.5 text-center">
+                        <input type="checkbox" class="row-check w-4 h-4 rounded text-secondary" ${isChecked ? 'checked' : ''} onchange="toggleRow('${item.id}', this)"/>
+                    </td>
+                    <td class="p-3.5 font-bold text-primary">
+                        ${ext.name_ar || 'بدون اسم'}
+                    </td>
+                    <td class="p-3.5 font-mono text-on-surface-variant" dir="ltr">
+                        ${ext.sku || '-'}
+                    </td>
+                    <td class="p-3.5 text-on-surface-variant font-medium">
+                        ${item.suggested_category_name || '<span class="text-amber-700">غير محدد</span>'}
+                    </td>
+                    <td class="p-3.5 text-on-surface-variant font-medium">
+                        ${item.suggested_manufacturer_name || '-'}
+                    </td>
+                    <td class="p-3.5 font-bold font-mono">
+                        ${ext.price ? `${ext.price} ${ext.currency} / ${ext.price_unit}` : '<span class="text-amber-700">مفقود</span>'}
+                    </td>
+                    <td class="p-3.5 text-on-surface-variant">
+                        ${ext.moq || '-'}
+                    </td>
+                    <td class="p-3.5 text-center">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${item.status === 'READY' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'}">
+                            ${item.status}
+                        </span>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function applyBulkModifications() {
+            if (selectedItemIds.size === 0) {
+                showToast('يرجى تحديد صنف واحد على الأقل للتعديل الجماعي', 'warning');
+                return;
+            }
+
+            const cat = document.getElementById('bulk-category').value || undefined;
+            const mfg = document.getElementById('bulk-manufacturer').value || undefined;
+            const curr = document.getElementById('bulk-currency').value || undefined;
+            const factor = parseFloat(document.getElementById('bulk-price-factor').value) || undefined;
+
+            if (!cat && !mfg && !curr && !factor) {
+                showToast('يرجى اختيار حقل واحد على الأقل لتطبيقه على الأصناف', 'warning');
+                return;
+            }
+
+            try {
+                const res = await zarsevFetch(`/api/imports/${importId}/bulk-update`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        item_ids: Array.from(selectedItemIds),
+                        category_id: cat,
+                        manufacturer_id: mfg,
+                        currency: curr,
+                        price_multiplier: factor
+                    })
+                });
+
+                showToast(res.message, 'success');
+                // Refresh table
+                const refreshed = await zarsevFetch(`/api/imports/${importId}/items`);
+                itemsData = refreshed.items;
+                renderTable();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
