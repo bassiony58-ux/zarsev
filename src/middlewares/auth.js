@@ -42,7 +42,7 @@ function authMiddleware(req, res, next) {
     // 4. Verify user existence and active status against server-side database
     const db = getDb();
     const user = db.prepare(`
-        SELECT id, name, email, role, manufacturer_id, is_active, is_demo 
+        SELECT id, name, email, role, manufacturer_id, is_active, is_demo, token_version 
         FROM users 
         WHERE id = ?
     `).get(payload.id);
@@ -58,6 +58,16 @@ function authMiddleware(req, res, next) {
         return res.status(401).json({
             success: false,
             error: 'غير مصرح: تم تجميد أو تعطيل هذا الحساب'
+        });
+    }
+
+    // 5. Invalidate revoked tokens (Token Version Check)
+    const currentVersion = user.token_version || 1;
+    const tokenVersion = payload.token_version !== undefined ? payload.token_version : 1;
+    if (tokenVersion !== currentVersion) {
+        return res.status(401).json({
+            success: false,
+            error: 'غير مصرح: تم تسجيل الخروج وإبطال جلسة هذا الرمز (Session Revoked)'
         });
     }
 
@@ -109,12 +119,21 @@ function optionalAuthMiddleware(req, res, next) {
 
     const db = getDb();
     const user = db.prepare(`
-        SELECT id, name, email, role, manufacturer_id, is_active, is_demo 
+        SELECT id, name, email, role, manufacturer_id, is_active, is_demo, token_version 
         FROM users 
         WHERE id = ?
     `).get(payload.id);
 
     if (!user || user.is_active !== 1) {
+        req.user = null;
+        req.manufacturer = null;
+        req.subscription = null;
+        return next();
+    }
+
+    const currentVersion = user.token_version || 1;
+    const tokenVersion = payload.token_version !== undefined ? payload.token_version : 1;
+    if (tokenVersion !== currentVersion) {
         req.user = null;
         req.manufacturer = null;
         req.subscription = null;

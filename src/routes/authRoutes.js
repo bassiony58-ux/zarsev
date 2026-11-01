@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getDb } = require('../db/database');
-const { authMiddleware } = require('../middlewares/auth');
+const { authMiddleware, optionalAuthMiddleware } = require('../middlewares/auth');
 const {
     generateToken,
     verifyPassword,
@@ -14,35 +14,35 @@ const {
 } = require('../utils/authUtils');
 const config = require('../config');
 
-// In-memory rate limiting map for login attempts: ip/email -> { count, lockUntil }
-const loginAttempts = new Map();
-const MAX_FAILED_ATTEMPTS = 5;
+// In-memory dual rate limiting:
+// 1. Per Email: max 5 failed attempts per 15 minutes
+// 2. Per IP: max 20 failed attempts per 15 minutes across any email
+const emailAttempts = new Map();
+const ipAttempts = new Map();
+const MAX_FAILED_PER_EMAIL = 5;
+const MAX_FAILED_PER_IP = 20;
 const LOCKOUT_PERIOD_MS = 15 * 60 * 1000; // 15 minutes
 
-function checkRateLimit(key) {
-    const record = loginAttempts.get(key);
+function checkRateLimitMap(map, key, maxAttempts) {
+    const record = map.get(key);
     if (!record) return { blocked: false };
     if (record.lockUntil && Date.now() < record.lockUntil) {
         const remainingMinutes = Math.ceil((record.lockUntil - Date.now()) / 60000);
         return { blocked: true, remainingMinutes };
     }
     if (record.lockUntil && Date.now() >= record.lockUntil) {
-        loginAttempts.delete(key);
+        map.delete(key);
     }
     return { blocked: false };
 }
 
-function recordFailedAttempt(key) {
-    const record = loginAttempts.get(key) || { count: 0 };
+function recordFailure(map, key, maxAttempts) {
+    const record = map.get(key) || { count: 0 };
     record.count += 1;
-    if (record.count >= MAX_FAILED_ATTEMPTS) {
+    if (record.count >= maxAttempts) {
         record.lockUntil = Date.now() + LOCKOUT_PERIOD_MS;
     }
-    loginAttempts.set(key, record);
-}
-
-function clearFailedAttempts(key) {
-    loginAttempts.delete(key);
+    map.set(key, record);
 }
 
 // Get current user and active role
@@ -65,24 +65,34 @@ router.post('/login', (req, res) => {
         });
     }
 
-    const clientIp = req.ip || req.connection.remoteAddress || 'unknown';
-    const rateLimitKey = `${clientIp}:${email.trim().toLowerCase()}`;
-    const limitStatus = checkRateLimit(rateLimitKey);
+    const clientIp = (req.ip || req.connection?.remoteAddress || '127.0.0.1').toString().trim();
+    const normalizedEmail = email.trim().toLowerCase();
 
-    if (limitStatus.blocked) {
+    // Check dual rate limits
+    const ipStatus = checkRateLimitMap(ipAttempts, clientIp, MAX_FAILED_PER_IP);
+    if (ipStatus.blocked) {
         return res.status(429).json({
             success: false,
-            error: `تم تجاوز الحد الأقصى لمحاولات الدخول الفاشلة. يرجى المحاولة بعد ${limitStatus.remainingMinutes} دقيقة.`
+            error: `تم حظر هذا العنوان مؤقتاً لتجاوز عدد المحاولات الفاشلة. يرجى المحاولة بعد ${ipStatus.remainingMinutes} دقيقة.`
+        });
+    }
+
+    const emailStatus = checkRateLimitMap(emailAttempts, normalizedEmail, MAX_FAILED_PER_EMAIL);
+    if (emailStatus.blocked) {
+        return res.status(429).json({
+            success: false,
+            error: `تم تجاوز الحد الأقصى لمحاولات الدخول الفاشلة لهذا الحساب. يرجى المحاولة بعد ${emailStatus.remainingMinutes} دقيقة.`
         });
     }
 
     const db = getDb();
-    const user = db.prepare('SELECT * FROM users WHERE LOWER(email) = LOWER(?)').get(email.trim());
+    const user = db.prepare('SELECT * FROM users WHERE LOWER(email) = LOWER(?)').get(normalizedEmail);
 
     if (!user || user.is_active !== 1) {
-        // Run dummy hash check to mitigate timing side-channel user enumeration
+        // Run dummy hash check to eliminate timing side-channel user enumeration
         verifyPassword(password, DUMMY_HASH);
-        recordFailedAttempt(rateLimitKey);
+        recordFailure(ipAttempts, clientIp, MAX_FAILED_PER_IP);
+        recordFailure(emailAttempts, normalizedEmail, MAX_FAILED_PER_EMAIL);
         return res.status(401).json({
             success: false,
             error: 'بيانات الدخول غير صحيحة أو الحساب غير نشط'
@@ -92,7 +102,8 @@ router.post('/login', (req, res) => {
     // Timing-safe password verification
     const isValid = verifyPassword(password, user.password_hash);
     if (!isValid) {
-        recordFailedAttempt(rateLimitKey);
+        recordFailure(ipAttempts, clientIp, MAX_FAILED_PER_IP);
+        recordFailure(emailAttempts, normalizedEmail, MAX_FAILED_PER_EMAIL);
         return res.status(401).json({
             success: false,
             error: 'بيانات الدخول غير صحيحة أو الحساب غير نشط'
@@ -100,13 +111,16 @@ router.post('/login', (req, res) => {
     }
 
     // Successful login: clear failed attempts
-    clearFailedAttempts(rateLimitKey);
+    emailAttempts.delete(normalizedEmail);
+    ipAttempts.delete(clientIp);
 
-    // Gradual rehash: If hash is legacy or under 210,000 iterations, upgrade seamlessly
+    // Concurrency-safe gradual rehash: If hash is legacy or under 210,000 iterations, upgrade seamlessly
     if (needsRehash(user.password_hash)) {
         try {
             const upgradedHash = hashPassword(password);
-            db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(upgradedHash, user.id);
+            // Optimistic concurrency check: only update if password_hash matches what was verified
+            db.prepare('UPDATE users SET password_hash = ? WHERE id = ? AND password_hash = ?')
+                .run(upgradedHash, user.id, user.password_hash);
         } catch (rehashErr) {
             console.error('Failed to automatically upgrade password hash:', rehashErr);
         }
@@ -192,13 +206,22 @@ router.post('/dev-login', (req, res) => {
     });
 });
 
-// Logout endpoint
-router.post('/logout', (req, res) => {
+// Logout endpoint with stateful token invalidation (increments token_version)
+router.post('/logout', optionalAuthMiddleware, (req, res) => {
+    if (req.user) {
+        try {
+            const db = getDb();
+            db.prepare('UPDATE users SET token_version = token_version + 1 WHERE id = ?').run(req.user.id);
+        } catch (err) {
+            console.error('Failed to increment token_version during logout:', err);
+        }
+    }
+
     res.clearCookie(config.AUTH_COOKIE_NAME);
     res.clearCookie(config.CSRF_COOKIE_NAME);
     res.json({
         success: true,
-        message: 'تم تسجيل الخروج بنجاح'
+        message: 'تم تسجيل الخروج وإبطال جميع الجلسات والرموز السابقة بنجاح'
     });
 });
 

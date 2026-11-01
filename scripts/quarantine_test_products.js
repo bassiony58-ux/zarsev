@@ -64,7 +64,7 @@ function runQuarantine(dbPath, mode = '--dry-run') {
             db.prepare(`
                 UPDATE products 
                 SET is_demo = 0,
-                    rejection_reason = REPLACE(rejection_reason, '[QUARANTINE_TEST_DATA]', '')
+                    rejection_reason = NULL
                 WHERE rejection_reason LIKE '%[QUARANTINE_TEST_DATA]%'
             `).run();
             db.exec('COMMIT;');
@@ -106,16 +106,18 @@ function runQuarantine(dbPath, mode = '--dry-run') {
     if (mode === '--apply') {
         db.exec('BEGIN TRANSACTION;');
         try {
+            const timestamp = new Date().toISOString();
+            const quarantineMarker = `[QUARANTINE_TEST_DATA] ${timestamp}: Confirmed test/seed data isolated from public catalog`;
             const updateStmt = db.prepare(`
                 UPDATE products 
                 SET is_demo = 1,
-                    rejection_reason = COALESCE(rejection_reason || ' ', '') || '[QUARANTINE_TEST_DATA]'
+                    rejection_reason = ?
                 WHERE id = ?
             `);
 
             let updatedCount = 0;
             for (const t of targets) {
-                updateStmt.run(t.id);
+                updateStmt.run(quarantineMarker, t.id);
                 updatedCount++;
             }
 

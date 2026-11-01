@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS users (
     manufacturer_id TEXT NULL,
     is_active INTEGER NOT NULL DEFAULT 1,
     is_demo INTEGER NOT NULL DEFAULT 0,
+    token_version INTEGER NOT NULL DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 

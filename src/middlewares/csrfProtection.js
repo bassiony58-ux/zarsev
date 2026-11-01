@@ -1,6 +1,16 @@
 const config = require('../config');
 const { generateCsrfToken } = require('../utils/authUtils');
 
+function getCanonicalOrigin(urlStr) {
+    if (!urlStr || typeof urlStr !== 'string') return null;
+    try {
+        const u = new URL(urlStr);
+        return u.origin.toLowerCase();
+    } catch (e) {
+        return null;
+    }
+}
+
 /**
  * CSRF Protection Middleware for Cookie-Authenticated Requests.
  *
@@ -9,8 +19,8 @@ const { generateCsrfToken } = require('../utils/authUtils');
  * 2. Requests presenting an explicit "Authorization: Bearer <token>" header bypass CSRF
  *    validation because custom headers cannot be submitted implicitly by cross-site HTML forms.
  * 3. Cookie-authenticated mutating requests (POST, PUT, PATCH, DELETE) MUST satisfy:
- *    a) Origin / Referer validation against configured trusted application origins, AND
- *    b) Valid Double-Submit CSRF Token matching between cookie and header (or Origin + X-Requested-With defense-in-depth).
+ *    a) Origin / Referer validation against configured trusted application origins (exact origin match), AND
+ *    b) Valid Double-Submit CSRF Token matching between cookie and header.
  */
 function csrfProtection(req, res, next) {
     // 1. Safe methods are exempt from mutating checks; seed/refresh CSRF cookie if absent
@@ -39,35 +49,25 @@ function csrfProtection(req, res, next) {
         return next();
     }
 
-    // 4. Validate Origin header if present
+    // 4. Exact Canonical Origin / Referer validation
     const origin = req.headers['origin'];
     const referer = req.headers['referer'];
-    const allowed = config.ALLOWED_ORIGINS || [];
+    const allowedCanonicalOrigins = (config.ALLOWED_ORIGINS || []).map(getCanonicalOrigin).filter(Boolean);
 
     if (origin) {
-        const originNormalized = origin.trim().toLowerCase();
-        const isOriginAllowed = allowed.some(a => originNormalized === a || originNormalized.startsWith(a));
-        if (!isOriginAllowed) {
+        const canonicalOrigin = getCanonicalOrigin(origin);
+        if (!canonicalOrigin || !allowedCanonicalOrigins.includes(canonicalOrigin)) {
             return res.status(403).json({
                 success: false,
                 error: 'غير مسموح: تم رفض الطلب لمخالفته سياسة أمان المصدر (CSRF Origin Mismatch)'
             });
         }
     } else if (referer) {
-        try {
-            const refUrl = new URL(referer);
-            const refOrigin = refUrl.origin.toLowerCase();
-            const isRefAllowed = allowed.some(a => refOrigin === a || refOrigin.startsWith(a));
-            if (!isRefAllowed) {
-                return res.status(403).json({
-                    success: false,
-                    error: 'غير مسموح: تم رفض الطلب لمخالفته سياسة أمان المرجع (CSRF Referer Mismatch)'
-                });
-            }
-        } catch (e) {
+        const canonicalReferer = getCanonicalOrigin(referer);
+        if (!canonicalReferer || !allowedCanonicalOrigins.includes(canonicalReferer)) {
             return res.status(403).json({
                 success: false,
-                error: 'غير مسموح: مرجع الطلب غير صالح (Invalid Referer)'
+                error: 'غير مسموح: تم رفض الطلب لمخالفته سياسة أمان المرجع (CSRF Referer Mismatch)'
             });
         }
     }
@@ -77,9 +77,9 @@ function csrfProtection(req, res, next) {
     const headerCsrf = req.headers[config.CSRF_HEADER_NAME] || req.headers['x-csrf-token'];
 
     if (!cookieCsrf || !headerCsrf || cookieCsrf !== headerCsrf) {
-        // Allow defense-in-depth bypass only if Origin was verified AND custom X-Requested-With is present
+        // Defense-in-depth: if exact Origin was validated AND custom X-Requested-With is present
         const customHeader = req.headers['x-requested-with'];
-        if (origin && customHeader) {
+        if (origin && customHeader && allowedCanonicalOrigins.includes(getCanonicalOrigin(origin))) {
             return next();
         }
 
@@ -93,5 +93,6 @@ function csrfProtection(req, res, next) {
 }
 
 module.exports = {
-    csrfProtection
+    csrfProtection,
+    getCanonicalOrigin
 };

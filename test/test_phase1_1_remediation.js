@@ -4,17 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const { DatabaseSync } = require('node:sqlite');
 
-// Configure isolated test environment
-const testDbPath = path.join(__dirname, 'remediation_test.db');
-if (fs.existsSync(testDbPath)) fs.unlinkSync(testDbPath);
-
-process.env.DB_PATH = testDbPath;
-process.env.NODE_ENV = 'test';
-process.env.JWT_SECRET = 'a-very-secure-32-byte-test-secret-key-123456';
-process.env.ALLOWED_ORIGINS = 'http://localhost:3000,http://127.0.0.1:3000';
-
 const config = require('../src/config');
-const { initDb, getDb } = require('../src/db/database');
+const { initDb, getDb, closeDb } = require('../src/db/database');
 const {
     hashPassword,
     verifyPassword,
@@ -24,12 +15,27 @@ const {
     generateCsrfToken
 } = require('../src/utils/authUtils');
 const { validateEmail, validatePasswordStrength } = require('../scripts/createAdmin');
+const { runQuarantine, KNOWN_TEST_SEED_IDS } = require('../scripts/quarantine_test_products');
 const app = require('../src/app');
 
 async function runRemediationTests() {
     console.log('================================================================');
     console.log('🛡️  ZARSEV Phase 1.1 Security Remediation Automated Test Suite');
     console.log('================================================================\n');
+
+    // Configure isolated test environment
+    const prevDbPath = process.env.DB_PATH;
+    const prevNodeEnv = process.env.NODE_ENV;
+    const prevJwtSecret = process.env.JWT_SECRET;
+    const prevOrigins = process.env.ALLOWED_ORIGINS;
+
+    const testDbPath = path.join(__dirname, 'remediation_test.db');
+    if (fs.existsSync(testDbPath)) fs.unlinkSync(testDbPath);
+
+    process.env.DB_PATH = testDbPath;
+    process.env.NODE_ENV = 'test';
+    process.env.JWT_SECRET = 'a-very-secure-32-byte-test-secret-key-123456';
+    process.env.ALLOWED_ORIGINS = 'http://localhost:3000,http://127.0.0.1:3000';
 
     initDb();
     const db = getDb();
@@ -180,13 +186,20 @@ async function runRemediationTests() {
         assert.strictEqual(validateEmail('invalid-email').valid ?? false, false);
         assert.strictEqual(validateEmail('admin@trade-zarsev.com'), true);
 
-        // Ensure clean slate for provisioning test
-        db.prepare('DELETE FROM users WHERE email = ?').run('owner@zarsev.gov');
-
-        // Provision admin on isolated test DB via createAdmin CLI
+        // Provision initial root admin
         const { main: runCreateAdmin } = require('../scripts/createAdmin');
+        process.argv = ['node', 'scripts/createAdmin.js', '--email', 'owner@zarsev.gov', '--name', 'الرئيس التنفيذي', '--password', 'SovereignOwner@2026!'];
+        await runCreateAdmin();
 
-        // Test refusal when Super Admin already exists
+        const createdAdmin = db.prepare('SELECT * FROM users WHERE email = ?').get('owner@zarsev.gov');
+        assert.ok(createdAdmin, 'Super Admin record must exist in DB');
+        assert.strictEqual(createdAdmin.role, 'SUPER_ADMIN');
+        assert.strictEqual(createdAdmin.is_demo, 0, 'Production admin must have is_demo = 0');
+        assert.strictEqual(createdAdmin.is_active, 1, 'Production admin must have is_active = 1');
+        assert.ok(createdAdmin.password_hash.startsWith('pbkdf2:sha512:210000:'), 'Admin password must use 210,000 iterations');
+        assert.strictEqual(verifyPassword('SovereignOwner@2026!', createdAdmin.password_hash), true);
+
+        // Test refusal when Super Admin already exists without --force
         let exitCalled = false;
         const origExit = process.exit;
         process.exit = (code) => {
@@ -203,17 +216,11 @@ async function runRemediationTests() {
         }
         assert.strictEqual(exitCalled, true, 'createAdmin must refuse to provision duplicate root Super Admin without --force');
 
-        // Test provisioning with --force
-        process.argv = ['node', 'scripts/createAdmin.js', '--email', 'owner@zarsev.gov', '--name', 'الرئيس التنفيذي', '--password', 'SovereignOwner@2026!', '--force'];
+        // Test provisioning with --force succeeds
+        process.argv = ['node', 'scripts/createAdmin.js', '--email', 'owner2@zarsev.gov', '--name', 'نائب المدير', '--password', 'SovereignOwner@2026!', '--force'];
         await runCreateAdmin();
-
-        const createdAdmin = db.prepare('SELECT * FROM users WHERE email = ?').get('owner@zarsev.gov');
-        assert.ok(createdAdmin, 'Super Admin record must exist in DB');
-        assert.strictEqual(createdAdmin.role, 'SUPER_ADMIN');
-        assert.strictEqual(createdAdmin.is_demo, 0, 'Production admin must have is_demo = 0');
-        assert.strictEqual(createdAdmin.is_active, 1, 'Production admin must have is_active = 1');
-        assert.ok(createdAdmin.password_hash.startsWith('pbkdf2:sha512:210000:'), 'Admin password must use 210,000 iterations');
-        assert.strictEqual(verifyPassword('SovereignOwner@2026!', createdAdmin.password_hash), true);
+        const secondAdmin = db.prepare('SELECT * FROM users WHERE email = ?').get('owner2@zarsev.gov');
+        assert.ok(secondAdmin, 'Second admin with --force must be provisioned');
         console.log('✓ Super Admin CLI provisioning & single-root-admin invariant verified.\n');
 
         // -------------------------------------------------------------
@@ -290,21 +297,173 @@ async function runRemediationTests() {
             body: JSON.stringify({ max_products_per_import: 90 })
         });
         assert.strictEqual(bearerClientRes.status, 200, 'Bearer client must pass mutating endpoint without CSRF requirement');
-        console.log('✓ All 6 CSRF & Bearer authorization verification tests passed.\n');
+
+        // 7. Subdomain/prefix attack on allowed origin (e.g. localhost:3000.evil.com) -> HTTP 403
+        const prefixAttackRes = await fetch(`${BASE_URL}/api/subscriptions/plans/sub_standard`, {
+            method: 'PUT',
+            headers: {
+                'Origin': 'http://localhost:3000.evil.com',
+                'Cookie': `zarsev_auth_token=${adminToken}; zarsev_csrf_token=${csrfToken}`,
+                'x-csrf-token': csrfToken,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ max_products_per_import: 999 })
+        });
+        assert.strictEqual(prefixAttackRes.status, 403, 'Prefix origin spoofing must be rejected with 403');
+        console.log('✓ All 7 CSRF & Bearer authorization verification tests passed.\n');
+
+        // -------------------------------------------------------------
+        // Test Suite 6: Stateful Token Invalidation via token_version on Logout
+        // -------------------------------------------------------------
+        console.log('--- 🧪 Test Suite 6: Stateful Token Invalidation & Logout ---');
+        // Initial token works
+        const meBeforeLogout = await fetch(`${BASE_URL}/api/auth/me`, {
+            headers: { 'Authorization': `Bearer ${adminToken}` }
+        });
+        assert.strictEqual(meBeforeLogout.status, 200, 'Token must be valid before logout');
+        const meBeforeData = await meBeforeLogout.json();
+        assert.strictEqual(meBeforeData.user.email, 'owner@zarsev.gov');
+
+        // Logout user (increments token_version in DB)
+        const logoutRes = await fetch(`${BASE_URL}/api/auth/logout`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${adminToken}` }
+        });
+        assert.strictEqual(logoutRes.status, 200, 'Logout must succeed');
+        const logoutData = await logoutRes.json();
+        assert.strictEqual(logoutData.success, true);
+
+        // Previous token must now be rejected across devices
+        const meAfterLogout = await fetch(`${BASE_URL}/api/auth/me`, {
+            headers: { 'Authorization': `Bearer ${adminToken}` }
+        });
+        assert.strictEqual(meAfterLogout.status, 401, 'Old token must be rejected after logout (HTTP 401)');
+        const meAfterData = await meAfterLogout.json();
+        assert.ok(
+            meAfterData.error.toLowerCase().includes('revoked') ||
+            meAfterData.error.includes('إبطال') ||
+            meAfterData.error.includes('جلسة'),
+            'Error message must reflect revoked token'
+        );
+
+        // Fresh login generates new token with updated token_version
+        const freshLoginRes = await fetch(`${BASE_URL}/api/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: 'owner@zarsev.gov',
+                password: 'SovereignOwner@2026!'
+            })
+        });
+        assert.strictEqual(freshLoginRes.status, 200, 'Login after logout must succeed');
+        const freshLoginData = await freshLoginRes.json();
+        const freshToken = freshLoginData.token;
+        assert.ok(freshToken, 'Fresh token must be returned');
+
+        // Fresh token works
+        const meWithFreshToken = await fetch(`${BASE_URL}/api/auth/me`, {
+            headers: { 'Authorization': `Bearer ${freshToken}` }
+        });
+        assert.strictEqual(meWithFreshToken.status, 200, 'Fresh token with updated token_version must work');
+        console.log('✓ Stateful token revocation on logout verified.\n');
+
+        // -------------------------------------------------------------
+        // Test Suite 7: Dual Rate Limiting on Login (Per-Email & Per-IP)
+        // -------------------------------------------------------------
+        console.log('--- 🧪 Test Suite 7: Dual Rate Limiting on Login ---');
+        // Trigger 5 failed logins for a specific email
+        for (let i = 0; i < 5; i++) {
+            const failRes = await fetch(`${BASE_URL}/api/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: 'owner@zarsev.gov',
+                    password: 'WrongPassword123!'
+                })
+            });
+            assert.strictEqual(failRes.status, 401, `Failed attempt ${i + 1} must return 401`);
+        }
+
+        // 6th attempt should trigger 429 Too Many Requests for that email
+        const rateLimitedRes = await fetch(`${BASE_URL}/api/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: 'owner@zarsev.gov',
+                password: 'SovereignOwner@2026!'
+            })
+        });
+        assert.strictEqual(rateLimitedRes.status, 429, '6th failed attempt must be rate-limited with 429');
+        const rateLimitData = await rateLimitedRes.json();
+        assert.ok(
+            rateLimitData.error.includes('الحد الأقصى') ||
+            rateLimitData.error.toLowerCase().includes('too many') ||
+            rateLimitData.error.includes('دقيقة'),
+            'Rate limit message must explain lockout'
+        );
+        console.log('✓ Dual rate-limiting enforced on repeated failed logins.\n');
+
+        // -------------------------------------------------------------
+        // Test Suite 8: Reversible Quarantine Tool Automated Verification
+        // -------------------------------------------------------------
+        console.log('--- 🧪 Test Suite 8: Reversible Quarantine Script Verification ---');
+        // Seed manufacturer and test products into test DB
+        db.prepare(`
+            INSERT OR IGNORE INTO manufacturers (id, name_ar, name_en, code, business_model, city, is_verified, is_demo)
+            VALUES ('mfg_test', 'شركة الاختبار', 'Test Mfg', 'MFG-TEST', 'DIRECT_CONTRACT', 'Cairo', 1, 0)
+        `).run();
+        const insertProd = db.prepare(`
+            INSERT INTO products (id, manufacturer_id, sku, name_ar, name_en, status, is_demo)
+            VALUES (?, 'mfg_test', 'TEST-SKU', 'منتج تجريبي للاختبار', 'Test Product', 'PUBLISHED', 0)
+        `);
+        for (const tid of KNOWN_TEST_SEED_IDS) {
+            insertProd.run(tid);
+        }
+
+        // Dry run
+        const dryRunResult = runQuarantine(testDbPath, '--dry-run');
+        assert.strictEqual(dryRunResult.count, KNOWN_TEST_SEED_IDS.length);
+        assert.strictEqual(dryRunResult.applied, false);
+        const checkDryRun = db.prepare('SELECT count(*) as c FROM products WHERE is_demo = 1 AND rejection_reason LIKE ?').get('%[QUARANTINE_TEST_DATA]%');
+        assert.strictEqual(checkDryRun.c, 0, 'Dry-run must not mutate database');
+
+        // Apply
+        const applyResult = runQuarantine(testDbPath, '--apply');
+        assert.strictEqual(applyResult.count, KNOWN_TEST_SEED_IDS.length);
+        assert.strictEqual(applyResult.applied, true);
+        const checkApply = db.prepare('SELECT count(*) as c FROM products WHERE is_demo = 1 AND rejection_reason LIKE ?').get('%[QUARANTINE_TEST_DATA]%');
+        assert.strictEqual(checkApply.c, KNOWN_TEST_SEED_IDS.length, 'All target products must be marked is_demo = 1');
+
+        // Rollback
+        const rollbackResult = runQuarantine(testDbPath, '--rollback');
+        assert.strictEqual(rollbackResult.rolledBackCount, KNOWN_TEST_SEED_IDS.length);
+        const checkRollback = db.prepare('SELECT count(*) as c FROM products WHERE is_demo = 1 AND rejection_reason LIKE ?').get('%[QUARANTINE_TEST_DATA]%');
+        assert.strictEqual(checkRollback.c, 0, 'Rollback must restore products to is_demo = 0 and clear marker');
+        console.log('✓ Reversible quarantine tool (dry-run, apply, rollback) verified.\n');
 
         console.log('================================================================');
         console.log('🎉 ALL PHASE 1.1 SECURITY REMEDIATION TESTS PASSED (100% SUCCESS)!');
         console.log('================================================================\n');
     } finally {
         server.close();
-        try { db.close(); } catch (e) {}
+        try { closeDb(); } catch (e) {}
         try { if (fs.existsSync(testDbPath)) fs.unlinkSync(testDbPath); } catch (e) {}
+        if (prevDbPath !== undefined) process.env.DB_PATH = prevDbPath;
+        else delete process.env.DB_PATH;
+        if (prevNodeEnv !== undefined) process.env.NODE_ENV = prevNodeEnv;
+        else delete process.env.NODE_ENV;
+        if (prevJwtSecret !== undefined) process.env.JWT_SECRET = prevJwtSecret;
+        else delete process.env.JWT_SECRET;
+        if (prevOrigins !== undefined) process.env.ALLOWED_ORIGINS = prevOrigins;
+        else delete process.env.ALLOWED_ORIGINS;
     }
 }
 
 if (require.main === module) {
     runRemediationTests().catch(err => {
         console.error('❌ Remediation test failure:', err);
+        try { closeDb(); } catch (e) {}
+        const testDbPath = path.join(__dirname, 'remediation_test.db');
         try { if (fs.existsSync(testDbPath)) fs.unlinkSync(testDbPath); } catch (e) {}
         process.exit(1);
     });

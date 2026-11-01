@@ -25,6 +25,7 @@
 
 const readline = require('readline');
 const crypto = require('crypto');
+const path = require('path');
 const { initDb, getDb } = require('../src/db/database');
 const { hashPassword } = require('../src/utils/authUtils');
 
@@ -121,6 +122,7 @@ function promptText(query) {
 async function main() {
     console.log('================================================================');
     console.log('⚓ ZARSEV Sovereign Platform — Root Super Admin Provisioning Tool');
+    console.log('📂 Target Database: ' + path.resolve(process.env.DB_PATH || path.join(__dirname, '..', 'zarsev.db')));
     console.log('================================================================\n');
 
     initDb();

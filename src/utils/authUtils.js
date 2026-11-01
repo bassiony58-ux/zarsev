@@ -49,6 +49,7 @@ function verifyPassword(password, storedHash) {
 
         try {
             const originalHashBuf = Buffer.from(originalHash, 'hex');
+            if (originalHashBuf.length < 32) return false;
             const derivedHash = crypto.pbkdf2Sync(password, salt, iterations, originalHashBuf.length, digest);
             return timingSafeCompare(derivedHash, originalHashBuf);
         } catch (err) {
@@ -65,6 +66,7 @@ function verifyPassword(password, storedHash) {
 
         try {
             const originalHashBuf = Buffer.from(originalHash, 'hex');
+            if (originalHashBuf.length < 32) return false;
             const derivedHash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512');
             return timingSafeCompare(derivedHash, originalHashBuf);
         } catch (err) {
@@ -100,7 +102,8 @@ function generateToken(user) {
     return jwt.sign(
         {
             id: user.id,
-            email: user.email
+            email: user.email,
+            token_version: user.token_version || 1
         },
         config.JWT_SECRET,
         {
@@ -179,7 +182,8 @@ function serializeUser(user) {
         role: user.role,
         manufacturer_id: user.manufacturer_id,
         is_active: user.is_active,
-        is_demo: user.is_demo
+        is_demo: user.is_demo,
+        token_version: user.token_version || 1
     };
 }
 

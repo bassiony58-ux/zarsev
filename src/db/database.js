@@ -2,20 +2,37 @@ const { DatabaseSync } = require('node:sqlite');
 const path = require('path');
 const fs = require('fs');
 
-const DB_PATH = process.env.DB_PATH || path.join(__dirname, '..', '..', 'zarsev.db');
+function getDbPath() {
+    return process.env.DB_PATH || path.join(__dirname, '..', '..', 'zarsev.db');
+}
 
 let dbInstance = null;
+let currentDbPath = null;
 
 function getDb() {
-    if (!dbInstance) {
-        const dbDir = path.dirname(DB_PATH);
+    const targetPath = getDbPath();
+    if (!dbInstance || currentDbPath !== targetPath) {
+        if (dbInstance) {
+            try { dbInstance.close(); } catch (e) {}
+            dbInstance = null;
+        }
+        const dbDir = path.dirname(targetPath);
         if (!fs.existsSync(dbDir)) {
             fs.mkdirSync(dbDir, { recursive: true });
         }
-        dbInstance = new DatabaseSync(DB_PATH);
+        dbInstance = new DatabaseSync(targetPath);
         dbInstance.exec('PRAGMA foreign_keys = ON;');
+        currentDbPath = targetPath;
     }
     return dbInstance;
+}
+
+function closeDb() {
+    if (dbInstance) {
+        try { dbInstance.close(); } catch (e) {}
+        dbInstance = null;
+        currentDbPath = null;
+    }
 }
 
 function ensureColumn(db, table, column, definition) {
@@ -34,6 +51,7 @@ function runMigrations(db) {
     ensureColumn(db, 'users', 'is_active', 'INTEGER NOT NULL DEFAULT 1');
     ensureColumn(db, 'users', 'password_hash', 'TEXT NULL');
     ensureColumn(db, 'users', 'is_demo', 'INTEGER NOT NULL DEFAULT 0');
+    ensureColumn(db, 'users', 'token_version', 'INTEGER NOT NULL DEFAULT 1');
 
     // Demo flags
     ensureColumn(db, 'manufacturers', 'is_demo', 'INTEGER NOT NULL DEFAULT 0');
@@ -52,5 +70,9 @@ function initDb() {
 module.exports = {
     getDb,
     initDb,
-    DB_PATH
+    closeDb,
+    getDbPath,
+    get DB_PATH() {
+        return getDbPath();
+    }
 };
