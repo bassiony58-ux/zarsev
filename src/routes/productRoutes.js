@@ -27,6 +27,9 @@ router.get('/', (req, res) => {
         query += " AND p.status = 'PUBLISHED'";
     }
 
+    // Exclude demo records from public catalog
+    query += ' AND (p.is_demo = 0 OR p.is_demo IS NULL)';
+
     if (category_id) {
         query += ' AND (p.category_id = ? OR p.subcategory_id = ?)';
         params.push(category_id, category_id);
@@ -67,7 +70,7 @@ router.get('/:id', (req, res) => {
         FROM products p
         JOIN manufacturers m ON p.manufacturer_id = m.id
         LEFT JOIN categories c ON p.category_id = c.id
-        WHERE p.id = ?
+        WHERE p.id = ? AND (p.is_demo = 0 OR p.is_demo IS NULL)
     `).get(req.params.id);
 
     if (!prod) {

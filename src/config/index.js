@@ -2,6 +2,11 @@ const path = require('path');
 
 module.exports = {
     PORT: process.env.PORT || 3000,
+    NODE_ENV: process.env.NODE_ENV || 'development',
+    JWT_SECRET: process.env.JWT_SECRET || 'zarsev-platform-jwt-secret-secure-key-2026',
+    JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '24h',
+    AUTH_COOKIE_NAME: 'zarsev_auth_token',
+    ENABLE_DEMO_SEED: process.env.ENABLE_DEMO_SEED === 'true',
     DB_PATH: process.env.DB_PATH || path.join(__dirname, '..', '..', 'zarsev.db'),
     STORAGE_DIR: path.join(__dirname, '..', '..', 'storage'),
     UPLOADS_DIR: path.join(__dirname, '..', '..', 'storage', 'uploads'),

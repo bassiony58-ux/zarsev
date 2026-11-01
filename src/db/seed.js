@@ -1,6 +1,16 @@
 const { getDb, initDb } = require('./database');
+const { hashPassword } = require('../utils/authUtils');
 
 function seedDatabase() {
+    if (process.env.NODE_ENV === 'production') {
+        console.warn('⚠️ [SECURITY] seedDatabase() blocked: Seeding is strictly forbidden in production mode (NODE_ENV=production).');
+        return { success: false, message: 'Seeding forbidden in production' };
+    }
+    if (process.env.ENABLE_DEMO_SEED !== 'true') {
+        console.log('ℹ️ [SEED] Seeding skipped: ENABLE_DEMO_SEED is not true.');
+        return { success: false, message: 'ENABLE_DEMO_SEED not enabled' };
+    }
+
     initDb();
     const db = getDb();
 
@@ -51,8 +61,8 @@ function seedDatabase() {
     const checkMfgs = db.prepare('SELECT COUNT(*) as count FROM manufacturers').get();
     if (checkMfgs.count === 0) {
         const insertMfg = db.prepare(`
-            INSERT INTO manufacturers (id, name_ar, name_en, code, business_model, subscription_id, country, city, contact_email, contact_phone, is_verified)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO manufacturers (id, name_ar, name_en, code, business_model, subscription_id, country, city, contact_email, contact_phone, is_verified, is_demo)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
         `);
 
         // Direct Contract Manufacturers (managed by ZARSEV, no login needed)
@@ -118,9 +128,10 @@ function seedDatabase() {
     // 3. Seed Users
     const checkUsers = db.prepare('SELECT COUNT(*) as count FROM users').get();
     if (checkUsers.count === 0) {
+        const defaultPasswordHash = hashPassword('Demo@Zarsev2026');
         const insertUser = db.prepare(`
-            INSERT INTO users (id, name, email, role, manufacturer_id)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO users (id, name, email, password_hash, role, manufacturer_id, is_active, is_demo)
+            VALUES (?, ?, ?, ?, ?, ?, 1, 1)
         `);
 
         // Super Admin (HQ)
@@ -128,6 +139,7 @@ function seedDatabase() {
             'usr_super_admin',
             'المدير العام (ZARSEV HQ)',
             'admin@zarsev.com',
+            defaultPasswordHash,
             'SUPER_ADMIN',
             null
         );
@@ -137,6 +149,7 @@ function seedDatabase() {
             'usr_logistics_officer',
             'مسؤول العمليات اللوجستية والموانئ',
             'logistics@zarsev.com',
+            defaultPasswordHash,
             'LOGISTICS_OFFICER',
             null
         );
@@ -146,6 +159,7 @@ function seedDatabase() {
             'usr_mfg_nile_fruits',
             'مدير تصدير ثمار النيل',
             'nile_export@company.com',
+            defaultPasswordHash,
             'MANUFACTURER',
             'mfg_nile_fruits'
         );
@@ -155,6 +169,7 @@ function seedDatabase() {
             'usr_mfg_delta_iqf',
             'مدير مبيعات دلتا للتجميد',
             'delta_sales@company.com',
+            defaultPasswordHash,
             'MANUFACTURER',
             'mfg_delta_iqf'
         );
@@ -199,8 +214,8 @@ function seedDatabase() {
             INSERT INTO products (
                 id, manufacturer_id, category_id, subcategory_id, sku, name_ar, name_en,
                 description_ar, description_en, specifications, packaging_info, country_of_origin,
-                price, currency, price_unit, moq, available_quantity, status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                price, currency, price_unit, moq, available_quantity, status, is_demo
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
         `);
 
         const insertImg = db.prepare(`

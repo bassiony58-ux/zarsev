@@ -4,8 +4,11 @@ CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NULL,
     role TEXT NOT NULL CHECK(role IN ('SUPER_ADMIN', 'LOGISTICS_OFFICER', 'MANUFACTURER')),
     manufacturer_id TEXT NULL,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    is_demo INTEGER NOT NULL DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -33,6 +36,7 @@ CREATE TABLE IF NOT EXISTS manufacturers (
     contact_email TEXT NULL,
     contact_phone TEXT NULL,
     is_verified INTEGER NOT NULL DEFAULT 1,
+    is_demo INTEGER NOT NULL DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(subscription_id) REFERENCES subscriptions(id)
 );
@@ -69,6 +73,7 @@ CREATE TABLE IF NOT EXISTS products (
     status TEXT NOT NULL DEFAULT 'DRAFT' CHECK(status IN ('DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'PUBLISHED', 'REJECTED')),
     rejection_reason TEXT NULL,
     source_import_id TEXT NULL,
+    is_demo INTEGER NOT NULL DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(manufacturer_id) REFERENCES manufacturers(id),
@@ -99,6 +104,7 @@ CREATE TABLE IF NOT EXISTS imports (
     total_failed INTEGER NOT NULL DEFAULT 0,
     progress_percent INTEGER NOT NULL DEFAULT 0,
     error_summary TEXT NULL,
+    is_demo INTEGER NOT NULL DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(user_id) REFERENCES users(id),

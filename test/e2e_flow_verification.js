@@ -9,8 +9,12 @@ async function runE2EVerification() {
     const app = require('../src/app');
     const { initDb } = require('../src/db/database');
     const { seedDatabase } = require('../src/db/seed');
+    const { generateToken } = require('../src/utils/authUtils');
     initDb();
     seedDatabase();
+
+    const adminToken = generateToken({ id: 'usr_super_admin', email: 'admin@zarsev.com' });
+    const authHeaders = { 'Authorization': `Bearer ${adminToken}` };
 
     const server = app.listen(3344);
     const BASE_URL = 'http://localhost:3344';
@@ -32,7 +36,7 @@ async function runE2EVerification() {
             method: 'POST',
             headers: {
                 'Content-Type': `multipart/form-data; boundary=${boundary}`,
-                'x-user-id': 'usr_super_admin'
+                ...authHeaders
             },
             body: bodyBuffer
         });
@@ -49,7 +53,7 @@ async function runE2EVerification() {
             await new Promise(r => setTimeout(r, 400));
             attempts++;
             const statusRes = await fetch(`${BASE_URL}/api/imports/status/${importId}`, {
-                headers: { 'x-user-id': 'usr_super_admin' }
+                headers: authHeaders
             });
             const statusData = await statusRes.json();
             if (statusData.import.status === 'REVIEW_READY') {
@@ -63,7 +67,7 @@ async function runE2EVerification() {
         // Step 3: Fetch extracted items
         console.log('3. Fetching extracted items for review...');
         const itemsRes = await fetch(`${BASE_URL}/api/imports/${importId}/items`, {
-            headers: { 'x-user-id': 'usr_super_admin' }
+            headers: authHeaders
         });
         const itemsData = await itemsRes.json();
         assert.strictEqual(itemsData.items.length, 3);
@@ -75,7 +79,7 @@ async function runE2EVerification() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'x-user-id': 'usr_super_admin'
+                ...authHeaders
             },
             body: JSON.stringify({
                 selected_item_ids: [itemsData.items[0].id, itemsData.items[1].id],
@@ -89,7 +93,7 @@ async function runE2EVerification() {
         // Step 5: Check approval queue
         console.log('5. Checking Super Admin approval queue...');
         const queueRes = await fetch(`${BASE_URL}/api/approvals/queue`, {
-            headers: { 'x-user-id': 'usr_super_admin' }
+            headers: authHeaders
         });
         const queueData = await queueRes.json();
         console.log(`✓ Approval queue contains ${queueData.count} items`);
@@ -102,7 +106,7 @@ async function runE2EVerification() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'x-user-id': 'usr_super_admin'
+                ...authHeaders
             },
             body: JSON.stringify({ decision: 'APPROVE' })
         });

@@ -2,16 +2,20 @@ const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
 const { getDb } = require('../db/database');
-const { authMiddleware, requireRole } = require('../middlewares/auth');
+const { authMiddleware, optionalAuthMiddleware, requireRole } = require('../middlewares/auth');
 const { findMatchingManufacturer } = require('../services/duplicateDetectionService');
+const { serializePublicManufacturer, serializeAdminManufacturer } = require('../utils/authUtils');
 
-// List manufacturers
-router.get('/', authMiddleware, (req, res) => {
+// List manufacturers (Privacy-aware serializer separating Public vs Admin)
+router.get('/', optionalAuthMiddleware, (req, res) => {
     const db = getDb();
     const { business_model } = req.query;
 
+    const isAdmin = req.user && ['SUPER_ADMIN', 'LOGISTICS_OFFICER'].includes(req.user.role);
+    const isMfgUser = req.user && req.user.role === 'MANUFACTURER';
+
     // If authenticated user is a Marketing Manufacturer, ONLY return their own manufacturer
-    if (req.user.role === 'MANUFACTURER') {
+    if (isMfgUser) {
         const mfg = db.prepare(`
             SELECT m.*, s.name as subscription_name
             FROM manufacturers m
@@ -21,29 +25,84 @@ router.get('/', authMiddleware, (req, res) => {
 
         return res.json({
             success: true,
-            manufacturers: mfg ? [mfg] : []
+            manufacturers: mfg ? [serializeAdminManufacturer(mfg)] : []
         });
     }
 
-    // For Super Admin & Logistics Officers: return all or filtered by business model
-    let query = `
+    // For Super Admin & Logistics Officers: return administrative serialization
+    if (isAdmin) {
+        let query = `
+            SELECT m.*, s.name as subscription_name,
+                   (SELECT COUNT(*) FROM products p WHERE p.manufacturer_id = m.id) as products_count
+            FROM manufacturers m
+            LEFT JOIN subscriptions s ON m.subscription_id = s.id
+        `;
+        const params = [];
+
+        if (business_model) {
+            query += ' WHERE m.business_model = ?';
+            params.push(business_model);
+        }
+        query += ' ORDER BY m.created_at DESC';
+
+        const manufacturers = db.prepare(query).all(...params);
+        return res.json({
+            success: true,
+            manufacturers: manufacturers.map(serializeAdminManufacturer)
+        });
+    }
+
+    // Public / Unauthenticated callers:
+    // Strips business_model, subscription_id, email, phone, and excludes demo records
+    const query = `
+        SELECT m.*
+        FROM manufacturers m
+        WHERE (m.is_demo = 0 OR m.is_demo IS NULL)
+        ORDER BY m.created_at DESC
+    `;
+    const manufacturers = db.prepare(query).all();
+
+    res.json({
+        success: true,
+        manufacturers: manufacturers.map(serializePublicManufacturer)
+    });
+});
+
+// Get single manufacturer by ID
+router.get('/:id', optionalAuthMiddleware, (req, res) => {
+    const db = getDb();
+    const { id } = req.params;
+
+    const mfg = db.prepare(`
         SELECT m.*, s.name as subscription_name,
                (SELECT COUNT(*) FROM products p WHERE p.manufacturer_id = m.id) as products_count
         FROM manufacturers m
         LEFT JOIN subscriptions s ON m.subscription_id = s.id
-    `;
-    const params = [];
+        WHERE m.id = ?
+    `).get(id);
 
-    if (business_model) {
-        query += ' WHERE m.business_model = ?';
-        params.push(business_model);
+    if (!mfg) {
+        return res.status(404).json({ success: false, error: 'المصنع غير موجود' });
     }
-    query += ' ORDER BY m.created_at DESC';
 
-    const manufacturers = db.prepare(query).all(...params);
+    const isAdmin = req.user && ['SUPER_ADMIN', 'LOGISTICS_OFFICER'].includes(req.user.role);
+    const isOwner = req.user && req.user.role === 'MANUFACTURER' && req.user.manufacturer_id === id;
+
+    if (isAdmin || isOwner) {
+        return res.json({
+            success: true,
+            manufacturer: serializeAdminManufacturer(mfg)
+        });
+    }
+
+    // Public response: ensure demo records are not exposed to public
+    if (mfg.is_demo === 1) {
+        return res.status(404).json({ success: false, error: 'المصنع غير موجود' });
+    }
+
     res.json({
         success: true,
-        manufacturers
+        manufacturer: serializePublicManufacturer(mfg)
     });
 });
 
@@ -89,8 +148,8 @@ router.post('/', authMiddleware, requireRole(['SUPER_ADMIN', 'LOGISTICS_OFFICER'
     const autoCode = code ? code.trim().toUpperCase() : 'EGY-' + crypto.randomBytes(3).toString('hex').toUpperCase();
 
     db.prepare(`
-        INSERT INTO manufacturers (id, name_ar, name_en, code, business_model, subscription_id, city, contact_email, contact_phone, is_verified)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+        INSERT INTO manufacturers (id, name_ar, name_en, code, business_model, subscription_id, city, contact_email, contact_phone, is_verified, is_demo)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0)
     `).run(
         mfgId,
         name_ar.trim(),
@@ -107,7 +166,7 @@ router.post('/', authMiddleware, requireRole(['SUPER_ADMIN', 'LOGISTICS_OFFICER'
     res.status(201).json({
         success: true,
         message: 'تم إنشاء ملف المصنع بنجاح',
-        manufacturer: created
+        manufacturer: serializeAdminManufacturer(created)
     });
 });
 

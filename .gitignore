@@ -1,3 +1,7 @@
-﻿node_modules/
+node_modules/
 *.bak
 backup_phase1/
+storage/uploads/*
+!storage/uploads/.gitkeep
+storage/thumbnails/*
+!storage/thumbnails/.gitkeep

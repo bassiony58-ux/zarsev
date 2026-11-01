@@ -8,9 +8,57 @@ const { checkSubscriptionLimits } = require('../middlewares/subscriptionGuard');
 const { upload } = require('../middlewares/uploadValidator');
 const { processImportJob } = require('../services/importJobQueue');
 
+/**
+ * Access Control Helper: Verifies user permission for a specific import session.
+ * Prevents tenant crossover and unauthorized cross-manufacturer operations.
+ */
+function checkImportAccess(importId, user) {
+    const db = getDb();
+    const imp = db.prepare(`
+        SELECT i.*, m.business_model, m.name_ar as mfg_name
+        FROM imports i
+        LEFT JOIN manufacturers m ON i.manufacturer_id = m.id
+        WHERE i.id = ?
+    `).get(importId);
+
+    if (!imp) {
+        return { allowed: false, statusCode: 404, error: 'عملية الاستيراد غير موجودة' };
+    }
+
+    // 1. Super Admin: full access
+    if (user.role === 'SUPER_ADMIN') {
+        return { allowed: true, importRecord: imp };
+    }
+
+    // 2. Logistics Officer: access Direct Contract imports or own created imports
+    if (user.role === 'LOGISTICS_OFFICER') {
+        if (imp.business_model === 'DIRECT_CONTRACT' || imp.user_id === user.id) {
+            return { allowed: true, importRecord: imp };
+        }
+        return {
+            allowed: false,
+            statusCode: 403,
+            error: 'غير مصرح: لا يمتلك مسؤول العمليات اللوجستية صلاحية الوصول إلى عمليات الاشتراكات التسويقية المستقلة'
+        };
+    }
+
+    // 3. Marketing Subscription Manufacturer: strictly isolated to their own manufacturer account
+    if (user.role === 'MANUFACTURER') {
+        if (imp.manufacturer_id && imp.manufacturer_id === user.manufacturer_id) {
+            return { allowed: true, importRecord: imp };
+        }
+        return {
+            allowed: false,
+            statusCode: 403,
+            error: 'غير مصرح: لا يمكنك الوصول إلى عمليات استيراد تخص حساب مصنع آخر'
+        };
+    }
+
+    return { allowed: false, statusCode: 403, error: 'غير مصرح بالوصول' };
+}
+
 // 1. Upload files and launch background import job
 router.post('/upload', authMiddleware, checkSubscriptionLimits(), (req, res) => {
-    // Generate import session ID prior to multer storage handling
     const importId = 'imp_' + crypto.randomBytes(6).toString('hex');
     req.importSessionId = importId;
 
@@ -27,9 +75,18 @@ router.post('/upload', authMiddleware, checkSubscriptionLimits(), (req, res) => 
         let targetManufacturerId = req.body.manufacturer_id || null;
 
         // Security check for Marketing Subscription Manufacturers:
-        // Must ALWAYS be associated with their own manufacturer account, never another!
+        // Client-supplied manufacturer_id is STRICTLY ignored! Always bind to own manufacturer account.
         if (req.user.role === 'MANUFACTURER') {
             targetManufacturerId = req.user.manufacturer_id;
+        } else if (req.user.role === 'LOGISTICS_OFFICER' && targetManufacturerId) {
+            // Logistics officer can only assign to DIRECT_CONTRACT manufacturers
+            const targetMfg = db.prepare('SELECT business_model FROM manufacturers WHERE id = ?').get(targetManufacturerId);
+            if (targetMfg && targetMfg.business_model !== 'DIRECT_CONTRACT') {
+                return res.status(403).json({
+                    success: false,
+                    error: 'غير مصرح: يمكن لمسؤول العمليات إدارة مصانع العقود المباشرة فقط'
+                });
+            }
         }
 
         const sourceFiles = req.files.map(f => ({
@@ -41,19 +98,20 @@ router.post('/upload', authMiddleware, checkSubscriptionLimits(), (req, res) => 
         }));
 
         db.prepare(`
-            INSERT INTO imports (id, user_id, manufacturer_id, source_files, status, progress_percent)
-            VALUES (?, ?, ?, ?, 'PENDING', 5)
+            INSERT INTO imports (id, user_id, manufacturer_id, source_files, status, progress_percent, is_demo)
+            VALUES (?, ?, ?, ?, 'PENDING', 5, ?)
         `).run(
             importId,
             req.user.id,
             targetManufacturerId,
-            JSON.stringify(sourceFiles)
+            JSON.stringify(sourceFiles),
+            req.user.is_demo || 0
         );
 
-        // Fire background worker asynchronously (does NOT block browser response)
+        // Fire background worker asynchronously
         setImmediate(() => {
-            processImportJob(importId).catch(err => {
-                console.error(`Background job failure for import ${importId}:`, err);
+            processImportJob(importId).catch(jobErr => {
+                console.error(`Background job failure for import ${importId}:`, jobErr);
             });
         });
 
@@ -68,24 +126,13 @@ router.post('/upload', authMiddleware, checkSubscriptionLimits(), (req, res) => 
 
 // 2. Poll import progress and background status
 router.get('/status/:id', authMiddleware, (req, res) => {
+    const access = checkImportAccess(req.params.id, req.user);
+    if (!access.allowed) {
+        return res.status(access.statusCode).json({ success: false, error: access.error });
+    }
+
+    const imp = access.importRecord;
     const db = getDb();
-    const imp = db.prepare(`
-        SELECT i.*, u.name as user_name, m.name_ar as manufacturer_name
-        FROM imports i
-        LEFT JOIN users u ON i.user_id = u.id
-        LEFT JOIN manufacturers m ON i.manufacturer_id = m.id
-        WHERE i.id = ?
-    `).get(req.params.id);
-
-    if (!imp) {
-        return res.status(404).json({ success: false, error: 'عملية الاستيراد غير موجودة' });
-    }
-
-    // Role isolation check
-    if (req.user.role === 'MANUFACTURER' && imp.user_id !== req.user.id && imp.manufacturer_id !== req.user.manufacturer_id) {
-        return res.status(403).json({ success: false, error: 'غير مصرح بعرض تفاصيل هذه العملية' });
-    }
-
     const logs = db.prepare('SELECT * FROM import_logs WHERE import_id = ? ORDER BY timestamp ASC').all(req.params.id);
 
     res.json({
@@ -100,17 +147,12 @@ router.get('/status/:id', authMiddleware, (req, res) => {
 
 // 3. Get extracted draft items for review
 router.get('/:id/items', authMiddleware, (req, res) => {
+    const access = checkImportAccess(req.params.id, req.user);
+    if (!access.allowed) {
+        return res.status(access.statusCode).json({ success: false, error: access.error });
+    }
+
     const db = getDb();
-    const imp = db.prepare('SELECT * FROM imports WHERE id = ?').get(req.params.id);
-    if (!imp) {
-        return res.status(404).json({ success: false, error: 'عملية الاستيراد غير موجودة' });
-    }
-
-    // Role check
-    if (req.user.role === 'MANUFACTURER' && imp.user_id !== req.user.id && imp.manufacturer_id !== req.user.manufacturer_id) {
-        return res.status(403).json({ success: false, error: 'غير مصرح لك باستعراض منتجات هذه العملية' });
-    }
-
     const items = db.prepare(`
         SELECT ii.*, m.name_ar as suggested_manufacturer_name, c.name_ar as suggested_category_name
         FROM import_items ii
@@ -134,18 +176,24 @@ router.get('/:id/items', authMiddleware, (req, res) => {
     });
 });
 
-// 4. Update single item during review
+// 4. Update single item during review (Enforces Import Ownership & IDOR Protection)
 router.put('/:id/items/:itemId', authMiddleware, (req, res) => {
-    const db = getDb();
     const { id, itemId } = req.params;
-    const { extracted_data, suggested_category_id, suggested_manufacturer_id, status } = req.body;
-
-    const item = db.prepare('SELECT * FROM import_items WHERE id = ? AND import_id = ?').get(itemId, id);
-    if (!item) {
-        return res.status(404).json({ success: false, error: 'المنتج غير موجود في قائمة المراجعة' });
+    const access = checkImportAccess(id, req.user);
+    if (!access.allowed) {
+        return res.status(access.statusCode).json({ success: false, error: access.error });
     }
 
-    // Manufacturer security: Marketing manufacturer cannot change to another manufacturer!
+    const db = getDb();
+    const { extracted_data, suggested_category_id, suggested_manufacturer_id, status } = req.body;
+
+    // Strict IDOR Check: Ensure item strictly belongs to this exact import session
+    const item = db.prepare('SELECT * FROM import_items WHERE id = ? AND import_id = ?').get(itemId, id);
+    if (!item) {
+        return res.status(404).json({ success: false, error: 'المنتج غير موجود في عملية الاستيراد المحددة' });
+    }
+
+    // Manufacturer security: Marketing manufacturer cannot reassign to another manufacturer profile
     let finalMfgId = suggested_manufacturer_id ?? item.suggested_manufacturer_id;
     if (req.user.role === 'MANUFACTURER') {
         finalMfgId = req.user.manufacturer_id;
@@ -160,13 +208,14 @@ router.put('/:id/items/:itemId', authMiddleware, (req, res) => {
             suggested_category_id = ?,
             suggested_manufacturer_id = ?,
             status = ?
-        WHERE id = ?
+        WHERE id = ? AND import_id = ?
     `).run(
         JSON.stringify(updatedExtracted),
         suggested_category_id ?? item.suggested_category_id,
         finalMfgId,
         status ?? item.status,
-        itemId
+        itemId,
+        id
     );
 
     res.json({
@@ -177,20 +226,27 @@ router.put('/:id/items/:itemId', authMiddleware, (req, res) => {
 
 // 5. Bulk edit items (category, manufacturer, status, price adjustments)
 router.post('/:id/bulk-update', authMiddleware, (req, res) => {
-    const db = getDb();
     const { id } = req.params;
+    const access = checkImportAccess(id, req.user);
+    if (!access.allowed) {
+        return res.status(access.statusCode).json({ success: false, error: access.error });
+    }
+
     const { item_ids, category_id, manufacturer_id, status, price_multiplier, currency } = req.body;
 
     if (!Array.isArray(item_ids) || item_ids.length === 0) {
         return res.status(400).json({ success: false, error: 'لم يتم تحديد أي أصناف للتعديل الجماعي' });
     }
 
+    const db = getDb();
     let finalMfgId = manufacturer_id;
     if (req.user.role === 'MANUFACTURER') {
         finalMfgId = req.user.manufacturer_id;
     }
 
+    let updatedCount = 0;
     item_ids.forEach(itemId => {
+        // Enforce that item strictly belongs to the requested import session
         const item = db.prepare('SELECT * FROM import_items WHERE id = ? AND import_id = ?').get(itemId, id);
         if (!item) return;
 
@@ -200,9 +256,9 @@ router.post('/:id/bulk-update', authMiddleware, (req, res) => {
             ext.price = parseFloat((ext.price * price_multiplier).toFixed(2));
         }
 
-        let cat = category_id !== undefined ? category_id : item.suggested_category_id;
-        let mfg = finalMfgId !== undefined ? finalMfgId : item.suggested_manufacturer_id;
-        let stat = status !== undefined ? status : item.status;
+        const cat = category_id !== undefined ? category_id : item.suggested_category_id;
+        const mfg = finalMfgId !== undefined ? finalMfgId : item.suggested_manufacturer_id;
+        const stat = status !== undefined ? status : item.status;
 
         db.prepare(`
             UPDATE import_items 
@@ -210,24 +266,33 @@ router.post('/:id/bulk-update', authMiddleware, (req, res) => {
                 suggested_category_id = ?,
                 suggested_manufacturer_id = ?,
                 status = ?
-            WHERE id = ?
-        `).run(JSON.stringify(ext), cat, mfg, stat, itemId);
+            WHERE id = ? AND import_id = ?
+        `).run(JSON.stringify(ext), cat, mfg, stat, itemId, id);
+
+        updatedCount++;
     });
 
     res.json({
         success: true,
-        message: `تم تطبيق التعديلات الجماعية على (${item_ids.length}) منتجات بنجاح`
+        message: `تم تطبيق التعديلات الجماعية على (${updatedCount}) منتجات بنجاح`,
+        updated_count: updatedCount
     });
 });
 
 // 6. Reassign images or change primary image
 router.post('/:id/reassign-image', authMiddleware, (req, res) => {
-    const db = getDb();
     const { id } = req.params;
-    const { from_item_id, to_item_id, image_url, make_primary, remove_image } = req.body;
+    const access = checkImportAccess(id, req.user);
+    if (!access.allowed) {
+        return res.status(access.statusCode).json({ success: false, error: access.error });
+    }
 
+    const { from_item_id, to_item_id, image_url, make_primary, remove_image } = req.body;
+    const db = getDb();
+
+    // Verify source item belongs to this import
     const sourceItem = db.prepare('SELECT * FROM import_items WHERE id = ? AND import_id = ?').get(from_item_id, id);
-    if (!sourceItem) return res.status(404).json({ success: false, error: 'الصنف المصدر غير موجود' });
+    if (!sourceItem) return res.status(404).json({ success: false, error: 'الصنف المصدر غير موجود في هذه العملية' });
 
     let sourceImages = JSON.parse(sourceItem.assigned_images || '[]');
     const targetImg = sourceImages.find(img => img.url === image_url);
@@ -238,35 +303,36 @@ router.post('/:id/reassign-image', authMiddleware, (req, res) => {
         if (sourceImages.length > 0 && !sourceImages.some(i => i.is_primary)) {
             sourceImages[0].is_primary = true;
         }
-        db.prepare('UPDATE import_items SET assigned_images = ? WHERE id = ?')
-            .run(JSON.stringify(sourceImages), from_item_id);
+        db.prepare('UPDATE import_items SET assigned_images = ? WHERE id = ? AND import_id = ?')
+            .run(JSON.stringify(sourceImages), from_item_id, id);
 
         return res.json({ success: true, message: 'تم إزالة الصورة بنجاح' });
     }
 
     if (from_item_id === to_item_id && make_primary) {
         sourceImages.forEach(img => { img.is_primary = (img.url === image_url); });
-        db.prepare('UPDATE import_items SET assigned_images = ? WHERE id = ?')
-            .run(JSON.stringify(sourceImages), from_item_id);
+        db.prepare('UPDATE import_items SET assigned_images = ? WHERE id = ? AND import_id = ?')
+            .run(JSON.stringify(sourceImages), from_item_id, id);
 
         return res.json({ success: true, message: 'تم تعيين الصورة كصورة رئيسية' });
     }
 
     if (from_item_id !== to_item_id) {
+        // Verify destination item also belongs to this exact import
         const destItem = db.prepare('SELECT * FROM import_items WHERE id = ? AND import_id = ?').get(to_item_id, id);
-        if (!destItem) return res.status(404).json({ success: false, error: 'الصنف المستهدف غير موجود' });
+        if (!destItem) return res.status(404).json({ success: false, error: 'الصنف المستهدف غير موجود في هذه العملية' });
 
         // Remove from source
         sourceImages = sourceImages.filter(img => img.url !== image_url);
-        db.prepare('UPDATE import_items SET assigned_images = ? WHERE id = ?')
-            .run(JSON.stringify(sourceImages), from_item_id);
+        db.prepare('UPDATE import_items SET assigned_images = ? WHERE id = ? AND import_id = ?')
+            .run(JSON.stringify(sourceImages), from_item_id, id);
 
         // Add to dest
         const destImages = JSON.parse(destItem.assigned_images || '[]');
         targetImg.is_primary = destImages.length === 0;
         destImages.push(targetImg);
-        db.prepare('UPDATE import_items SET assigned_images = ? WHERE id = ?')
-            .run(JSON.stringify(destImages), to_item_id);
+        db.prepare('UPDATE import_items SET assigned_images = ? WHERE id = ? AND import_id = ?')
+            .run(JSON.stringify(destImages), to_item_id, id);
 
         return res.json({ success: true, message: 'تم نقل الصورة إلى الصنف المحدد' });
     }
@@ -276,15 +342,18 @@ router.post('/:id/reassign-image', authMiddleware, (req, res) => {
 
 // 7. Save items as DRAFT into products catalog
 router.post('/:id/save-draft', authMiddleware, (req, res) => {
-    const db = getDb();
     const { id } = req.params;
-    const { selected_item_ids } = req.body;
+    const access = checkImportAccess(id, req.user);
+    if (!access.allowed) {
+        return res.status(access.statusCode).json({ success: false, error: access.error });
+    }
 
-    const imp = db.prepare('SELECT * FROM imports WHERE id = ?').get(id);
-    if (!imp) return res.status(404).json({ success: false, error: 'عملية الاستيراد غير موجودة' });
+    const imp = access.importRecord;
+    const { selected_item_ids } = req.body;
+    const db = getDb();
 
     let query = "SELECT * FROM import_items WHERE import_id = ? AND status != 'SKIPPED'";
-    let params = [id];
+    const params = [id];
     if (Array.isArray(selected_item_ids) && selected_item_ids.length > 0) {
         query += ` AND id IN (${selected_item_ids.map(() => '?').join(',')})`;
         params.push(...selected_item_ids);
@@ -299,23 +368,21 @@ router.post('/:id/save-draft', authMiddleware, (req, res) => {
     for (const item of items) {
         const ext = JSON.parse(item.extracted_data || '{}');
         let mfgId = item.suggested_manufacturer_id || imp.manufacturer_id;
-        
-        // Strict manufacturer restriction for Marketing Manufacturers
+
+        // Strict manufacturer enforcement
         if (req.user.role === 'MANUFACTURER') {
             mfgId = req.user.manufacturer_id;
         }
 
-        if (!mfgId) {
-            continue; // Cannot save product without valid manufacturer!
-        }
+        if (!mfgId) continue;
 
         const prodId = 'prod_' + crypto.randomBytes(6).toString('hex');
         db.prepare(`
             INSERT INTO products (
                 id, manufacturer_id, category_id, sku, name_ar, name_en,
                 description_ar, specifications, packaging_info, country_of_origin,
-                price, currency, price_unit, moq, available_quantity, status, source_import_id
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'DRAFT', ?)
+                price, currency, price_unit, moq, available_quantity, status, source_import_id, is_demo
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'DRAFT', ?, ?)
         `).run(
             prodId,
             mfgId,
@@ -332,10 +399,11 @@ router.post('/:id/save-draft', authMiddleware, (req, res) => {
             ext.price_unit || 'MT',
             ext.moq || null,
             ext.available_quantity || null,
-            id
+            id,
+            req.user.is_demo || 0
         );
 
-        // Insert product images
+        // Product images
         const images = JSON.parse(item.assigned_images || '[]');
         images.forEach((img, idx) => {
             const imgId = 'pimg_' + crypto.randomBytes(6).toString('hex');
@@ -345,7 +413,6 @@ router.post('/:id/save-draft', authMiddleware, (req, res) => {
             `).run(imgId, prodId, img.url, img.thumbnail_url || null, img.is_primary ? 1 : 0, idx + 1, img.dhash || null);
         });
 
-        // Mark item as SAVED
         db.prepare("UPDATE import_items SET status = 'SAVED' WHERE id = ?").run(item.id);
         savedCount++;
     }
@@ -359,17 +426,20 @@ router.post('/:id/save-draft', authMiddleware, (req, res) => {
     });
 });
 
-// 8. Submit items for Approval Workflow (Pending Approval / Published)
+// 8. Submit items for Approval Workflow
 router.post('/:id/submit-approval', authMiddleware, (req, res) => {
-    const db = getDb();
     const { id } = req.params;
-    const { selected_item_ids, direct_publish } = req.body;
+    const access = checkImportAccess(id, req.user);
+    if (!access.allowed) {
+        return res.status(access.statusCode).json({ success: false, error: access.error });
+    }
 
-    const imp = db.prepare('SELECT * FROM imports WHERE id = ?').get(id);
-    if (!imp) return res.status(404).json({ success: false, error: 'عملية الاستيراد غير موجودة' });
+    const imp = access.importRecord;
+    const { selected_item_ids, direct_publish } = req.body;
+    const db = getDb();
 
     let query = "SELECT * FROM import_items WHERE import_id = ? AND status != 'SKIPPED'";
-    let params = [id];
+    const params = [id];
     if (Array.isArray(selected_item_ids) && selected_item_ids.length > 0) {
         query += ` AND id IN (${selected_item_ids.map(() => '?').join(',')})`;
         params.push(...selected_item_ids);
@@ -380,9 +450,6 @@ router.post('/:id/submit-approval', authMiddleware, (req, res) => {
         return res.status(400).json({ success: false, error: 'لا توجد منتجات معتمدة لتقديمها للاعتماد' });
     }
 
-    // Role lifecycle enforcement:
-    // Marketing Manufacturers: ALWAYS enter 'PENDING_APPROVAL'
-    // Super Admin: Can save as 'PENDING_APPROVAL' or directly 'PUBLISHED' if direct_publish is requested
     let targetStatus = 'PENDING_APPROVAL';
     if (req.user.role === 'SUPER_ADMIN' && direct_publish) {
         targetStatus = 'PUBLISHED';
@@ -404,8 +471,8 @@ router.post('/:id/submit-approval', authMiddleware, (req, res) => {
             INSERT INTO products (
                 id, manufacturer_id, category_id, sku, name_ar, name_en,
                 description_ar, specifications, packaging_info, country_of_origin,
-                price, currency, price_unit, moq, available_quantity, status, source_import_id
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                price, currency, price_unit, moq, available_quantity, status, source_import_id, is_demo
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).run(
             prodId,
             mfgId,
@@ -423,7 +490,8 @@ router.post('/:id/submit-approval', authMiddleware, (req, res) => {
             ext.moq || null,
             ext.available_quantity || null,
             targetStatus,
-            id
+            id,
+            req.user.is_demo || 0
         );
 
         // Images
@@ -454,7 +522,7 @@ router.post('/:id/submit-approval', authMiddleware, (req, res) => {
     });
 });
 
-// 9. Import History
+// 9. Import History (Tenant Isolated)
 router.get('/history', authMiddleware, (req, res) => {
     const db = getDb();
     let query = `
@@ -466,10 +534,15 @@ router.get('/history', authMiddleware, (req, res) => {
     `;
     const params = [];
 
-    // Role filtering: Marketing manufacturers see only their imports
+    // Role filtering:
+    // Marketing manufacturers see ONLY their own imports
     if (req.user.role === 'MANUFACTURER') {
-        query += ' WHERE i.manufacturer_id = ? OR i.user_id = ?';
-        params.push(req.user.manufacturer_id, req.user.id);
+        query += ' WHERE i.manufacturer_id = ?';
+        params.push(req.user.manufacturer_id);
+    } else if (req.user.role === 'LOGISTICS_OFFICER') {
+        // Logistics Officers only see Direct Contract imports or imports they created
+        query += " WHERE m.business_model = 'DIRECT_CONTRACT' OR i.user_id = ?";
+        params.push(req.user.id);
     }
 
     query += ' ORDER BY i.created_at DESC';
@@ -488,9 +561,13 @@ router.get('/history', authMiddleware, (req, res) => {
 
 // 10. Downloadable Error Report (CSV)
 router.get('/:id/error-report', authMiddleware, (req, res) => {
-    const db = getDb();
     const { id } = req.params;
+    const access = checkImportAccess(id, req.user);
+    if (!access.allowed) {
+        return res.status(access.statusCode).json({ success: false, error: access.error });
+    }
 
+    const db = getDb();
     const failedItems = db.prepare(`
         SELECT * FROM import_items 
         WHERE import_id = ? AND (status = 'FAILED' OR validation_warnings != '[]')
@@ -523,9 +600,13 @@ router.get('/:id/error-report', authMiddleware, (req, res) => {
 
 // 11. Retry failed items without duplicating valid items
 router.post('/:id/retry-failed', authMiddleware, (req, res) => {
-    const db = getDb();
     const { id } = req.params;
+    const access = checkImportAccess(id, req.user);
+    if (!access.allowed) {
+        return res.status(access.statusCode).json({ success: false, error: access.error });
+    }
 
+    const db = getDb();
     const failedItems = db.prepare('SELECT * FROM import_items WHERE import_id = ? AND status = "FAILED"').all(id);
     if (failedItems.length === 0) {
         return res.json({ success: true, message: 'لا توجد سجلات فاشلة لإعادة محاولتها' });
@@ -534,9 +615,8 @@ router.post('/:id/retry-failed', authMiddleware, (req, res) => {
     let recoveredCount = 0;
     for (const item of failedItems) {
         const raw = JSON.parse(item.raw_data || '{}');
-        // Try fallback extraction
         const recoveredName = raw.cluster_name || Object.values(raw).find(v => typeof v === 'string' && v.trim().length > 3) || 'صنف مسترجع';
-        
+
         const ext = {
             name_ar: recoveredName,
             price: null,
@@ -551,8 +631,8 @@ router.post('/:id/retry-failed', authMiddleware, (req, res) => {
             SET extracted_data = ?,
                 status = 'AWAITING_REVIEW',
                 validation_warnings = '["تم استرجاع السجل في وضع المراجعة اليدوية"]'
-            WHERE id = ?
-        `).run(JSON.stringify(ext), item.id);
+            WHERE id = ? AND import_id = ?
+        `).run(JSON.stringify(ext), item.id, id);
 
         recoveredCount++;
     }
@@ -560,7 +640,7 @@ router.post('/:id/retry-failed', authMiddleware, (req, res) => {
     // Update counts on parent import
     const validCount = db.prepare('SELECT COUNT(*) as c FROM import_items WHERE import_id = ? AND status = "AWAITING_REVIEW"').get(id).c;
     const remainingFailed = db.prepare('SELECT COUNT(*) as c FROM import_items WHERE import_id = ? AND status = "FAILED"').get(id).c;
-    
+
     db.prepare('UPDATE imports SET total_valid = ?, total_failed = ? WHERE id = ?').run(validCount, remainingFailed, id);
 
     res.json({
