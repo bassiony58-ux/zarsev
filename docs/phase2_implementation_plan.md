@@ -1,10 +1,10 @@
-# ZARSEV — Phase 2 Data & Business Architecture Implementation Plan (Revised)
+# ZARSEV — Phase 2 Data & Business Architecture Implementation Plan (Hardened)
 
 **Branch:** `phase2-data-and-business-architecture`  
 **Base Commit:** `eb5544a`  
 **Target Environment:** Local Verified SQLite (`M:\ZZZ\zarsev.db`)  
 **Revision Date:** 2026-11-02  
-**Status:** Architecture Specification Awaiting Final Authorization
+**Status:** Architecture Specification Awaiting Milestone 2 Authorization
 
 ---
 
@@ -24,8 +24,8 @@ Every architectural section, schema definition, and business rule in this implem
 This master plan is supported by 5 detailed specifications:
 
 1. **[phase2_current_schema_inventory.md](file:///M:/ZZZ/docs/phase2_current_schema_inventory.md):** Complete inventory of all 9 current tables, columns, indexes, constraints, and business model topologies.
-2. **[phase2_business_rules.md](file:///M:/ZZZ/docs/phase2_business_rules.md):** Authoritative rules for multi-currency pricing, volume tiers, Incoterms, subscription state machine, usage ledger, durable queue heartbeats, and private storage.
-3. **[phase2_migration_safety_plan.md](file:///M:/ZZZ/docs/phase2_migration_safety_plan.md):** SQLite `VACUUM INTO` backup protocol, `PRAGMA integrity_check`, anti-tamper checksums, concurrency locks, and transactional DDL rules.
+2. **[phase2_business_rules.md](file:///M:/ZZZ/docs/phase2_business_rules.md):** Authoritative rules for multi-currency pricing, deterministic partial indexes, volume tiers, Incoterms, subscription state machine, usage ledger, worker fencing tokens (`lease_generation`), and private storage.
+3. **[phase2_migration_safety_plan.md](file:///M:/ZZZ/docs/phase2_migration_safety_plan.md):** 8-phase SQLite backup protocol, WAL checkpoint busy retry, `PRAGMA integrity_check`, schema/count validation, atomic promotion, anti-tamper checksums, concurrency locks, and transactional DDL rules.
 4. **[phase2_security_and_tenant_matrix.md](file:///M:/ZZZ/docs/phase2_security_and_tenant_matrix.md):** Detailed RBAC and tenant isolation matrix across `SUPER_ADMIN`, `LOGISTICS_OFFICER`, `MANUFACTURER`, and `ANONYMOUS_PUBLIC`.
 5. **[phase2_test_strategy.md](file:///M:/ZZZ/docs/phase2_test_strategy.md):** Specifications for 5 new automated test suites covering migrations, pricing boundaries, subscription quotas, worker resilience, and private asset protection.
 
@@ -80,11 +80,18 @@ graph LR
 
 `[PROPOSED FUTURE BEHAVIOR]`
 
-### 4.1 Architecture & Safety Protocol
+### 4.1 Architecture & 8-Phase Safety Protocol
 - **Tracking Table:** `_migrations` (columns: `id, name, batch, checksum, applied_at`).
 - **Concurrency Locking:** `_migration_lock` ensures single-process migration execution.
-- **Backup Before Migration:** Every migration automatically flushes SQLite WAL (`PRAGMA wal_checkpoint(TRUNCATE)`) and creates an atomic live snapshot via `VACUUM INTO 'storage/backups/migrations/backup_before_<migration>_<timestamp>.db'`.
-- **Pre-Migration Integrity Verification:** The backup snapshot is validated via `PRAGMA integrity_check` before any DDL statements are executed.
+- **Pre-Migration Backup Protocol:**
+  1. Acquire migration execution lock.
+  2. Issue `PRAGMA wal_checkpoint(TRUNCATE)` with exponential backoff on `busy`.
+  3. Create live temporary snapshot via `VACUUM INTO ...temp.db`.
+  4. Verify database integrity via `PRAGMA integrity_check`.
+  5. Verify critical schema tables and row counts (`users >= 6`, `products >= 42`).
+  6. Atomically promote temporary file to permanent `backup_pre_migration_<name>_<timestamp>.db`.
+  7. Preserve all historical backup files.
+  8. Enforce fatal abort if any backup verification step fails (migration strictly blocked).
 - **Transactional DDL:** Every migration runs inside `BEGIN TRANSACTION ... COMMIT`. On any error, an immediate `ROLLBACK` is triggered.
 - **Anti-Tampering Checksum:** Migration runner calculates the SHA-256 hash of each file and compares it with `_migrations.checksum`. Any alteration aborts immediately.
 - **Zero Auto-Rollback on Live Database:** Failed migrations roll back within their transaction, preserving existing database tables and backups without destructive drops.
@@ -98,26 +105,24 @@ graph LR
 ### 5.1 Architecture & Invariants
 - **Authoritative Table (`product_prices`):**
   Supports multi-currency (`USD`, `EUR`, `EGP`, `SAR`, etc.), volume discount tiers, Incoterms (`FOB`, `CIF`, `CFR`, `EXW`, `DDP`), and validity dates (`valid_from`, `valid_to`).
-- **Synchronized Projections (`products`):**
-  Legacy columns `products.price`, `currency`, `price_unit`, `moq` are maintained as read projections synchronized automatically upon primary price insertion/update.
-- **Single Primary Price Invariant:**
-  Enforced by partial unique index:
+- **Deterministic Partial Unique Index:**
+  Replaced non-deterministic predicate with a 100% deterministic partial index:
   ```sql
-  CREATE UNIQUE INDEX uidx_product_prices_primary 
+  CREATE UNIQUE INDEX IF NOT EXISTS uidx_product_prices_primary 
   ON product_prices(product_id, currency, incoterm) 
-  WHERE is_primary = 1 AND (valid_to IS NULL OR valid_to > CURRENT_TIMESTAMP);
+  WHERE is_primary = 1;
   ```
+- **Atomic Primary Replacement (`BEGIN IMMEDIATE`):**
+  Activating a primary price demotes existing primary (`is_primary = 0`, `valid_to = CURRENT_TIMESTAMP`) and inserts the new primary inside an immediate write transaction.
+- **Deterministic Legacy Projection Policy:**
+  Legacy columns `products.price`, `currency`, `price_unit`, `moq` project the primary price according to strict priority:
+  `is_default_projection = 1` -> USD -> FOB -> lowest MOQ -> most recent `valid_from`.
+- **Explicit Quotation-Only Mode:**
+  `price = NULL`, `is_quotation_only = 1`. Unpriced items without this explicit flag remain incomplete drafts with warnings, NOT quotation-only.
 - **Non-Overlapping Quantity Tiers:**
   Tier ranges for the same context are validated in application service logic prior to insertion, rejecting overlaps with `HTTP 422`.
 - **Historical Price Preservation:**
   Updating an active price sets `valid_to = CURRENT_TIMESTAMP` on the old record and inserts a new active record, preserving full pricing history.
-- **Quotation-Only Mode (`QUOTATION_ONLY`):**
-  `price = NULL`, `is_quotation_only = 1`. Public API returns `"سعر عند الطلب (Quotation on Request)"` with an RFQ trigger.
-- **Fallback Resolution:**
-  When querying a product:
-  1. Active primary price from `product_prices`.
-  2. If missing, fall back to legacy `products.price`.
-  3. If both are null, fall back to `QUOTATION_ONLY`.
 
 ---
 
@@ -126,19 +131,20 @@ graph LR
 `[PROPOSED FUTURE BEHAVIOR]`
 
 ### 6.1 Architecture & State Machine
-- **Active Subscriptions (`manufacturer_subscriptions`):**
-  Tracks tenant-specific subscription instances with states: `PENDING`, `ACTIVE`, `EXPIRED`, `SUSPENDED`, `CANCELLED`.
+- **Independent Subscription Status vs Payment Status:**
+  - `status`: `PENDING`, `ACTIVE`, `EXPIRED`, `SUSPENDED`, `CANCELLED`.
+  - `payment_status`: `UNPAID`, `PENDING_VERIFICATION`, `PAID`, `WAIVED`, `REFUNDED`.
 - **Auditable Usage Ledger (`subscription_usage`):**
   Replaces mutable counter with an append-only ledger tracking:
   - `id, subscription_id, manufacturer_id, usage_type, quantity, billing_period, related_import_id, actor_user_id, idempotency_key, created_at`.
-- **Concurrent Quota Protection:**
-  Atomic quota checks against `SUM(quantity)` from the usage ledger within a database transaction prevent race-condition quota overruns.
+- **Atomic Quota Consumption Transaction (`BEGIN IMMEDIATE`):**
+  SQLite write serialization prevents race-condition quota overruns under concurrent requests.
+- **Scoped Idempotency Protection:**
+  `UNIQUE(manufacturer_id, idempotency_key)` guarantees network retries cannot double-charge quotas.
 - **Expiration Gatekeeper:**
   Expired manufacturers are restricted to read-only access (can view catalog and own products; uploads and submissions blocked with `HTTP 403`).
 - **Administrative Adjustments:**
   Super Admin can inject audited `ADMIN_ADJUSTMENT` entries with logged rationale.
-- **Payment Boundary:**
-  No external payment processors in Phase 2. Status recorded as `WAIVED`, `INVOICED`, or `BANK_TRANSFER_VERIFIED`.
 
 ---
 
@@ -149,14 +155,17 @@ graph LR
 ### 7.1 Architecture & Resilience
 - **Durable Job Queue (`import_jobs`):**
   Replaces in-memory `setImmediate` with persistent SQLite job tracking.
+- **Fencing Token (`lease_generation`):**
+  Monotonically increasing token incremented on every job claim. Every worker write verifies:
+  `locked_by = workerId AND lease_generation = expectedGen AND lease_expires_at > CURRENT_TIMESTAMP`.
+- **Stale Worker Halting:**
+  An expired worker attempting to finalize an import after its lease expired affects 0 rows, halts immediately, and discards results without overwriting the newer worker.
 - **Worker Heartbeat & Lease Expiration:**
   Workers claim jobs with a **10-minute lease** (`lease_expires_at`). Ongoing workers update `last_heartbeat_at` every 60 seconds.
 - **Safe Crash Recovery (No Blind Re-queuing):**
   On server boot, only jobs in `PROCESSING` whose `lease_expires_at < CURRENT_TIMESTAMP` are evaluated. If `attempts < max_attempts`, re-queue with an audit log; otherwise transition to `FAILED`.
 - **Upload Idempotency:**
   `import_id` is unique in `import_jobs`. Duplicate submissions are rejected.
-- **Partial Extraction Resume:**
-  If a job fails midway, items already written to `import_items` with status `AWAITING_REVIEW` or `READY` are preserved without re-extraction.
 - **Storage Path Sanitization:**
   Internal filesystem paths (`M:\ZZZ\storage\...`) are stripped from all client-facing responses.
 
@@ -183,7 +192,7 @@ graph LR
 
 ```mermaid
 flowchart TD
-    M1["Milestone 1: Architecture Review & Corrections<br/>(COMPLETED & VERIFIED)"] --> M2["Milestone 2: Database Migration Framework<br/>(_migrations, backup runner, CLI)"]
+    M1["Milestone 1: Hardened Architecture Review<br/>(COMPLETED & VERIFIED)"] --> M2["Milestone 2: Database Migration Framework<br/>(_migrations, backup runner, CLI)"]
     M2 --> M3["Milestone 3: Product Pricing Architecture<br/>(product_prices, tiers, Incoterms, fallback)"]
     M3 --> M4["Milestone 4: Subscription Lifecycle & Ledger<br/>(states, expiry, usage ledger, quotas)"]
     M4 --> M5["Milestone 5: Durable Background Import Queue<br/>(import_jobs, lease recovery, worker)"]

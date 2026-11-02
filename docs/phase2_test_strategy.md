@@ -1,9 +1,10 @@
-# ZARSEV — Phase 2 Automated Testing & Quality Assurance Strategy
+# ZARSEV — Phase 2 Automated Testing & Quality Assurance Strategy (Revised)
 
 **Branch:** `phase2-data-and-business-architecture`  
 **Base Commit:** `eb5544a`  
 **Target Environment:** Local Verified SQLite (`M:\ZZZ\zarsev.db`)  
-**Specification Date:** 2026-11-02
+**Specification Date:** 2026-11-02  
+**Status:** Hardened QA & Automated Testing Specification
 
 ---
 
@@ -37,82 +38,101 @@ The current test runner [`test/run_all_tests.js`](file:///M:/ZZZ/test/run_all_te
 
 `[PROPOSED FUTURE BEHAVIOR]`
 
-Phase 2 introduces **5 new dedicated test suites** corresponding to each milestone. These suites will run on isolated test databases (`test/phase2_*.db`) without ever mutating `zarsev.db`:
+Phase 2 introduces **5 new dedicated test suites** corresponding to each milestone. These suites run on isolated test databases (`test/phase2_*.db`) without ever mutating `zarsev.db`:
 
 ```mermaid
 flowchart TD
     Runner["Phase 2 Comprehensive Test Runner<br/>(test/run_phase2_tests.js)"]
-    Runner --> TS1["Suite 9: test_migrations.js<br/>(Checksums, VACUUM backup, Up/Down rollbacks)"]
-    Runner --> TS2["Suite 10: test_product_pricing.js<br/>(Tiers, Incoterms, Single primary price, Quotation fallback)"]
-    Runner --> TS3["Suite 11: test_subscription_lifecycle.js<br/>(State machine, Ledger quotas, Concurrency, Direct Contract bypass)"]
-    Runner --> TS4["Suite 12: test_durable_queue.js<br/>(Heartbeat, Lease expiry, Crash recovery, Idempotent retry)"]
+    Runner --> TS1["Suite 9: test_migrations.js<br/>(Backup protocol, Checksums, VACUUM INTO, Atomic promo)"]
+    Runner --> TS2["Suite 10: test_product_pricing.js<br/>(Deterministic index, Tiers, Incoterms, Legacy projection)"]
+    Runner --> TS3["Suite 11: test_subscription_lifecycle.js<br/>(BEGIN IMMEDIATE, Quota ledger, Fencing, Status independence)"]
+    Runner --> TS4["Suite 12: test_durable_queue.js<br/>(lease_generation fencing, Heartbeat, Recovery)"]
     Runner --> TS5["Suite 13: test_storage_abstraction.js<br/>(Private asset auth, Path traversal, Checksum validation)"]
     Runner --> Regression["Regression Suite: Suites 1–8<br/>(Zero Phase 1 security regressions)"]
 ```
 
 ---
 
-### 3.1 Suite 9: `test_migrations.js` (Migration Framework Verification)
+### 3.1 Suite 9: `test_migrations.js` (Migration Framework & Comprehensive Backup Protocol)
 `[PROPOSED FUTURE BEHAVIOR]`
 
 - **Test 1: Clean Up/Down Execution:**
   Verify that running `migrate.js up` applies all pending migrations in order, populates `_migrations` with batch numbers and checksums, and `migrate.js down` safely rolls back the batch.
-- **Test 2: Pre-Migration Backup Verification:**
-  Confirm that `storage/backups/migrations/` receives a verified `.db` snapshot before any DDL runs, and that `PRAGMA integrity_check` passes on the snapshot.
-- **Test 3: Anti-Tamper Checksum Detection:**
+- **Test 2: Anti-Tamper Checksum Detection:**
   Manually alter 1 byte in a previously applied migration file; verify that `migrate.js up` aborts with a security violation.
-- **Test 4: Migration Lock Invariant:**
+- **Test 3: Migration Lock Invariant:**
   Simulate two concurrent migration processes; verify that the second process fails immediately due to `_migration_lock`.
-- **Test 5: Transactional Rollback on Error:**
+- **Test 4: Transactional Rollback on Error:**
   Introduce a syntax error in migration file $N$; verify that migration $N$ fails, rolls back completely, and leaves database at version $N-1$.
+- **Test 5: 8-Phase Backup Protocol Verification:**
+  - Verify that active connections trigger `PRAGMA wal_checkpoint(TRUNCATE)` with exponential backoff on `busy`.
+  - Verify temporary backup creation via `VACUUM INTO ...temp.db`.
+  - Verify that `PRAGMA integrity_check` executes and confirms `ok`.
+  - Verify schema validation: checks that `users`, `manufacturers`, `products`, `subscriptions`, `imports` exist and baseline record counts match live counts.
+  - Verify atomic promotion: temporary file is renamed to `backup_pre_migration_<name>_<timestamp>.db`.
+  - Verify preservation: historical backups remain intact.
+  - Verify failure behavior: if integrity check or count check fails, temporary backup is deleted, lock is released, and migration is strictly prevented from starting.
 
 ---
 
-### 3.2 Suite 10: `test_product_pricing.js` (Pricing Architecture)
+### 3.2 Suite 10: `test_product_pricing.js` (Pricing Architecture & Deterministic Projections)
 `[PROPOSED FUTURE BEHAVIOR]`
 
-- **Test 1: Single Primary Price Enforcement:**
-  Attempt to insert two primary prices for the same product, currency, and Incoterm; verify database rejects with unique constraint violation.
-- **Test 2: Non-Overlapping Tier Boundaries:**
-  Insert tier 1 (1–10 MT @ $800); attempt to insert tier 2 (8–20 MT @ $750); verify rejection with `HTTP 422`.
-- **Test 3: Synchronized Legacy Projections:**
-  Insert a new primary price in `product_prices`; verify that `products.price`, `currency`, `price_unit`, and `moq` are immediately updated.
-- **Test 4: Quotation-Only Mode Fallback:**
-  Create a product with `price_type = 'QUOTATION_ONLY'`; verify public catalog returns `price: null, is_quotation_only: true`.
-- **Test 5: Historical Price Preservation:**
-  Update an active price; verify that the old price record remains in `product_prices` with `valid_to <= NOW` and the new price is active with `valid_from = NOW`.
-- **Test 6: Expired Price Exclusion:**
-  Verify that prices with `valid_to < NOW` do not appear in public active search results.
+- **Test 1: SQLite Deterministic Partial Unique Index:**
+  - Verify verified SQLite behavior: creating an index with `CURRENT_TIMESTAMP` in `WHERE` fails with `non-deterministic functions prohibited in partial index WHERE clauses`.
+  - Verify deterministic index creation: `CREATE UNIQUE INDEX uidx_product_prices_primary ON product_prices(product_id, currency, incoterm) WHERE is_primary = 1;`.
+  - Verify rejection of duplicate primary prices for the same `(product_id, currency, incoterm)`.
+- **Test 2: Atomic Primary Replacement (`BEGIN IMMEDIATE`):**
+  - Execute `setPrimaryPrice()`: verify existing primary is demoted (`is_primary = 0`, `valid_to = CURRENT_TIMESTAMP`) and new primary is promoted (`is_primary = 1`, `valid_to = NULL`).
+- **Test 3: Non-Overlapping Tier Boundaries:**
+  - Insert tier 1 (1–10 MT @ $800); attempt to insert tier 2 (8–20 MT @ $750); verify rejection with `HTTP 422`.
+- **Test 4: Deterministic Legacy Projection Policy:**
+  - Create multiple primary prices: USD FOB ($750), EUR CIF (€800), and EGP EXW (EGP 35,000).
+  - Verify `products.price` projects `$750`, `currency` projects `USD`, and `price_unit` projects `MT` based on strict priority (`is_default_projection` -> USD -> FOB -> lowest MOQ).
+  - Explicitly set `is_default_projection = 1` on the EUR price; verify `products` immediately projects EUR.
+- **Test 5: Explicit Quotation-Only Mode:**
+  - Create unpriced draft product without quotation flag; verify it remains incomplete draft with warning `"السعر غير متوفر"`, NOT quotation-only.
+  - Set `price_type = 'QUOTATION_ONLY'`; verify public catalog returns `price: null, is_quotation_only: true, quotation_label: "سعر عند الطلب (Quotation on Request)"`.
+- **Test 6: Historical Price Preservation:**
+  - Update an active price; verify that the old price record remains in `product_prices` with historical `valid_to` and the new price is active with `valid_from = NOW`.
 
 ---
 
 ### 3.3 Suite 11: `test_subscription_lifecycle.js` (Subscriptions & Usage Ledger)
 `[PROPOSED FUTURE BEHAVIOR]`
 
-- **Test 1: Direct Contract Immunity:**
-  Verify that Direct Contract manufacturers (`business_model = 'DIRECT_CONTRACT'`) can import unlimited products even with `subscription_id = NULL`.
-- **Test 2: Expiration Gatekeeper:**
-  Set `expires_at = NOW - 1 day` for a Marketing Subscription; verify that `POST /api/imports/upload` returns `HTTP 403 Subscription Expired`.
-- **Test 3: Usage Ledger Quota Tracking:**
-  Execute 10 imports on a plan with `max_monthly_imports = 10`; verify import 11 is blocked with `HTTP 429 Quota Exceeded`.
-- **Test 4: Concurrent Quota Reservation:**
-  Simulate 5 simultaneous upload requests on a plan with 2 imports remaining; verify exactly 2 succeed and 3 receive `HTTP 429`.
-- **Test 5: Administrative Usage Adjustment:**
-  Super Admin injects an `ADJUSTMENT` record in `subscription_usage`; verify usage reflects the adjustment in the next quota calculation.
+- **Test 1: Direct Contract Complete Immunity:**
+  - Verify that Direct Contract manufacturers (`business_model = 'DIRECT_CONTRACT'`) bypass all subscription quota checks even with `subscription_id = NULL`.
+- **Test 2: Atomic Quota Consumption (`BEGIN IMMEDIATE`):**
+  - Simulate 10 concurrent quota requests on a plan with remaining quota of 2; verify that `BEGIN IMMEDIATE` write lock serialization allows exactly 2 to consume quota and 8 receive `HTTP 429 Quota Exceeded`.
+- **Test 3: Idempotency Protection:**
+  - Submit two requests with identical `(manufacturer_id, idempotency_key)`; verify the second returns the existing transaction result without double-charging quota.
+- **Test 4: Independent Subscription Status vs Payment Status:**
+  - Verify state transitions where `status = 'ACTIVE'` and `payment_status = 'WAIVED'`.
+  - Verify `status = 'ACTIVE'` with `payment_status = 'UNPAID'` during grace period.
+  - Verify `status = 'SUSPENDED'` while retaining `payment_status = 'PAID'`.
+- **Test 5: Expiration Gatekeeper:**
+  - Set `expires_at = NOW - 1 day` for a Marketing Subscription; verify that `POST /api/imports/upload` returns `HTTP 403 Subscription Expired`.
+- **Test 6: Administrative Usage Adjustment:**
+  - Super Admin injects an `ADMIN_ADJUSTMENT` record in `subscription_usage`; verify subsequent quota calculations reflect the adjustment.
 
 ---
 
-### 3.4 Suite 12: `test_durable_queue.js` (Durable Import Processing)
+### 3.4 Suite 12: `test_durable_queue.js` (Durable Queue & Worker Fencing)
 `[PROPOSED FUTURE BEHAVIOR]`
 
-- **Test 1: Server Restart Recovery (No Blind Re-queuing):**
-  Create an import job with `status = 'PROCESSING'` and expired lease (`lease_expires_at = NOW - 5 minutes`); boot recovery routine; verify job is re-queued with attempt count incremented.
-- **Test 2: Valid Lease Protection:**
-  Create an import job with `status = 'PROCESSING'` and active lease (`lease_expires_at = NOW + 5 minutes`); boot recovery routine; verify job is NOT disturbed.
-- **Test 3: Terminal Failure & Dead-Letter:**
-  Simulate 3 repeated failures on an import job; verify status transitions to `FAILED` and does not re-queue.
-- **Test 4: Upload Idempotency:**
-  Submit the same upload batch with the same idempotency key; verify duplicate job is rejected.
+- **Test 1: Worker Fencing Token Increment (`lease_generation`):**
+  - Claim a job with worker $A$; verify `lease_generation = 1`.
+  - Simulate worker $A$ pausing past `lease_expires_at`.
+  - Claim the job with worker $B$; verify `lease_generation = 2`.
+- **Test 2: Stale Worker Fencing Defense:**
+  - Simulate worker $A$ waking up and attempting to finalize the job with `lease_generation = 1`; verify SQLite conditional update affects **0 rows**.
+  - Verify worker $A$ detects it was fenced out, halts, and discards results without overwriting worker $B$.
+- **Test 3: Server Restart Recovery (No Blind Re-queuing):**
+  - Job in `PROCESSING` with valid lease is NOT disturbed on server startup.
+  - Job in `PROCESSING` with expired lease and `attempts < max_attempts` is safely re-queued with attempt count incremented.
+- **Test 4: Terminal Failure & Dead-Letter:**
+  - Job reaching `attempts >= max_attempts` transitions to `FAILED` and is not re-queued.
 
 ---
 
@@ -120,12 +140,12 @@ flowchart TD
 `[PROPOSED FUTURE BEHAVIOR]`
 
 - **Test 1: Unauthenticated Private File Access:**
-  Request `GET /api/storage/assets/:privateAssetId` without JWT token; verify `HTTP 401 Unauthorized`.
+  - Request `GET /api/storage/assets/:privateAssetId` without JWT token; verify `HTTP 401 Unauthorized`.
 - **Test 2: Cross-Tenant Private File IDOR:**
-  Request private asset belonging to Manufacturer A using valid JWT for Manufacturer B; verify `HTTP 403 Forbidden`.
+  - Request private asset belonging to Manufacturer A using valid JWT for Manufacturer B; verify `HTTP 403 Forbidden`.
 - **Test 3: Super Admin Universal Access:**
-  Request private asset belonging to Manufacturer A using Super Admin JWT; verify `HTTP 200 OK` and file stream.
+  - Request private asset belonging to Manufacturer A using Super Admin JWT; verify `HTTP 200 OK` and file stream.
 - **Test 4: Path Traversal Attack Defense:**
-  Attempt upload with malicious filename `../../../../etc/passwd`; verify physical disk key is sanitized to `asset_<hex>.<ext>` inside private storage directory.
+  - Attempt upload with malicious filename `../../../../etc/passwd`; verify physical disk key is sanitized to `asset_<hex>.<ext>` inside private storage directory.
 - **Test 5: SHA-256 Checksum Verification:**
-  Verify that `file_assets.sha256` matches the exact hash of the file bytes on disk.
+  - Verify that `file_assets.sha256` matches the exact hash of the file bytes on disk.

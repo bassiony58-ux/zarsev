@@ -1,9 +1,10 @@
-# ZARSEV — Phase 2 Database Migration & Backup Safety Plan
+# ZARSEV — Phase 2 Database Migration & Backup Safety Plan (Revised)
 
 **Branch:** `phase2-data-and-business-architecture`  
 **Base Commit:** `eb5544a`  
 **Target Environment:** Local Verified SQLite (`M:\ZZZ\zarsev.db`)  
-**Specification Date:** 2026-11-02
+**Specification Date:** 2026-11-02  
+**Status:** Hardened Technical Safety Specification
 
 ---
 
@@ -38,53 +39,133 @@
   2. No migration rollback capability.
   3. No checksums to detect migration tampering.
   4. No pre-migration database backup trigger.
-  5. Cannot perform complex schema transformations (e.g. creating tables, renaming, rebuilding with foreign keys).
+  5. Cannot perform complex schema transformations (e.g. creating tables, rebuilding with foreign keys).
 
 ---
 
-## 3. SQLite Backup Consistency & Verification Protocol
+## 3. Comprehensive Migration Backup Protocol & Integrity Gatekeeper
 
-### 3.1 Why Raw File Copy Is Inadequate
 `[PROPOSED FUTURE BEHAVIOR]`
 
-Copying an active SQLite database file using OS file copy (`copy`, `cp`, or `fs.copyFileSync`) during active writes can lead to:
-- Corrupted database headers.
-- Torn writes if pages are being flushed to disk.
-- Out-of-sync WAL (Write-Ahead Logging) files (`.db-wal`, `.db-shm`).
+A migration must **NEVER** start if its pre-migration backup cannot be completely created and verified. The protocol consists of **8 mandatory sequential phases**:
 
-### 3.2 Implemented Consistent Backup Procedure
-`[PROPOSED FUTURE BEHAVIOR]`
+```mermaid
+flowchart TD
+    Start["migrate.js up"] --> Phase1["Phase 1: Acquire Migration Lock<br/>(_migration_lock table)"]
+    Phase1 --> Phase2["Phase 2: WAL Checkpoint & Busy Handling<br/>(PRAGMA wal_checkpoint with backoff)"]
+    Phase2 --> Phase3["Phase 3: Create Temporary Backup<br/>(VACUUM INTO ...temp.db)"]
+    Phase3 --> Phase4["Phase 4: SQLite PRAGMA integrity_check<br/>(Must return 'ok')"]
+    Phase4 --> Phase5["Phase 5: Schema & Record Count Verification<br/>(Verify users >= 6, products >= 42, etc.)"]
+    Phase5 --> Phase6["Phase 6: Atomic Promotion to Final Backup<br/>(Rename temp.db -> backup_pre_migration_*.db)"]
+    Phase6 --> Phase7["Phase 7: Preserve Previous Backups<br/>(Immutable historical backup chain)"]
+    Phase7 --> Execute["Execute Migration Transaction<br/>(BEGIN TRANSACTION ... COMMIT)"]
+    
+    Phase1 -.->|Lock Held| Abort["ABORT: Clean Exit"]
+    Phase2 -.->|Busy Timeout| Cleanup["Cleanup & ABORT"]
+    Phase3 -.->|Vacuum Error| Cleanup
+    Phase4 -.->|Corruption Detected| Cleanup
+    Phase5 -.->|Record Mismatch| Cleanup
+```
 
-The migration framework will execute backups using a safe three-step protocol:
+### Phase 1: Migration Execution Lock
+- Before performing any backup or migration inspection, the runner acquires an exclusive lock via the `_migration_lock` table:
+  ```sql
+  UPDATE _migration_lock 
+  SET is_locked = 1, locked_by = ?, locked_at = CURRENT_TIMESTAMP 
+  WHERE id = 1 AND is_locked = 0;
+  ```
+- If rows modified = 0, another migration or runner process is active. The runner exits cleanly with error:  
+  `"Migration lock is currently held by another process. Aborting."`
 
-1. **Step 1: WAL Checkpoint Flush:**
-   ```sql
-   PRAGMA wal_checkpoint(TRUNCATE);
-   ```
-   Ensures all pending writes in WAL are flushed to the main `.db` file.
-2. **Step 2: Consistent Snapshot via VACUUM INTO:**
-   ```javascript
-   const backupDir = path.join(__dirname, '..', '..', 'storage', 'backups', 'migrations');
-   if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, { recursive: true });
+### Phase 2: Explicit Handling of Active SQLite Connections & WAL Checkpoint
+- In SQLite WAL mode, readers holding read locks can block checkpointing.
+- The runner issues:
+  ```sql
+  PRAGMA wal_checkpoint(TRUNCATE);
+  ```
+- **Busy Handling with Exponential Backoff:**
+  If the checkpoint returns `busy = 1` (readers holding active transactions):
+  - The runner pauses for 500ms, retrying up to 3 times (500ms, 1000ms, 2000ms).
+  - If still busy after 3 retries, the runner logs:  
+    `"Unable to checkpoint SQLite WAL due to active read locks. Aborting migration."`
+  - The migration lock is released, and the process exits with code 1 **without touching any data or schema**.
 
-   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-   const backupPath = path.join(backupDir, `backup_pre_migration_${migrationName}_${timestamp}.db`);
+### Phase 3: Temporary Backup Snapshot Creation (`VACUUM INTO`)
+- Live SQLite snapshots must be taken cleanly without tearing pages.
+- Backup is written to a temporary staging path:
+  ```javascript
+  const backupDir = path.join(__dirname, '..', '..', 'storage', 'backups', 'migrations');
+  if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, { recursive: true });
 
-   // Consistent live SQLite backup statement
-   db.exec(`VACUUM INTO '${backupPath.replace(/'/g, "''")}';`);
-   ```
-3. **Step 3: Backup Integrity Verification:**
-   Before allowing any migration to run, open the backup in a separate connection and verify its integrity:
-   ```javascript
-   const backupDb = new DatabaseSync(backupPath);
-   const integrity = backupDb.prepare('PRAGMA integrity_check;').get();
-   backupDb.close();
+  const tempBackupPath = path.join(backupDir, `temp_backup_${Date.now()}.db`);
+  db.exec(`VACUUM INTO '${tempBackupPath.replace(/'/g, "''")}';`);
+  ```
 
-   if (!integrity || integrity.integrity_check !== 'ok') {
-       throw new Error(`[CRITICAL] Pre-migration backup failed integrity check: ${JSON.stringify(integrity)}. Migration aborted.`);
-   }
-   console.log(`✅ Pre-migration backup verified: ${backupPath} (Integrity: OK)`);
-   ```
+### Phase 4: SQLite Database Integrity Verification
+- Open the temporary backup file in a separate, isolated SQLite connection:
+  ```javascript
+  const backupDb = new DatabaseSync(tempBackupPath);
+  const integrity = backupDb.prepare('PRAGMA integrity_check;').get();
+  if (!integrity || integrity.integrity_check !== 'ok') {
+      backupDb.close();
+      if (fs.existsSync(tempBackupPath)) fs.unlinkSync(tempBackupPath);
+      throw new Error(`[CRITICAL] Pre-migration backup failed integrity check: ${JSON.stringify(integrity)}`);
+  }
+  ```
+
+### Phase 5: Schema Structure & Critical Record Count Verification
+- To guarantee the backup is not an empty or truncated file, the runner inspects schema and baseline record counts on the temporary backup:
+  ```javascript
+  // 1. Verify critical tables exist
+  const expectedTables = ['users', 'subscriptions', 'manufacturers', 'products', 'imports'];
+  const actualTables = backupDb.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all().map(r => r.name);
+  for (const table of expectedTables) {
+      if (!actualTables.includes(table)) {
+          backupDb.close();
+          fs.unlinkSync(tempBackupPath);
+          throw new Error(`[CRITICAL] Backup verification failed: table ${table} is missing from backup.`);
+      }
+  }
+
+  // 2. Verify baseline record counts against live database
+  const liveUserCount = db.prepare('SELECT count(*) as c FROM users').get().c;
+  const backupUserCount = backupDb.prepare('SELECT count(*) as c FROM users').get().c;
+  if (backupUserCount !== liveUserCount || backupUserCount === 0) {
+      backupDb.close();
+      fs.unlinkSync(tempBackupPath);
+      throw new Error(`[CRITICAL] Backup record count mismatch for users: live=${liveUserCount}, backup=${backupUserCount}`);
+  }
+
+  const liveProdCount = db.prepare('SELECT count(*) as c FROM products').get().c;
+  const backupProdCount = backupDb.prepare('SELECT count(*) as c FROM products').get().c;
+  if (backupProdCount !== liveProdCount) {
+      backupDb.close();
+      fs.unlinkSync(tempBackupPath);
+      throw new Error(`[CRITICAL] Backup record count mismatch for products: live=${liveProdCount}, backup=${backupProdCount}`);
+  }
+  backupDb.close();
+  ```
+
+### Phase 6: Atomic Promotion to Final Backup Name
+- Only when all integrity and count checks pass 100%, the temporary backup is atomically renamed to its permanent filename:
+  ```javascript
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const finalBackupPath = path.join(backupDir, `backup_pre_migration_${migrationName}_${timestamp}.db`);
+  fs.renameSync(tempBackupPath, finalBackupPath);
+  console.log(`✅ Pre-migration backup verified & promoted: ${path.basename(finalBackupPath)}`);
+  ```
+
+### Phase 7: Preservation of All Historical Backups
+- The migration framework **never deletes or prunes** historical backups.
+- All existing backups (`zarsev.db.bak`, `zarsev.db.phase1_2_prequarantine.bak`, and past migration snapshots) remain immutable on disk.
+
+### Phase 8: Safe Failure Behavior & Invariant
+- If **any** step fails during Phases 1–6:
+  1. Temporary `.db` files are deleted.
+  2. The migration lock is cleanly released.
+  3. The error is written to stdout and audit log.
+  4. The migration runner terminates with exit code 1.
+  5. **Absolute Invariant:** A migration is **NEVER** allowed to start if its pre-migration backup cannot be verified.
 
 ---
 
@@ -93,7 +174,7 @@ The migration framework will execute backups using a safe three-step protocol:
 ### 4.1 Supported Transactional DDL in SQLite
 `[PROPOSED FUTURE BEHAVIOR]`
 
-SQLite natively supports transactional DDL for the following operations:
+SQLite natively supports transactional DDL for:
 - `CREATE TABLE`, `CREATE INDEX`, `CREATE VIEW`, `CREATE TRIGGER`.
 - `DROP TABLE`, `DROP INDEX`, `DROP VIEW`, `DROP TRIGGER`.
 - `ALTER TABLE ADD COLUMN`.
@@ -102,43 +183,25 @@ SQLite natively supports transactional DDL for the following operations:
 Every migration runs enclosed within:
 ```sql
 BEGIN TRANSACTION;
--- Migration statements
+-- Migration DDL & DML statements
 COMMIT;
 ```
-If an error occurs at any point, `ROLLBACK` is executed, leaving the database state untouched.
+If an error occurs, SQLite triggers an automatic `ROLLBACK`, leaving existing database tables untouched.
 
 ### 4.2 Handling Unsupported DDL (The 12-Step Rebuild Pattern)
 `[PROPOSED FUTURE BEHAVIOR]`
 
-SQLite does not support altering column types, adding complex constraints post-creation, or dropping columns in older SQLite engines. When a schema change requires modifying existing column types or constraints, the migration **MUST** use the official SQLite 12-step table rebuild pattern:
-
-```sql
-BEGIN TRANSACTION;
--- 1. Create temporary replacement table with target schema
-CREATE TABLE products_new (
-    id TEXT PRIMARY KEY,
-    manufacturer_id TEXT NOT NULL,
-    -- New / modified columns
-    ...
-);
-
--- 2. Copy data from old table to new table
-INSERT INTO products_new SELECT id, manufacturer_id, ... FROM products;
-
--- 3. Drop old table
-DROP TABLE products;
-
--- 4. Rename new table to original name
-ALTER TABLE products_new RENAME TO products;
-
--- 5. Re-create indexes and triggers
-CREATE INDEX idx_products_mfg ON products(manufacturer_id);
-
--- 6. Verify foreign key integrity
-PRAGMA foreign_key_check;
-
-COMMIT;
-```
+SQLite does not support altering column types or constraints post-creation. When modifying existing columns or constraints is required, the migration **MUST** use the official 12-step table rebuild pattern:
+1. `PRAGMA foreign_keys = OFF;`
+2. `BEGIN TRANSACTION;`
+3. `CREATE TABLE products_new (...);`
+4. `INSERT INTO products_new SELECT ... FROM products;`
+5. `DROP TABLE products;`
+6. `ALTER TABLE products_new RENAME TO products;`
+7. Recreate indexes and triggers.
+8. `PRAGMA foreign_key_check;`
+9. `COMMIT;`
+10. `PRAGMA foreign_keys = ON;`
 
 ---
 
@@ -162,88 +225,21 @@ CREATE TABLE IF NOT EXISTS _migrations (
 
 When `migrate.js` runs:
 1. Fetch all records from `_migrations` ordered by `id ASC`.
-2. For each applied migration, read the file from disk and compute its current SHA-256 hash.
-3. Compare:
-   ```javascript
-   if (currentChecksum !== recordedRecord.checksum) {
-       throw new Error(
-           `[SECURITY VIOLATION] Migration checksum mismatch for ${record.name}!\n` +
-           `Expected: ${record.checksum}\n` +
-           `Found:    ${currentChecksum}\n` +
-           `Historical migration files must NEVER be edited after execution. Migration aborted.`
-       );
-   }
-   ```
-4. Only if all historical migrations pass checksum verification will new pending migrations be executed.
+2. For each applied migration, compute the SHA-256 hash of the corresponding file on disk.
+3. If `currentChecksum !== record.checksum`:
+   - Throw a fatal security error:
+     `"[SECURITY VIOLATION] Migration file checksum mismatch for ${record.name}. Historical migration files must NEVER be modified. Aborting."`
+   - Release lock and exit immediately.
 
 ---
 
-## 6. Migration Concurrency Locking
+## 6. Rollback Safety & Invariants
 
 `[PROPOSED FUTURE BEHAVIOR]`
 
-To prevent two concurrent CLI processes or application startups from running migrations simultaneously:
-- A dedicated lock table `_migration_lock` will be utilized:
-  ```sql
-  CREATE TABLE IF NOT EXISTS _migration_lock (
-      id INTEGER PRIMARY KEY CHECK (id = 1),
-      is_locked INTEGER NOT NULL DEFAULT 0,
-      locked_by TEXT NULL,
-      locked_at DATETIME NULL
-  );
-  INSERT OR IGNORE INTO _migration_lock (id, is_locked) VALUES (1, 0);
-  ```
-- Migration runner acquires the lock atomically:
-  ```sql
-  UPDATE _migration_lock 
-  SET is_locked = 1, locked_by = ?, locked_at = CURRENT_TIMESTAMP 
-  WHERE id = 1 AND is_locked = 0;
-  ```
-- If rows modified = 0, the migration runner exits with:
-  `"Migration lock is currently held by another process. Aborting."`
-
----
-
-## 7. Rollback Safety & Classification of Irreversible Migrations
-
-### 7.1 Reversible vs Irreversible Migrations
-`[PROPOSED FUTURE BEHAVIOR]`
-
-| Migration Type | Reversibility | Rollback Strategy |
-| :--- | :--- | :--- |
-| **New Tables (`product_prices`, `import_jobs`, `file_assets`)** | **Fully Reversible** | `DROP TABLE <table_name>;` |
-| **New Indexes** | **Fully Reversible** | `DROP INDEX <index_name>;` |
-| **New Columns (`ALTER TABLE ADD COLUMN`)** | **Requires Table Rebuild** | Drop requires 12-step table rebuild or SQLite 3.35+ `DROP COLUMN`. |
-| **Data Backfills / Normalization** | **Irreversible / Complex** | Must have an explicit custom `down` migration script; cannot drop data. |
-| **Quarantined Test Data Preservation** | **Protected** | Under no circumstance may a rollback touch records with `is_demo = 1`. |
-
-### 7.2 Safety Invariant: Never Auto-Rollback Production Database
-`[PROPOSED FUTURE BEHAVIOR]`
-
-- The migration runner will **NEVER** execute an automated destructive rollback against the primary database.
-- If a migration fails mid-execution:
-  1. The transaction automatically rolls back.
-  2. The pre-migration backup remains untouched on disk.
-  3. The error is logged to `console.error` and process exits with code 1.
-  4. Manual intervention or a restoration script using the verified backup is documented for administrators.
-
----
-
-## 8. Isolated Restoration Test Protocol
-
-`[PROPOSED FUTURE BEHAVIOR]`
-
-Before any migration is permitted to execute against the working `zarsev.db`, the test suite runs the migration against a synthetic copy:
-
-```
-[Original zarsev.db] 
-         │ (VACUUM INTO)
-         ▼
-[test/isolated_migration_test.db]
-         │
-         ├── Step 1: Run pending migration (up)
-         ├── Step 2: Verify schema & data integrity
-         ├── Step 3: Run rollback (down)
-         ├── Step 4: Verify pre-migration state restored
-         └── Step 5: If all pass -> Permit migration on working DB
-```
+1. **Reversible Migrations:**
+   - New tables (`product_prices`, `manufacturer_subscriptions`, `subscription_usage`, `import_jobs`, `file_assets`) have explicit `down` scripts (`DROP TABLE <name>;`).
+2. **Irreversible Migrations:**
+   - Migrations that backfill or transform legacy data must document that automatic down migration cannot regenerate dropped state.
+3. **No Automatic Destructive Rollback on Live Database:**
+   - The system will **NEVER** run an automated destructive rollback against the live database upon an error. Failed transactions roll back in-place, preserving data, and point the administrator to the verified backup snapshot.
