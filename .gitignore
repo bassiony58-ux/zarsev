@@ -13,3 +13,4 @@ storage/extracted_images/**
 !storage/extracted_images/.gitkeep
 .env
 .env.*
+test/migration_sandbox/

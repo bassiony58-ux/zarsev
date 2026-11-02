@@ -68,17 +68,16 @@ flowchart TD
 ```
 
 ### Phase 1: Migration Execution Lock & Write-Quiescence Strategy
-- **Consistent Snapshot vs Live Mutating Database:**
-  Comparing backup row counts against a live database that is actively receiving application writes produces false positive mismatches (e.g. an import completes and increments counts during the backup window). More dangerously, unquiesced concurrent writes can interleave with DDL operations.
-- **Write-Quiescence Strategy:**
-  1. The migration runner acquires an exclusive write lock on `_migration_lock`:
-     ```sql
-     UPDATE _migration_lock 
-     SET is_locked = 1, locked_by = ?, locked_at = CURRENT_TIMESTAMP 
-     WHERE id = 1 AND is_locked = 0;
-     ```
-  2. The runner immediately acquires an SQLite write transaction lock (`BEGIN IMMEDIATE`), ensuring write quiescence across the migration window.
-  3. If safe write-quiescence cannot be established, the migration runner aborts immediately without modifying any schema.
+- **Process Isolation & Fencing:**
+  The migration runner acquires an exclusive lock via `_migration_lock`:
+  ```sql
+  UPDATE _migration_lock 
+  SET is_locked = 1, locked_by = ?, locked_at = CURRENT_TIMESTAMP, owner_pid = ?, owner_token = ?
+  WHERE id = 1 AND is_locked = 0;
+  ```
+  - Lock owner identity incorporates hostname, PID, timestamp, and a cryptographically random owner token.
+  - Before committing any migration transaction, the runner asserts lock ownership (Fencing Token). If ownership was superseded or lost, execution halts immediately.
+  - Safe crash recovery: If lock acquisition fails, the runner checks if `owner_pid` is confirmed dead (`process.kill(pid, 0)` throws `ESRCH`) and stale grace period has elapsed. If dead, the orphaned lock is safely reclaimed. If alive, the runner aborts fail-closed to prevent split-brain execution.
 
 ### Phase 2: Explicit Handling of Active SQLite Connections & WAL Checkpoint
 - In SQLite WAL mode, readers holding read locks can block checkpointing.
@@ -100,7 +99,7 @@ flowchart TD
   const backupDir = path.join(__dirname, '..', '..', 'storage', 'backups', 'migrations');
   if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, { recursive: true });
 
-  const tempBackupPath = path.join(backupDir, `temp_backup_${Date.now()}.db`);
+  const tempBackupPath = path.join(backupDir, `temp_backup_${Date.now()}_${randomHex}.db`);
   db.exec(`VACUUM INTO '${tempBackupPath.replace(/'/g, "''")}';`);
   ```
 
@@ -126,55 +125,22 @@ flowchart TD
   }
   ```
 
-### Phase 5: Exhaustive Exact Count & Schema Audit (Rejection of Heuristics)
-- **Heuristic Lower Bounds Rejected:** Simple checks such as `users >= 6` and `products >= 42` are strictly rejected as insufficient because they cannot detect truncated rows, dropped tables, or partial data corruption in unmonitored tables.
-- **Exhaustive Table-by-Table Exact Count Verification:**
-  The runner dynamically discovers **ALL** existing application tables from `sqlite_master` and asserts an exact 1:1 row count equality between the live database snapshot and the backup:
-  ```javascript
-  // 1. Discover all non-internal application tables
-  const tables = db.prepare(`
-      SELECT name FROM sqlite_master 
-      WHERE type = 'table' 
-        AND name NOT LIKE 'sqlite_%' 
-        AND name NOT LIKE '_migration%'
-  `).all().map(r => r.name);
+### Phase 5: Strategy B Snapshot-Internal Structural & Schema Parity Verification
+- **Strategy B Justification:**
+  SQLite's `VACUUM INTO` creates an atomic point-in-time ACID snapshot of the database at the instant the command executes. In SQLite, `VACUUM INTO` cannot be executed inside a multi-statement transaction. Comparing live table row counts queried *after* `VACUUM INTO` against the snapshot produces false-positive mismatches if asynchronous writes occur between snapshot completion and verification.
+- **Deep Parity Invariants:**
+  1. Exhaustive dynamic table discovery from `sqlite_master` in live DB.
+  2. Confirm every application table exists in the snapshot `sqlite_master`.
+  3. Validate exact 1:1 column schema definition parity (`PRAGMA table_info`) for all tables.
+  4. Validate all index schema definitions (`sqlite_master` type='index') exist in snapshot.
+  5. Validate each table in the snapshot is queryable.
+  6. Optional strict write-quiescence mode (`requireWriteQuiescence: true`): Asserts baseline counts before `VACUUM INTO` match live counts throughout verification, aborting if concurrent writes occur.
 
-  // 2. Verify table existence and exact row counts for EVERY table
-  for (const table of tables) {
-      const backupTableExists = backupDb.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?").get(table);
-      if (!backupTableExists) {
-          backupDb.close();
-          fs.unlinkSync(tempBackupPath);
-          throw new Error(`[CRITICAL] Table ${table} is missing from verified backup!`);
-      }
-
-      const liveCount = db.prepare(`SELECT count(*) as c FROM ${table}`).get().c;
-      const backupCount = backupDb.prepare(`SELECT count(*) as c FROM ${table}`).get().c;
-      if (backupCount !== liveCount) {
-          backupDb.close();
-          fs.unlinkSync(tempBackupPath);
-          throw new Error(`[CRITICAL] Exact row count mismatch on table '${table}': live=${liveCount}, backup=${backupCount}!`);
-      }
-  }
-
-  // 3. Verify all indexes exist in backup
-  const liveIndexes = db.prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND name NOT LIKE 'sqlite_%'").all().map(r => r.name);
-  const backupIndexes = backupDb.prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND name NOT LIKE 'sqlite_%'").all().map(r => r.name);
-  for (const idx of liveIndexes) {
-      if (!backupIndexes.includes(idx)) {
-          backupDb.close();
-          fs.unlinkSync(tempBackupPath);
-          throw new Error(`[CRITICAL] Index ${idx} is missing from verified backup!`);
-      }
-  }
-  backupDb.close();
-  ```
-
-### Phase 6: Atomic Promotion to Final Backup Name
-- Only when all integrity, foreign key, exact table counts, and schema index checks pass 100%, the temporary backup is atomically renamed to its permanent filename:
+### Phase 6: Atomic Promotion to Permanent Verified Backup
+- Only when all integrity, foreign key, table existence, and schema index parity checks pass 100%, the temporary backup is promoted to its permanent filename with timestamp and random suffix to eliminate collisions:
   ```javascript
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const finalBackupPath = path.join(backupDir, `backup_pre_migration_${migrationName}_${timestamp}.db`);
+  const finalBackupPath = path.join(backupDir, `backup_pre_migration_${migrationName}_${timestamp}_${randomSuffix}.db`);
   fs.renameSync(tempBackupPath, finalBackupPath);
   console.log(`✅ Pre-migration backup verified & promoted: ${path.basename(finalBackupPath)}`);
   ```
@@ -265,13 +231,37 @@ When `migrate.js` runs:
 
 ---
 
-## 6. Rollback Safety & Invariants
+## 7. Hardened Database Restore Protocol (`restoreFromBackup`)
+`[IMPLEMENTED BEHAVIOR]`
 
-`[PROPOSED FUTURE BEHAVIOR]`
+Restoring an SQLite database from backup is protected by a 7-phase gatekeeper:
+1. **Source Backup Validation:** Executes `PRAGMA integrity_check` and `PRAGMA foreign_key_check` on the backup file before touching the target.
+2. **Active Contention Gatekeeper:** Asserts write quiescence on target database via `PRAGMA wal_checkpoint(TRUNCATE)`; refuses restoration if busy.
+3. **Pre-Restore Target Safety Snapshot:** Generates and verifies a safety backup of the existing target database (`pre_restore_<target>_<timestamp>_<rnd>.bak`).
+4. **Safe WAL & SHM Sidecar Isolation:** Archives existing `${targetDbPath}-wal` and `${targetDbPath}-shm` files to prevent catastrophic header salt replay corruption.
+5. **Staging Database Verification:** Stages restored file in target filesystem directory and runs full integrity/foreign key validation prior to promotion.
+6. **Safe Two-Step File Swap with Automated Rollback:** Uses staging swap with automated catch-rollback restoring original target if filesystem replacement fails.
+7. **Post-Restoration Target Verification:** Re-opens target database after replacement and confirms `PRAGMA integrity_check` returns `ok` and 0 foreign key violations.
 
-1. **Reversible Migrations:**
-   - New tables (`product_prices`, `manufacturer_subscriptions`, `subscription_usage`, `import_jobs`, `file_assets`) have explicit `down` scripts (`DROP TABLE <name>;`).
-2. **Irreversible Migrations:**
-   - Migrations that backfill or transform legacy data must document that automatic down migration cannot regenerate dropped state.
-3. **No Automatic Destructive Rollback on Live Database:**
-   - The system will **NEVER** run an automated destructive rollback against the live database upon an error. Failed transactions roll back in-place, preserving data, and point the administrator to the verified backup snapshot.
+---
+
+## 8. Persistent Migration Failure Audit (`_migration_failures`)
+`[IMPLEMENTED BEHAVIOR]`
+
+When any migration fails during execution:
+1. The migration transaction is immediately rolled back via `ROLLBACK;`.
+2. A separate transaction records the failure in `_migration_failures`:
+   ```sql
+   CREATE TABLE IF NOT EXISTS _migration_failures (
+       id INTEGER PRIMARY KEY AUTOINCREMENT,
+       name TEXT NOT NULL,
+       batch INTEGER NOT NULL,
+       checksum TEXT NOT NULL,
+       error_message TEXT NOT NULL,
+       error_stack TEXT NULL,
+       failed_at DATETIME DEFAULT CURRENT_TIMESTAMP
+   );
+   ```
+3. The failed migration is **never** recorded in `_migrations`.
+4. The migration CLI surfaces recent failure records during `status` queries.
+

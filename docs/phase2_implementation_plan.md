@@ -76,25 +76,26 @@ graph LR
 
 ---
 
-## 4. Milestone 2: Versioned Database Migration Framework
+## 4. Milestone 2 & 2.1: Hardened Database Migration Framework
 
-`[PROPOSED FUTURE BEHAVIOR]`
+`[IMPLEMENTED & REMEDIATED - MILESTONE 2.1]`
 
-### 4.1 Architecture & 8-Phase Safety Protocol
+### 4.1 Architecture & Safety Gatekeepers
 - **Tracking Table:** `_migrations` (columns: `id, name, batch, checksum, applied_at`).
-- **Concurrency Locking:** `_migration_lock` ensures single-process migration execution.
-- **Pre-Migration Backup Protocol:**
-  1. Acquire migration execution lock and establish write-quiescence (`BEGIN IMMEDIATE`).
+- **Failure Audit Table:** `_migration_failures` (columns: `id, name, batch, checksum, error_message, error_stack, failed_at`).
+- **Concurrency Locking & Fencing:** `_migration_lock` tracks `owner_pid` and `owner_token`. Employs dead-PID crash recovery and fencing verification before commit.
+- **Pre-Migration Backup Protocol (Strategy B):**
+  1. Acquire migration execution lock with `PRAGMA busy_timeout = 5000`.
   2. Issue `PRAGMA wal_checkpoint(TRUNCATE)` with exponential backoff on `busy`.
-  3. Create live temporary snapshot via `VACUUM INTO ...temp.db`.
+  3. Create point-in-time snapshot via `VACUUM INTO ...temp.db`.
   4. Verify database integrity via `PRAGMA integrity_check` and `PRAGMA foreign_key_check`.
-  5. Exhaustive exact count verification asserting `backup_count[table] === source_count[table]` for ALL application tables in `sqlite_master`.
-  6. Atomically promote temporary file to permanent `backup_pre_migration_<name>_<timestamp>.db`.
-  7. Preserve all historical backup files immutably.
-  8. Enforce fatal abort if safe quiescence or backup verification fails (migration strictly blocked). Never delete or overwrite the only valid backup.
-- **Transactional DDL:** Every migration runs inside `BEGIN TRANSACTION ... COMMIT`. On any error, an immediate `ROLLBACK` is triggered.
-- **Anti-Tampering Checksum:** Migration runner calculates the SHA-256 hash of each file and compares it with `_migrations.checksum`. Any alteration aborts immediately.
-- **Zero Auto-Rollback on Live Database:** Failed migrations roll back within their transaction, preserving existing database tables and backups without destructive drops.
+  5. Exhaustive table & column schema parity and index parity for ALL non-internal tables in `sqlite_master`.
+  6. Promote temporary file to permanent `backup_pre_migration_<name>_<timestamp>_<rnd>.db`.
+  7. Preserve all historical backup files immutably without overwriting.
+  8. Fatal abort if backup verification fails (migration strictly blocked).
+- **Hardened Restore Protocol:** Pre-restore safety backup, WAL/SHM sidecar isolation, staged file verification, and swap with automated rollback on failure.
+- **Transactional DDL:** Every migration runs inside `BEGIN TRANSACTION ... COMMIT`. On any error, an immediate `ROLLBACK` is triggered and a failure record is committed to `_migration_failures`.
+- **Anti-Tampering Checksum:** Migration runner calculates SHA-256 hashes of all applied migrations and compares with `_migrations.checksum`. Any alteration aborts immediately.
 
 ---
 
