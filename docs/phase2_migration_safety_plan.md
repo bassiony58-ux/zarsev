@@ -47,15 +47,15 @@
 
 `[PROPOSED FUTURE BEHAVIOR]`
 
-A migration must **NEVER** start if its pre-migration backup cannot be completely created and verified. The protocol consists of **8 mandatory sequential phases**:
+A migration must **NEVER** start if its pre-migration backup cannot be completely created, verified, and promoted. The protocol consists of **8 mandatory sequential phases**:
 
 ```mermaid
 flowchart TD
-    Start["migrate.js up"] --> Phase1["Phase 1: Acquire Migration Lock<br/>(_migration_lock table)"]
+    Start["migrate.js up"] --> Phase1["Phase 1: Acquire Migration Lock & Quiescence<br/>(BEGIN IMMEDIATE / _migration_lock)"]
     Phase1 --> Phase2["Phase 2: WAL Checkpoint & Busy Handling<br/>(PRAGMA wal_checkpoint with backoff)"]
-    Phase2 --> Phase3["Phase 3: Create Temporary Backup<br/>(VACUUM INTO ...temp.db)"]
-    Phase3 --> Phase4["Phase 4: SQLite PRAGMA integrity_check<br/>(Must return 'ok')"]
-    Phase4 --> Phase5["Phase 5: Schema & Record Count Verification<br/>(Verify users >= 6, products >= 42, etc.)"]
+    Phase2 --> Phase3["Phase 3: Create Temporary Backup Snapshot<br/>(VACUUM INTO ...temp.db)"]
+    Phase3 --> Phase4["Phase 4: Integrity & Foreign Key Checks<br/>(PRAGMA integrity_check + foreign_key_check)"]
+    Phase4 --> Phase5["Phase 5: Exhaustive Exact Count & Schema Audit<br/>(Assert backup_count[t] == live_count[t] for ALL tables)"]
     Phase5 --> Phase6["Phase 6: Atomic Promotion to Final Backup<br/>(Rename temp.db -> backup_pre_migration_*.db)"]
     Phase6 --> Phase7["Phase 7: Preserve Previous Backups<br/>(Immutable historical backup chain)"]
     Phase7 --> Execute["Execute Migration Transaction<br/>(BEGIN TRANSACTION ... COMMIT)"]
@@ -63,19 +63,22 @@ flowchart TD
     Phase1 -.->|Lock Held| Abort["ABORT: Clean Exit"]
     Phase2 -.->|Busy Timeout| Cleanup["Cleanup & ABORT"]
     Phase3 -.->|Vacuum Error| Cleanup
-    Phase4 -.->|Corruption Detected| Cleanup
-    Phase5 -.->|Record Mismatch| Cleanup
+    Phase4 -.->|Corruption / FK Violation| Cleanup
+    Phase5 -.->|Count / Schema Mismatch| Cleanup
 ```
 
-### Phase 1: Migration Execution Lock
-- Before performing any backup or migration inspection, the runner acquires an exclusive lock via the `_migration_lock` table:
-  ```sql
-  UPDATE _migration_lock 
-  SET is_locked = 1, locked_by = ?, locked_at = CURRENT_TIMESTAMP 
-  WHERE id = 1 AND is_locked = 0;
-  ```
-- If rows modified = 0, another migration or runner process is active. The runner exits cleanly with error:  
-  `"Migration lock is currently held by another process. Aborting."`
+### Phase 1: Migration Execution Lock & Write-Quiescence Strategy
+- **Consistent Snapshot vs Live Mutating Database:**
+  Comparing backup row counts against a live database that is actively receiving application writes produces false positive mismatches (e.g. an import completes and increments counts during the backup window). More dangerously, unquiesced concurrent writes can interleave with DDL operations.
+- **Write-Quiescence Strategy:**
+  1. The migration runner acquires an exclusive write lock on `_migration_lock`:
+     ```sql
+     UPDATE _migration_lock 
+     SET is_locked = 1, locked_by = ?, locked_at = CURRENT_TIMESTAMP 
+     WHERE id = 1 AND is_locked = 0;
+     ```
+  2. The runner immediately acquires an SQLite write transaction lock (`BEGIN IMMEDIATE`), ensuring write quiescence across the migration window.
+  3. If safe write-quiescence cannot be established, the migration runner aborts immediately without modifying any schema.
 
 ### Phase 2: Explicit Handling of Active SQLite Connections & WAL Checkpoint
 - In SQLite WAL mode, readers holding read locks can block checkpointing.
@@ -101,53 +104,74 @@ flowchart TD
   db.exec(`VACUUM INTO '${tempBackupPath.replace(/'/g, "''")}';`);
   ```
 
-### Phase 4: SQLite Database Integrity Verification
+### Phase 4: SQLite Database Integrity & Foreign Key Checks
 - Open the temporary backup file in a separate, isolated SQLite connection:
   ```javascript
   const backupDb = new DatabaseSync(tempBackupPath);
+  
+  // 1. PRAGMA integrity_check
   const integrity = backupDb.prepare('PRAGMA integrity_check;').get();
   if (!integrity || integrity.integrity_check !== 'ok') {
       backupDb.close();
       if (fs.existsSync(tempBackupPath)) fs.unlinkSync(tempBackupPath);
       throw new Error(`[CRITICAL] Pre-migration backup failed integrity check: ${JSON.stringify(integrity)}`);
   }
+
+  // 2. PRAGMA foreign_key_check
+  const fkViolations = backupDb.prepare('PRAGMA foreign_key_check;').all();
+  if (fkViolations.length > 0) {
+      backupDb.close();
+      if (fs.existsSync(tempBackupPath)) fs.unlinkSync(tempBackupPath);
+      throw new Error(`[CRITICAL] Pre-migration backup contains ${fkViolations.length} foreign key violations!`);
+  }
   ```
 
-### Phase 5: Schema Structure & Critical Record Count Verification
-- To guarantee the backup is not an empty or truncated file, the runner inspects schema and baseline record counts on the temporary backup:
+### Phase 5: Exhaustive Exact Count & Schema Audit (Rejection of Heuristics)
+- **Heuristic Lower Bounds Rejected:** Simple checks such as `users >= 6` and `products >= 42` are strictly rejected as insufficient because they cannot detect truncated rows, dropped tables, or partial data corruption in unmonitored tables.
+- **Exhaustive Table-by-Table Exact Count Verification:**
+  The runner dynamically discovers **ALL** existing application tables from `sqlite_master` and asserts an exact 1:1 row count equality between the live database snapshot and the backup:
   ```javascript
-  // 1. Verify critical tables exist
-  const expectedTables = ['users', 'subscriptions', 'manufacturers', 'products', 'imports'];
-  const actualTables = backupDb.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all().map(r => r.name);
-  for (const table of expectedTables) {
-      if (!actualTables.includes(table)) {
+  // 1. Discover all non-internal application tables
+  const tables = db.prepare(`
+      SELECT name FROM sqlite_master 
+      WHERE type = 'table' 
+        AND name NOT LIKE 'sqlite_%' 
+        AND name NOT LIKE '_migration%'
+  `).all().map(r => r.name);
+
+  // 2. Verify table existence and exact row counts for EVERY table
+  for (const table of tables) {
+      const backupTableExists = backupDb.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?").get(table);
+      if (!backupTableExists) {
           backupDb.close();
           fs.unlinkSync(tempBackupPath);
-          throw new Error(`[CRITICAL] Backup verification failed: table ${table} is missing from backup.`);
+          throw new Error(`[CRITICAL] Table ${table} is missing from verified backup!`);
+      }
+
+      const liveCount = db.prepare(`SELECT count(*) as c FROM ${table}`).get().c;
+      const backupCount = backupDb.prepare(`SELECT count(*) as c FROM ${table}`).get().c;
+      if (backupCount !== liveCount) {
+          backupDb.close();
+          fs.unlinkSync(tempBackupPath);
+          throw new Error(`[CRITICAL] Exact row count mismatch on table '${table}': live=${liveCount}, backup=${backupCount}!`);
       }
   }
 
-  // 2. Verify baseline record counts against live database
-  const liveUserCount = db.prepare('SELECT count(*) as c FROM users').get().c;
-  const backupUserCount = backupDb.prepare('SELECT count(*) as c FROM users').get().c;
-  if (backupUserCount !== liveUserCount || backupUserCount === 0) {
-      backupDb.close();
-      fs.unlinkSync(tempBackupPath);
-      throw new Error(`[CRITICAL] Backup record count mismatch for users: live=${liveUserCount}, backup=${backupUserCount}`);
-  }
-
-  const liveProdCount = db.prepare('SELECT count(*) as c FROM products').get().c;
-  const backupProdCount = backupDb.prepare('SELECT count(*) as c FROM products').get().c;
-  if (backupProdCount !== liveProdCount) {
-      backupDb.close();
-      fs.unlinkSync(tempBackupPath);
-      throw new Error(`[CRITICAL] Backup record count mismatch for products: live=${liveProdCount}, backup=${backupProdCount}`);
+  // 3. Verify all indexes exist in backup
+  const liveIndexes = db.prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND name NOT LIKE 'sqlite_%'").all().map(r => r.name);
+  const backupIndexes = backupDb.prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND name NOT LIKE 'sqlite_%'").all().map(r => r.name);
+  for (const idx of liveIndexes) {
+      if (!backupIndexes.includes(idx)) {
+          backupDb.close();
+          fs.unlinkSync(tempBackupPath);
+          throw new Error(`[CRITICAL] Index ${idx} is missing from verified backup!`);
+      }
   }
   backupDb.close();
   ```
 
 ### Phase 6: Atomic Promotion to Final Backup Name
-- Only when all integrity and count checks pass 100%, the temporary backup is atomically renamed to its permanent filename:
+- Only when all integrity, foreign key, exact table counts, and schema index checks pass 100%, the temporary backup is atomically renamed to its permanent filename:
   ```javascript
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const finalBackupPath = path.join(backupDir, `backup_pre_migration_${migrationName}_${timestamp}.db`);
@@ -156,8 +180,16 @@ flowchart TD
   ```
 
 ### Phase 7: Preservation of All Historical Backups
-- The migration framework **never deletes or prunes** historical backups.
+- The migration framework **never deletes or overwrites** historical backups.
 - All existing backups (`zarsev.db.bak`, `zarsev.db.phase1_2_prequarantine.bak`, and past migration snapshots) remain immutable on disk.
+
+### Phase 8: Safe Failure Behavior & Absolute Invariant
+- If **any** step fails during Phases 1–6:
+  1. Temporary `.db` files are deleted.
+  2. The migration lock is cleanly released.
+  3. The error is written to stdout and audit log.
+  4. The migration runner terminates with exit code 1.
+  5. **Absolute Invariant:** A migration is **NEVER** allowed to start if its pre-migration backup cannot be verified. Never automatically delete or overwrite the only valid backup.
 
 ### Phase 8: Safe Failure Behavior & Invariant
 - If **any** step fails during Phases 1–6:

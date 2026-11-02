@@ -84,14 +84,14 @@ graph LR
 - **Tracking Table:** `_migrations` (columns: `id, name, batch, checksum, applied_at`).
 - **Concurrency Locking:** `_migration_lock` ensures single-process migration execution.
 - **Pre-Migration Backup Protocol:**
-  1. Acquire migration execution lock.
+  1. Acquire migration execution lock and establish write-quiescence (`BEGIN IMMEDIATE`).
   2. Issue `PRAGMA wal_checkpoint(TRUNCATE)` with exponential backoff on `busy`.
   3. Create live temporary snapshot via `VACUUM INTO ...temp.db`.
-  4. Verify database integrity via `PRAGMA integrity_check`.
-  5. Verify critical schema tables and row counts (`users >= 6`, `products >= 42`).
+  4. Verify database integrity via `PRAGMA integrity_check` and `PRAGMA foreign_key_check`.
+  5. Exhaustive exact count verification asserting `backup_count[table] === source_count[table]` for ALL application tables in `sqlite_master`.
   6. Atomically promote temporary file to permanent `backup_pre_migration_<name>_<timestamp>.db`.
-  7. Preserve all historical backup files.
-  8. Enforce fatal abort if any backup verification step fails (migration strictly blocked).
+  7. Preserve all historical backup files immutably.
+  8. Enforce fatal abort if safe quiescence or backup verification fails (migration strictly blocked). Never delete or overwrite the only valid backup.
 - **Transactional DDL:** Every migration runs inside `BEGIN TRANSACTION ... COMMIT`. On any error, an immediate `ROLLBACK` is triggered.
 - **Anti-Tampering Checksum:** Migration runner calculates the SHA-256 hash of each file and compares it with `_migrations.checksum`. Any alteration aborts immediately.
 - **Zero Auto-Rollback on Live Database:** Failed migrations roll back within their transaction, preserving existing database tables and backups without destructive drops.
