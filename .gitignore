@@ -13,4 +13,13 @@ storage/extracted_images/**
 !storage/extracted_images/.gitkeep
 .env
 .env.*
+!.env.example
 test/migration_sandbox/
+test/sandbox/
+.disposable_pg_data/
+.backups/
+storage/secure_docs/**
+!storage/secure_docs/.gitkeep
+*.log
+.remediation_prompt.txt
+

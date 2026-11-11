@@ -99,11 +99,13 @@ const DUMMY_HASH = `pbkdf2:${CURRENT_ALGO}:${CURRENT_ITERATIONS}:000000000000000
  * Generate signed JWT token
  */
 function generateToken(user) {
+    const rawVersion = user.token_version !== undefined && user.token_version !== null ? Number(user.token_version) : 1;
+    const tokenVersion = Number.isInteger(rawVersion) && rawVersion >= 1 ? rawVersion : 1;
     return jwt.sign(
         {
             id: user.id,
             email: user.email,
-            token_version: user.token_version || 1
+            token_version: tokenVersion
         },
         config.JWT_SECRET,
         {
@@ -180,6 +182,7 @@ function serializeUser(user) {
         name: user.name,
         email: user.email,
         role: user.role,
+        sub_role: user.sub_role || null,
         manufacturer_id: user.manufacturer_id,
         is_active: user.is_active,
         is_demo: user.is_demo,

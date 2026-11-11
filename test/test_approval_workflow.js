@@ -1,13 +1,12 @@
 const assert = require('assert');
 const crypto = require('crypto');
-const { getDb, initDb } = require('../src/db/database');
-const { seedDatabase } = require('../src/db/seed');
+const { setupTestEnvironment, cleanupTestDatabase } = require('./test_helper');
 
 async function runApprovalWorkflowTests() {
     console.log('--- 🧪 Test Suite 5: Product Lifecycle & Approval Workflow ---');
-    initDb();
-    seedDatabase();
-    const db = getDb();
+    const { db, isolatedDbPath } = setupTestEnvironment('approval_workflow');
+
+    try {
 
     // 1. Marketing Subscription Manufacturer Submits Product -> Must Enter PENDING_APPROVAL
     const testProdId = 'prod_test_approval_' + crypto.randomBytes(4).toString('hex');
@@ -88,6 +87,9 @@ async function runApprovalWorkflowTests() {
     db.prepare('DELETE FROM products WHERE id = ?').run(testProdId);
 
     console.log('✅ ALL PRODUCT LIFECYCLE & APPROVAL TESTS PASSED!\n');
+    } finally {
+        cleanupTestDatabase(isolatedDbPath);
+    }
 }
 
 if (require.main === module) {

@@ -1,0 +1,1913 @@
+
+        <!-- Manufacturer Navigation Tabs -->
+        <div class="bg-surface-container-lowest p-2 rounded-2xl border border-outline-variant shadow-sm flex items-center gap-2 overflow-x-auto">
+            <button type="button" onclick="switchMfgSection('rfqs')" id="mfg-tab-btn-rfqs" class="mfg-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 bg-primary text-white shadow-xs">
+                <span class="material-symbols-outlined text-[18px]">request_quote</span>
+                <span>طلبات الأسعار (RFQs)</span>
+            </button>
+            <button type="button" onclick="switchMfgSection('products')" id="mfg-tab-btn-products" class="mfg-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 text-primary hover:bg-surface-container-low">
+                <span class="material-symbols-outlined text-[18px]">inventory_2</span>
+                <span>منتجاتي المعتمدة (My Products)</span>
+                <span id="mfg-my-prods-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EBF5F5] text-secondary font-mono">0</span>
+            </button>
+            <button type="button" onclick="switchMfgSection('contracts')" id="mfg-tab-btn-contracts" class="mfg-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 text-primary hover:bg-surface-container-low">
+                <span class="material-symbols-outlined text-[18px]">precision_manufacturing</span>
+                <span>العقود والتشغيل وفحص الجودة (QC/QA)</span>
+            </button>
+            <button type="button" onclick="switchMfgSection('team')" id="mfg-tab-btn-team" class="mfg-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 text-primary hover:bg-surface-container-low">
+                <span class="material-symbols-outlined text-[18px]">groups</span>
+                <span>فريق العمل والمقاعد</span>
+            </button>
+            <button type="button" onclick="switchMfgSection('docs')" id="mfg-tab-btn-docs" class="mfg-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 text-primary hover:bg-surface-container-low">
+                <span class="material-symbols-outlined text-[18px]">folder_shared</span>
+                <span>المستندات والشهادات</span>
+            </button>
+        </div>
+
+        <!-- Section 2: My Products Management (Phase 4.0-F) -->
+        <div id="mfg-section-products" class="hidden bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden space-y-4 p-5">
+            <div class="flex items-center justify-between flex-wrap gap-4 pb-4 border-b border-outline-variant/60">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-secondary text-[24px]">inventory_2</span>
+                    <div>
+                        <h2 class="font-bold text-primary text-base">كتالوج منتجات المصنع المنشورة والمعتمدة (My Products)</h2>
+                        <p class="text-[11px] text-on-surface-variant">استعراض الأصناف النشطة في الكتالوج الدولي مع إمكانية تحديث الأسعار والمواصفات (يخضع لمراجعة الجودة عند تعديل الحقول الحساسة)</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/importer" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-secondary hover:bg-secondary/90 text-white font-bold text-xs shadow-xs transition-all">
+                        <span class="material-symbols-outlined text-[17px]">upload_file</span>
+                        <span>استيراد منتجات جديدة</span>
+                    </a>
+                    <button type="button" onclick="loadMfgProducts()" class="h-9 px-3 rounded-lg bg-surface-container-low hover:bg-surface-container text-primary text-xs font-semibold border border-outline-variant flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[16px]">refresh</span>
+                        <span>تحديث</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-right text-xs">
+                    <thead class="bg-surface-container-low text-primary font-bold border-b border-outline-variant">
+                        <tr>
+                            <th class="p-3.5">المنتج (عربي / إنجليزي)</th>
+                            <th class="p-3.5">التصنيف</th>
+                            <th class="p-3.5 font-mono">السعر التصديري</th>
+                            <th class="p-3.5 font-mono">الحد الأدنى للطلب (MOQ)</th>
+                            <th class="p-3.5 text-center">حالة النشر والاعتماد</th>
+                            <th class="p-3.5 text-center">الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mfg-products-tbody" class="divide-y divide-outline-variant/40">
+                        <tr>
+                            <td colspan="6" class="p-8 text-center text-on-surface-variant">جاري تحميل منتجات المصنع...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Section 3: Commercial Contracts, Production & QC (Phase 5.0) -->
+        <div id="mfg-section-contracts" class="hidden space-y-6">
+            <!-- Contracts Overview -->
+            <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm p-5 space-y-4">
+                <div class="flex items-center justify-between flex-wrap gap-4 pb-4 border-b border-outline-variant/60">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-secondary text-[24px]">assignment</span>
+                        <div>
+                            <h2 class="font-bold text-primary text-base">العقود التجارية المبرمة للإنتاج والتصدير</h2>
+                            <p class="text-[11px] text-on-surface-variant">العقود المنفذة بناءً على قبول عروض الأسعار لبدء دورة التصنيع والتعبئة</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right text-xs">
+                        <thead class="bg-surface-container-low text-primary font-bold border-b border-outline-variant">
+                            <tr>
+                                <th class="p-3.5">رقم العقد</th>
+                                <th class="p-3.5">المشتري والشركة</th>
+                                <th class="p-3.5 font-mono">القيمة الإجمالية</th>
+                                <th class="p-3.5 text-center">شرط Incoterm</th>
+                                <th class="p-3.5">موعد التسليم</th>
+                                <th class="p-3.5 text-center">حالة العقد</th>
+                                <th class="p-3.5 text-center">الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mfg-contracts-tbody" class="divide-y divide-outline-variant/40">
+                            <tr>
+                                <td colspan="7" class="p-8 text-center text-on-surface-variant">جاري تحميل العقود...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Production Batches & QC Inspections -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Batches -->
+                <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm p-5 space-y-4">
+                    <div class="flex items-center justify-between pb-3 border-b border-outline-variant/60">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-secondary text-[20px]">precision_manufacturing</span>
+                            <h3 class="font-bold text-primary text-sm">دفعات التشغيل وخطط الإنتاج</h3>
+                        </div>
+                    </div>
+                    <div id="mfg-batches-list" class="space-y-3 max-h-96 overflow-y-auto">
+                        <div class="p-6 text-center text-on-surface-variant text-xs">جاري تحميل دفعات الإنتاج...</div>
+                    </div>
+                </div>
+
+                <!-- QC Inspections -->
+                <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm p-5 space-y-4">
+                    <div class="flex items-center justify-between pb-3 border-b border-outline-variant/60">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-secondary text-[20px]">verified</span>
+                            <h3 class="font-bold text-primary text-sm">سجل فحوصات الجودة والشهادات (QC/QA)</h3>
+                        </div>
+                    </div>
+                    <div id="mfg-qc-inspections-list" class="space-y-3 max-h-96 overflow-y-auto">
+                        <div class="p-6 text-center text-on-surface-variant text-xs">جاري تحميل فحوصات الجودة...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Incoming Buyer RFQs Section -->
+        <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
+            <div class="p-5 border-b border-outline-variant/60 flex items-center justify-between flex-wrap gap-4">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-secondary text-[22px]">request_quote</span>
+                    <h2 class="font-bold text-primary text-base">طلبات عروض الأسعار الواردة من المشترين الدوليين (RFQ)</h2>
+                    <span id="mfg-rfqs-count" class="px-2 py-0.5 rounded-full bg-secondary/10 text-secondary text-xs font-mono font-bold">0</span>
+                </div>
+                <button type="button" onclick="loadMfgRfqs()" class="text-xs font-bold text-secondary hover:underline flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[16px]">refresh</span>
+                    <span>تحديث الطلبات</span>
+                </button>
+            </div>
+
+            <!-- Mobile Horizontal Scroll Indicator (RTL-aware) -->
+            <div class="md:hidden flex items-center justify-between px-3 py-1.5 bg-secondary/10 border-b border-outline-variant/40 text-[11px] text-secondary font-medium">
+                <span class="flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-[15px] animate-pulse">swipe_left</span>
+                    <span>اسحب الجدول لليسار (←) لاستعراض الكميات والموانئ وإصدار العروض</span>
+                </span>
+                <span class="px-2 py-0.5 rounded bg-white text-secondary font-mono text-[10px] font-bold border border-secondary/20 shadow-xs">7 أعمدة</span>
+            </div>
+
+            <div class="relative group">
+                <div class="pointer-events-none md:hidden absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-primary/10 to-transparent z-10"></div>
+                <div class="overflow-x-auto scrollbar-thin">
+                    <table class="w-full text-right text-xs min-w-[700px]">
+                        <thead class="bg-surface-container-low text-primary font-bold border-b border-outline-variant">
+                            <tr>
+                                <th class="p-3.5">الرقم المرجعي</th>
+                                <th class="p-3.5">المشتري / الدولة</th>
+                                <th class="p-3.5">المنتج المطلوب</th>
+                                <th class="p-3.5 text-center">الكمية</th>
+                                <th class="p-3.5">ميناء الوصول</th>
+                                <th class="p-3.5 text-center">حالة الطلب</th>
+                                <th class="p-3.5 text-center">الإجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mfg-rfqs-tbody" class="divide-y divide-outline-variant/40">
+                            <tr>
+                                <td colspan="7" class="p-8 text-center text-on-surface-variant">
+                                    <span class="material-symbols-outlined animate-spin text-[24px]">progress_activity</span>
+                                    <div class="mt-2 text-xs">جاري تحميل طلبات عروض الأسعار...</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Team & Seat Management Section -->
+        <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
+            <div class="p-5 border-b border-outline-variant/60 flex items-center justify-between flex-wrap gap-4">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-secondary text-[22px]">badge</span>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h2 class="font-bold text-primary text-base">إدارة طاقم عمل المنشأة وحصص المقاعد (Team &amp; Seats)</h2>
+                            <span id="mfg-seats-badge" class="px-2.5 py-0.5 rounded-full bg-secondary/10 text-secondary text-xs font-mono font-bold">- / - مقعد</span>
+                        </div>
+                        <p class="text-xs text-on-surface-variant mt-0.5">صلاحيات الفريق وإدارة الأدوار الفرعية التصديرية والإنتاجية</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button type="button" onclick="loadTeamAndSeats()" class="text-xs font-bold text-secondary hover:underline flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[16px]">refresh</span>
+                        <span>تحديث</span>
+                    </button>
+                    <button type="button" id="mfg-invite-btn" onclick="openInviteModal()" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-secondary hover:bg-secondary/90 text-white font-bold text-xs shadow-md transition-all">
+                        <span class="material-symbols-outlined text-[17px]">person_add</span>
+                        <span>دعوة عضو جديد</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Seat Usage Quota Progress Bar -->
+            <div class="p-4 bg-surface-container-low border-b border-outline-variant/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                <div class="flex items-center gap-4 flex-wrap">
+                    <div>
+                        <span class="text-on-surface-variant">الأعضاء النشطون:</span>
+                        <strong id="mfg-stat-active-members" class="font-mono text-primary font-bold mr-1">0</strong>
+                    </div>
+                    <span class="text-outline-variant">|</span>
+                    <div>
+                        <span class="text-on-surface-variant">الدعوات المعلقة:</span>
+                        <strong id="mfg-stat-pending-invites" class="font-mono text-secondary font-bold mr-1">0</strong>
+                    </div>
+                    <span class="text-outline-variant">|</span>
+                    <div>
+                        <span class="text-on-surface-variant">المقاعد المتبقية:</span>
+                        <strong id="mfg-stat-remaining-seats" class="font-mono text-emerald-700 font-bold mr-1">0</strong>
+                    </div>
+                </div>
+                <div class="w-full sm:w-64 flex items-center gap-2">
+                    <div class="flex-1 h-2 rounded-full bg-outline-variant/50 overflow-hidden">
+                        <div id="mfg-seats-bar" class="h-full bg-secondary transition-all" style="width: 0%;"></div>
+                    </div>
+                    <span id="mfg-seats-pct" class="font-mono text-[11px] font-bold text-on-surface-variant">0%</span>
+                </div>
+            </div>
+
+            <!-- Members Table -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-right text-xs">
+                    <thead class="bg-surface-container-low text-primary font-bold border-b border-outline-variant">
+                        <tr>
+                            <th class="p-3.5">عضو الفريق</th>
+                            <th class="p-3.5">البريد الإلكتروني</th>
+                            <th class="p-3.5 text-center">الدور الفرعي</th>
+                            <th class="p-3.5 text-center">الحالة</th>
+                            <th class="p-3.5">تاريخ الانضمام</th>
+                            <th class="p-3.5 text-center">الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mfg-team-tbody" class="divide-y divide-outline-variant/40">
+                        <tr>
+                            <td colspan="6" class="p-6 text-center text-on-surface-variant">
+                                <span class="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
+                                <div class="mt-1 text-xs">جاري تحميل أعضاء الفريق...</div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pending Invitations Sub-table -->
+            <div id="mfg-invites-section" class="border-t border-outline-variant/60">
+                <div class="p-3.5 bg-surface-container-low/50 border-b border-outline-variant/40 flex items-center justify-between">
+                    <span class="font-bold text-primary text-xs flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-[17px] text-on-surface-variant">mail</span>
+                        <span>الدعوات المرسلة المعلقة (Pending Invitations)</span>
+                    </span>
+                    <span id="mfg-invites-count" class="px-2 py-0.5 rounded-full bg-outline-variant text-on-surface-variant text-[10px] font-mono font-bold">0</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right text-xs">
+                        <thead class="bg-surface-container-lowest text-on-surface-variant text-[11px] border-b border-outline-variant/40">
+                            <tr>
+                                <th class="p-3">البريد المدعو</th>
+                                <th class="p-3 text-center">الدور المقترح</th>
+                                <th class="p-3">تاريخ الإرسال</th>
+                                <th class="p-3">انتهاء الصلاحية</th>
+                                <th class="p-3 text-center">الإجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mfg-invites-tbody" class="divide-y divide-outline-variant/40">
+                            <tr>
+                                <td colspan="5" class="p-4 text-center text-on-surface-variant text-[11px]">لا توجد دعوات معلقة</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Secure Documents Repository Section -->
+        <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
+            <div class="p-5 border-b border-outline-variant/60 flex items-center justify-between flex-wrap gap-4">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-secondary text-[22px]">folder_special</span>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h2 class="font-bold text-primary text-base">خزينة المستندات والشهادات التصديرية الرسمية (Secure Documents)</h2>
+                            <span id="mfg-docs-count" class="px-2 py-0.5 rounded-full bg-secondary/10 text-secondary text-xs font-mono font-bold">0</span>
+                        </div>
+                        <p class="text-xs text-on-surface-variant mt-0.5">تخزين آمن للشهادات الجمركية والسجلات وتراخيص المنشأة مع التحقق من التوقيع الرقمي</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button type="button" onclick="loadManufacturerDocuments()" class="text-xs font-bold text-secondary hover:underline flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[16px]">refresh</span>
+                        <span>تحديث</span>
+                    </button>
+                    <button type="button" id="mfg-doc-upload-btn" onclick="openDocModal()" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-secondary hover:bg-secondary/90 text-white font-bold text-xs shadow-md transition-all">
+                        <span class="material-symbols-outlined text-[17px]">upload_file</span>
+                        <span>رفع مستند جديد</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-right text-xs">
+                    <thead class="bg-surface-container-low text-primary font-bold border-b border-outline-variant">
+                        <tr>
+                            <th class="p-3.5">عنوان المستند</th>
+                            <th class="p-3.5 text-center">نوع المستند</th>
+                            <th class="p-3.5">اسم الملف الأصلي</th>
+                            <th class="p-3.5 text-center">الحجم</th>
+                            <th class="p-3.5">تاريخ الرفع</th>
+                            <th class="p-3.5 text-center">التحميل الآمن</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mfg-docs-tbody" class="divide-y divide-outline-variant/40">
+                        <tr>
+                            <td colspan="6" class="p-6 text-center text-on-surface-variant">
+                                <span class="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
+                                <div class="mt-1 text-xs">جاري تحميل المستندات الآمنة...</div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Modal: Edit Product Details (Phase 4.0-F) -->
+        <div id="mfg-edit-product-modal" class="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+            <div class="bg-surface-container-lowest rounded-2xl max-w-xl w-full border border-outline-variant shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+                <div class="flex items-center justify-between pb-3 border-b border-outline-variant">
+                    <h3 class="font-bold text-primary text-sm flex items-center gap-2">
+                        <span class="material-symbols-outlined text-secondary">edit_note</span>
+                        <span>تعديل بيانات الصنف التصديري</span>
+                    </h3>
+                    <button type="button" onclick="closeMfgProductEditModal()" class="text-on-surface-variant hover:text-primary">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <input type="hidden" id="edit-prod-id" />
+                <div class="space-y-3 text-xs">
+                    <div>
+                        <label class="font-semibold text-primary block pb-1">الاسم بالعربية:</label>
+                        <input id="edit-prod-name-ar" type="text" class="w-full h-9 px-3 rounded-lg border border-outline-variant bg-surface-container-low" />
+                    </div>
+                    <div>
+                        <label class="font-semibold text-primary block pb-1">الاسم بالإنجليزية (Commercial Name):</label>
+                        <input id="edit-prod-name-en" type="text" class="w-full h-9 px-3 rounded-lg border border-outline-variant bg-surface-container-low font-mono" />
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div>
+                            <label class="font-semibold text-primary block pb-1">السعر:</label>
+                            <input id="edit-prod-price" type="number" step="0.01" class="w-full h-9 px-3 rounded-lg border border-outline-variant bg-surface-container-low font-mono" />
+                        </div>
+                        <div>
+                            <label class="font-semibold text-primary block pb-1">العملة:</label>
+                            <select id="edit-prod-currency" class="w-full h-9 px-2 rounded-lg border border-outline-variant bg-surface-container-low font-mono">
+                                <option value="USD">USD ($)</option>
+                                <option value="EUR">EUR (€)</option>
+                                <option value="GBP">GBP (£)</option>
+                                <option value="EGP">EGP (ج.م)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="font-semibold text-primary block pb-1">وحدة التسعير:</label>
+                            <input id="edit-prod-unit" type="text" placeholder="طن / KG" class="w-full h-9 px-3 rounded-lg border border-outline-variant bg-surface-container-low" />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="font-semibold text-primary block pb-1">الحد الأدنى للطلب (MOQ):</label>
+                        <input id="edit-prod-moq" type="text" class="w-full h-9 px-3 rounded-lg border border-outline-variant bg-surface-container-low" />
+                    </div>
+                    <div>
+                        <label class="font-semibold text-primary block pb-1">مواصفات التعبئة والتغليف:</label>
+                        <textarea id="edit-prod-packaging" rows="2" class="w-full p-2.5 rounded-lg border border-outline-variant bg-surface-container-low text-xs"></textarea>
+                    </div>
+                    <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-[11px] leading-relaxed">
+                        ⚠️ <strong>تنبيه الأمان السيادي:</strong> في حال تعديل الاسم أو المواصفات الحساسة، ستتم إعادة المنتج تلقائياً إلى حالة <strong>(قيد المراجعة المركزية)</strong> لضمان مطابقة معايير الصادرات المصرية قبل إعادة نشره.
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeMfgProductEditModal()" class="px-4 py-2 rounded-lg bg-surface-container-low text-xs font-semibold">إلغاء</button>
+                    <button type="button" onclick="submitMfgProductUpdate()" id="btn-save-mfg-prod" class="px-5 py-2 rounded-lg bg-secondary text-white font-bold text-xs shadow-xs">حفظ التعديلات</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: Create Production Plan Batch (Phase 5.0-B) -->
+        <div id="mfg-new-batch-modal" class="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+            <div class="bg-surface-container-lowest rounded-2xl max-w-md w-full border border-outline-variant shadow-2xl p-6 space-y-4">
+                <div class="flex items-center justify-between pb-3 border-b border-outline-variant">
+                    <h3 class="font-bold text-primary text-sm flex items-center gap-2">
+                        <span class="material-symbols-outlined text-secondary">factory</span>
+                        <span>بدء خطة إنتاج وتشغيل دفعة جديدة</span>
+                    </h3>
+                    <button type="button" onclick="document.getElementById('mfg-new-batch-modal').classList.add('hidden')" class="text-on-surface-variant hover:text-primary">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <input type="hidden" id="new-batch-contract-id" />
+                <div class="space-y-3 text-xs">
+                    <div>
+                        <label class="font-semibold text-primary block pb-1">رقم تشغيلة الدفعة (Lot Number):</label>
+                        <input id="new-batch-lot-number" type="text" placeholder="LOT-2026-VALENCIA-01" class="w-full h-9 px-3 rounded-lg border border-outline-variant bg-surface-container-low font-mono" />
+                    </div>
+                    <div>
+                        <label class="font-semibold text-primary block pb-1">الكمية المستهدفة (Target Quantity):</label>
+                        <input id="new-batch-target-qty" type="number" step="0.1" placeholder="25000" class="w-full h-9 px-3 rounded-lg border border-outline-variant bg-surface-container-low font-mono" />
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="font-semibold text-primary block pb-1">تاريخ البدء:</label>
+                            <input id="new-batch-start-date" type="date" class="w-full h-9 px-2 rounded-lg border border-outline-variant bg-surface-container-low" />
+                        </div>
+                        <div>
+                            <label class="font-semibold text-primary block pb-1">تاريخ الانتهاء المتوقع:</label>
+                            <input id="new-batch-end-date" type="date" class="w-full h-9 px-2 rounded-lg border border-outline-variant bg-surface-container-low" />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="font-semibold text-primary block pb-1">ملاحظات التشغيل ومحطة الفرز:</label>
+                        <textarea id="new-batch-notes" rows="2" placeholder="محطة الفرز، خط التعبئة، معايير المعايرة..." class="w-full p-2.5 rounded-lg border border-outline-variant bg-surface-container-low text-xs"></textarea>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="document.getElementById('mfg-new-batch-modal').classList.add('hidden')" class="px-4 py-2 rounded-lg bg-surface-container-low text-xs font-semibold">إلغاء</button>
+                    <button type="button" onclick="submitCreateBatch()" id="btn-submit-new-batch" class="px-5 py-2 rounded-lg bg-secondary text-white font-bold text-xs shadow-xs">بدء خطة التشغيل</button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Manufacturer RFQ Detail & Response Modal -->
+    <div id="mfg-rfq-modal" class="fixed inset-0 bg-primary/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-surface-container-lowest rounded-2xl max-w-2xl w-full border border-outline-variant shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-5 border-b border-outline-variant flex items-center justify-between bg-surface-container-low">
+                <div>
+                    <div class="flex items-center gap-2.5 flex-wrap">
+                        <h3 class="font-bold text-primary text-base flex items-center gap-2">
+                            <span class="material-symbols-outlined text-secondary">request_quote</span>
+                            <span>طلب عرض أسعار تصديري: </span>
+                            <span id="mfg-modal-ref" class="font-mono text-secondary">-</span>
+                        </h3>
+                        <div id="mfg-modal-status-badge"></div>
+                    </div>
+                    <p class="text-[11px] text-on-surface-variant mt-0.5">تفاصيل متطلبات المشتري الدولي وإمكانية الرد والتسعير</p>
+                </div>
+                <button type="button" onclick="closeMfgRfqModal()" class="w-8 h-8 rounded-lg hover:bg-surface-container text-on-surface-variant flex items-center justify-center">
+                    <span class="material-symbols-outlined text-[20px]">close</span>
+                </button>
+            </div>
+
+            <div class="p-6 overflow-y-auto space-y-5">
+                <div class="grid grid-cols-2 gap-4 bg-surface-container-low p-4 rounded-xl border border-outline-variant text-xs">
+                    <div>
+                        <span class="text-on-surface-variant block text-[10px]">المشتري والشركة:</span>
+                        <strong id="mfg-modal-buyer" class="text-primary">-</strong>
+                    </div>
+                    <div>
+                        <span class="text-on-surface-variant block text-[10px]">البريد ووسيلة الاتصال:</span>
+                        <strong id="mfg-modal-contact" class="text-primary font-mono">-</strong>
+                    </div>
+                    <div>
+                        <span class="text-on-surface-variant block text-[10px]">المنتج المستهدف:</span>
+                        <strong id="mfg-modal-product" class="text-primary">-</strong>
+                    </div>
+                    <div>
+                        <span class="text-on-surface-variant block text-[10px]">الكمية وميناء التفريغ:</span>
+                        <strong id="mfg-modal-qty-port" class="text-secondary">-</strong>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="text-xs font-bold text-primary mb-1">المواصفات والمتطلبات الخاصة بالمشتري:</h4>
+                    <div id="mfg-modal-specs" class="p-3 bg-surface rounded-xl border border-outline-variant/60 text-xs text-on-surface leading-relaxed whitespace-pre-wrap">
+                        -
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="text-xs font-bold text-primary mb-1">رسالة وملاحظات المشتري:</h4>
+                    <div id="mfg-modal-message" class="p-3 bg-surface rounded-xl border border-outline-variant/60 text-xs text-on-surface-variant leading-relaxed whitespace-pre-wrap">
+                        -
+                    </div>
+                </div>
+
+                <div class="border-t border-outline-variant/80 pt-4 space-y-4">
+                    <!-- Existing Quotations History (if any) -->
+                    <div id="mfg-quotes-history" class="hidden space-y-2">
+                        <h4 class="text-xs font-bold text-primary flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-secondary text-[16px]">history_edu</span>
+                            <span>عروض الأسعار الصادرة مسبقاً لهذا الطلب:</span>
+                        </h4>
+                        <div id="mfg-quotes-history-list" class="space-y-2"></div>
+                    </div>
+
+                    <!-- Structured Quotation Form -->
+                    <div class="bg-surface-container-low p-4 rounded-xl border border-secondary/30 space-y-4">
+                        <div class="flex items-center justify-between border-b border-outline-variant/60 pb-2">
+                            <h4 class="text-xs font-bold text-primary flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-secondary text-[18px]">verified</span>
+                                <span>إصدار عرض أسعار تجاري معتمد (Official Incoterms Quotation)</span>
+                            </h4>
+                            <span class="text-[10px] text-secondary font-mono font-bold">معايير التجارة الدولية 2020</span>
+                        </div>
+
+                        <form id="mfg-quote-form" onsubmit="submitStructuredQuote(event)" class="space-y-3">
+                            <input type="hidden" id="mfg-quote-rfq-id" />
+
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-primary mb-1">سعر الوحدة الصافي *</label>
+                                    <input type="number" id="mfg-quote-price" step="0.01" min="0.01" required placeholder="مثال: 850.00" class="w-full px-3 py-2 rounded-lg border border-outline-variant bg-surface-container-lowest text-xs text-primary font-mono focus:outline-none focus:border-secondary" />
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-primary mb-1">العملة التجارية *</label>
+                                    <select id="mfg-quote-currency" class="w-full px-3 py-2 rounded-lg border border-outline-variant bg-surface-container-lowest text-xs text-primary font-bold focus:outline-none focus:border-secondary">
+                                        <option value="USD">USD ($) - دولار أمريكي</option>
+                                        <option value="EUR">EUR (€) - يورو أوروبي</option>
+                                        <option value="GBP">GBP (£) - جنيه إسترليني</option>
+                                        <option value="AED">AED - درهم إماراتي</option>
+                                        <option value="SAR">SAR - ريال سعودي</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-primary mb-1">شرط الشحن (Incoterms 2020) *</label>
+                                    <select id="mfg-quote-incoterm" class="w-full px-3 py-2 rounded-lg border border-outline-variant bg-surface-container-lowest text-xs text-primary font-bold focus:outline-none focus:border-secondary">
+                                        <option value="EXW">EXW - تسليم أرض المصنع (Ex Works)</option>
+                                        <option value="FCA">FCA - تسليم للناقل المعتمد (Free Carrier)</option>
+                                        <option value="CPT">CPT - أجور النقل مدفوعة إلى (Carriage Paid To)</option>
+                                        <option value="CIP">CIP - أجور النقل والتأمين مدفوعة إلى (Carriage & Insurance Paid)</option>
+                                        <option value="DAP">DAP - تسليم في المكان المحدد (Delivered at Place)</option>
+                                        <option value="DPU">DPU - تسليم وتفريغ بمكان الوصول (Delivered at Place Unloaded)</option>
+                                        <option value="DDP">DDP - تسليم شامل الرسوم والجمارك (Delivered Duty Paid)</option>
+                                        <option value="FAS">FAS - تسليم بجانب السفينة بميناء الشحن (Free Alongside Ship)</option>
+                                        <option value="FOB" selected>FOB - تسليم على ظهر السفينة بميناء الشحن (Free On Board)</option>
+                                        <option value="CFR">CFR - التكلفة وأجور الشحن لميناء الوصول (Cost and Freight)</option>
+                                        <option value="CIF">CIF - التكلفة والتأمين وأجور الشحن (Cost, Insurance & Freight)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-primary mb-1">ميناء الشحن / التحميل (Loading Port) *</label>
+                                    <input type="text" id="mfg-quote-loading-port" required placeholder="مثال: ميناء الإسكندرية / ميناء دمياط" class="w-full px-3 py-2 rounded-lg border border-outline-variant bg-surface-container-lowest text-xs text-primary focus:outline-none focus:border-secondary" />
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-primary mb-1">ميناء التفريغ / الوصول (Discharge Port)</label>
+                                    <input type="text" id="mfg-quote-dest-port" placeholder="مثال: Port of Hamburg" class="w-full px-3 py-2 rounded-lg border border-outline-variant bg-surface-container-lowest text-xs text-primary focus:outline-none focus:border-secondary" />
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-primary mb-1">الحد الأدنى للطلب (MOQ) *</label>
+                                    <input type="number" id="mfg-quote-moq" min="1" required placeholder="مثال: 25" class="w-full px-3 py-2 rounded-lg border border-outline-variant bg-surface-container-lowest text-xs text-primary font-mono focus:outline-none focus:border-secondary" />
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-primary mb-1">وحدة القياس *</label>
+                                    <input type="text" id="mfg-quote-unit" required value="MT" placeholder="مثال: MT / Containers" class="w-full px-3 py-2 rounded-lg border border-outline-variant bg-surface-container-lowest text-xs text-primary font-mono focus:outline-none focus:border-secondary" />
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-primary mb-1">مدة التجهيز والتسليم (أيام) *</label>
+                                    <input type="number" id="mfg-quote-lead-time" min="1" required placeholder="مثال: 14" class="w-full px-3 py-2 rounded-lg border border-outline-variant bg-surface-container-lowest text-xs text-primary font-mono focus:outline-none focus:border-secondary" />
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-primary mb-1">مواصفات التعبئة والتغليف التصديري *</label>
+                                    <input type="text" id="mfg-quote-packaging" required placeholder="مثال: كراتين تصدير 10 كجم تلسكوبية، رص باليتات معتمدة" class="w-full px-3 py-2 rounded-lg border border-outline-variant bg-surface-container-lowest text-xs text-primary focus:outline-none focus:border-secondary" />
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-primary mb-1">شروط الدفع والتحصيل *</label>
+                                    <input type="text" id="mfg-quote-payment" required placeholder="مثال: 100% L/C at sight أو 30% مقدم والباقي مقابل المستندات" class="w-full px-3 py-2 rounded-lg border border-outline-variant bg-surface-container-lowest text-xs text-primary focus:outline-none focus:border-secondary" />
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-primary mb-1">تاريخ انتهاء صلاحية العرض *</label>
+                                    <input type="date" id="mfg-quote-validity" required class="w-full px-3 py-2 rounded-lg border border-outline-variant bg-surface-container-lowest text-xs text-primary font-mono focus:outline-none focus:border-secondary" />
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-primary mb-1">شروط أو ملاحظات تجارية إضافية</label>
+                                    <input type="text" id="mfg-quote-terms" placeholder="مثال: الأسعار خاضعة لمطابقة الفحص الحجري بميناء الشحن" class="w-full px-3 py-2 rounded-lg border border-outline-variant bg-surface-container-lowest text-xs text-primary focus:outline-none focus:border-secondary" />
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between pt-2 border-t border-outline-variant/60">
+                                <span class="text-[11px] text-on-surface-variant">يتم تثبيت العرض في السجل التجاري للمنصة مع إشعار المشتري فوراً.</span>
+                                <div class="flex items-center gap-2">
+                                    <button type="button" onclick="closeMfgRfqModal()" class="px-3 py-2 rounded-xl border border-outline-variant text-xs font-bold text-on-surface-variant hover:bg-surface-container">إغلاق</button>
+                                    <button type="submit" id="mfg-quote-submit-btn" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-secondary hover:bg-secondary/90 text-white text-xs font-bold shadow-md transition-all">
+                                        <span class="material-symbols-outlined text-[17px]">send</span>
+                                        <span>إرسال العرض التجاري المعتمد</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Secondary Quick Status Form (For decline or under review) -->
+                    <div class="p-3 bg-surface rounded-xl border border-outline-variant/60">
+                        <div class="text-[11px] font-bold text-on-surface-variant mb-2">إجراءات أخرى على الطلب:</div>
+                        <div class="flex items-center gap-3">
+                            <button type="button" onclick="quickUpdateMfgRfqStatus('UNDER_REVIEW')" class="px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-xs font-bold text-primary transition-all">
+                                تعيين الطلب: قيد الدراسة الفنية
+                            </button>
+                            <button type="button" onclick="quickUpdateMfgRfqStatus('REJECTED')" class="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-xs font-bold text-rose-700 transition-all">
+                                الاعتذار عن تلبية الطلب
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invite Member Modal -->
+    <div id="mfg-invite-modal" class="fixed inset-0 bg-primary/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-surface-container-lowest rounded-2xl max-w-md w-full border border-outline-variant shadow-2xl overflow-hidden flex flex-col">
+            <div class="p-5 border-b border-outline-variant flex items-center justify-between bg-surface-container-low">
+                <h3 class="font-bold text-primary text-base flex items-center gap-2">
+                    <span class="material-symbols-outlined text-secondary">person_add</span>
+                    <span>دعوة عضو جديد لفريق العمل</span>
+                </h3>
+                <button type="button" onclick="closeInviteModal()" class="w-8 h-8 rounded-lg hover:bg-surface-container text-on-surface-variant flex items-center justify-center">
+                    <span class="material-symbols-outlined text-[20px]">close</span>
+                </button>
+            </div>
+            <form id="mfg-invite-form" onsubmit="submitInvite(event)" class="p-6 space-y-4 text-xs">
+                <div>
+                    <label class="block font-bold text-primary mb-1">البريد الإلكتروني للعضو *</label>
+                    <input type="email" id="invite-email" required placeholder="name@company.com" dir="ltr" class="w-full px-3 py-2.5 rounded-lg border border-outline-variant bg-surface-container-lowest text-xs text-primary font-mono focus:outline-none focus:border-secondary" />
+                </div>
+                <div>
+                    <label class="block font-bold text-primary mb-1">الدور الفرعي والصلاحيات *</label>
+                    <select id="invite-subrole" required class="w-full px-3 py-2.5 rounded-lg border border-outline-variant bg-surface-container-lowest text-xs text-primary font-bold focus:outline-none focus:border-secondary">
+                        <option value="SALES">المبيعات والعقود (SALES) - إصدار عروض الأسعار والتواصل</option>
+                        <option value="PRODUCTION">الإنتاج والجودة (PRODUCTION) - رفع الكتالوجات وإدارة المواصفات</option>
+                        <option value="EXPORT">الشحن والتصدير (EXPORT) - اللوجستيات والمستندات التصديرية</option>
+                    </select>
+                </div>
+                <div class="p-3 bg-surface-container-low rounded-xl border border-outline-variant/60 text-[11px] text-on-surface-variant leading-relaxed">
+                    يتم إنشاء رابط دعوة مؤمن بتشفير CSPRNG وصلاحية 48 ساعة. يحسب كل عضو مدعو ضمن حصة مقاعد اشتراك المصنع.
+                </div>
+                <div class="flex items-center justify-end gap-2 pt-2 border-t border-outline-variant/60">
+                    <button type="button" onclick="closeInviteModal()" class="px-3.5 py-2 rounded-xl border border-outline-variant font-bold text-on-surface-variant hover:bg-surface-container">إلغاء</button>
+                    <button type="submit" id="invite-submit-btn" class="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-secondary hover:bg-secondary/90 text-white font-bold shadow-md transition-all">
+                        <span class="material-symbols-outlined text-[16px]">send</span>
+                        <span>إرسال الدعوة</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Change Member Sub-Role Modal -->
+    <div id="mfg-role-modal" class="fixed inset-0 bg-primary/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-surface-container-lowest rounded-2xl max-w-md w-full border border-outline-variant shadow-2xl overflow-hidden flex flex-col">
+            <div class="p-5 border-b border-outline-variant flex items-center justify-between bg-surface-container-low">
+                <h3 class="font-bold text-primary text-base flex items-center gap-2">
+                    <span class="material-symbols-outlined text-secondary">admin_panel_settings</span>
+                    <span>تعديل الدور الفرعي للعضو</span>
+                </h3>
+                <button type="button" onclick="closeRoleModal()" class="w-8 h-8 rounded-lg hover:bg-surface-container text-on-surface-variant flex items-center justify-center">
+                    <span class="material-symbols-outlined text-[20px]">close</span>
+                </button>
+            </div>
+            <form id="mfg-role-form" onsubmit="submitRoleChange(event)" class="p-6 space-y-4 text-xs">
+                <input type="hidden" id="role-target-user-id" />
+                <div class="bg-surface-container-low p-3 rounded-xl border border-outline-variant/60">
+                    <span class="text-on-surface-variant text-[11px] block">العضو المستهدف:</span>
+                    <strong id="role-target-user-name" class="text-primary font-bold text-xs">-</strong>
+                </div>
+                <div>
+                    <label class="block font-bold text-primary mb-1">الدور الفرعي الجديد *</label>
+                    <select id="role-new-subrole" required class="w-full px-3 py-2.5 rounded-lg border border-outline-variant bg-surface-container-lowest text-xs text-primary font-bold focus:outline-none focus:border-secondary">
+                        <option value="SALES">المبيعات والعقود (SALES)</option>
+                        <option value="PRODUCTION">الإنتاج والجودة (PRODUCTION)</option>
+                        <option value="EXPORT">الشحن والتصدير (EXPORT)</option>
+                    </select>
+                </div>
+                <div class="p-3 bg-amber-50 rounded-xl border border-amber-200 text-[11px] text-amber-900 leading-relaxed">
+                    تنبيه: سيؤدي تعديل الدور إلى إلغاء صلاحية الجلسات النشطة الحالية للعضو فوراً وإلزامه بتجديد الـ Token لضمان تطبيق الصلاحيات الجديدة لحظياً.
+                </div>
+                <div class="flex items-center justify-end gap-2 pt-2 border-t border-outline-variant/60">
+                    <button type="button" onclick="closeRoleModal()" class="px-3.5 py-2 rounded-xl border border-outline-variant font-bold text-on-surface-variant hover:bg-surface-container">إلغاء</button>
+                    <button type="submit" id="role-submit-btn" class="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-secondary hover:bg-secondary/90 text-white font-bold shadow-md transition-all">
+                        <span class="material-symbols-outlined text-[16px]">save</span>
+                        <span>حفظ الدور الجديد</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Transfer Ownership Modal -->
+    <div id="mfg-transfer-modal" class="fixed inset-0 bg-primary/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-surface-container-lowest rounded-2xl max-w-md w-full border border-outline-variant shadow-2xl overflow-hidden flex flex-col">
+            <div class="p-5 border-b border-outline-variant flex items-center justify-between bg-rose-50">
+                <h3 class="font-bold text-rose-900 text-base flex items-center gap-2">
+                    <span class="material-symbols-outlined text-rose-700">key</span>
+                    <span>نقل الملكية الرئيسية للمنشأة (Ownership Transfer)</span>
+                </h3>
+                <button type="button" onclick="closeTransferModal()" class="w-8 h-8 rounded-lg hover:bg-rose-100 text-rose-800 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-[20px]">close</span>
+                </button>
+            </div>
+            <form id="mfg-transfer-form" onsubmit="submitTransferOwnership(event)" class="p-6 space-y-4 text-xs">
+                <input type="hidden" id="transfer-target-user-id" />
+                <div class="bg-surface-container-low p-3 rounded-xl border border-outline-variant/60">
+                    <span class="text-on-surface-variant text-[11px] block">المالك الجديد المستهدف:</span>
+                    <strong id="transfer-target-user-name" class="text-primary font-bold text-xs">-</strong>
+                </div>
+                <div>
+                    <label class="block font-bold text-primary mb-1">الدور الجديد لحسابك الحالي بعد نقل الملكية *</label>
+                    <select id="transfer-demoted-role" required class="w-full px-3 py-2.5 rounded-lg border border-outline-variant bg-surface-container-lowest text-xs text-primary font-bold focus:outline-none focus:border-secondary">
+                        <option value="SALES" selected>المبيعات والعقود (SALES)</option>
+                        <option value="PRODUCTION">الإنتاج والجودة (PRODUCTION)</option>
+                        <option value="EXPORT">الشحن والتصدير (EXPORT)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-bold text-primary mb-1">كلمة المرور الحالية لتأكيد الإجراء السيادي *</label>
+                    <input type="password" id="transfer-password" required placeholder="أدخل كلمة مرورك الحالية" class="w-full px-3 py-2.5 rounded-lg border border-outline-variant bg-surface-container-lowest text-xs text-primary focus:outline-none focus:border-rose-600" />
+                </div>
+                <div class="p-3 bg-rose-50 rounded-xl border border-rose-200 text-[11px] text-rose-900 leading-relaxed font-medium">
+                    ⚠️ تحذير أمني: هذا إجراء غير قابل للرجوع من جانبك. ستفقد الصلاحيات الإدارية الكاملة للمصنع، وسيصبح العضو المختار هو المالك السيادي الوحيد.
+                </div>
+                <div class="flex items-center justify-end gap-2 pt-2 border-t border-outline-variant/60">
+                    <button type="button" onclick="closeTransferModal()" class="px-3.5 py-2 rounded-xl border border-outline-variant font-bold text-on-surface-variant hover:bg-surface-container">إلغاء</button>
+                    <button type="submit" id="transfer-submit-btn" class="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-rose-700 hover:bg-rose-800 text-white font-bold shadow-md transition-all">
+                        <span class="material-symbols-outlined text-[16px]">verified_user</span>
+                        <span>تأكيد نقل الملكية</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Upload Secure Document Modal -->
+    <div id="mfg-doc-modal" class="fixed inset-0 bg-primary/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-surface-container-lowest rounded-2xl max-w-md w-full border border-outline-variant shadow-2xl overflow-hidden flex flex-col">
+            <div class="p-5 border-b border-outline-variant flex items-center justify-between bg-surface-container-low">
+                <h3 class="font-bold text-primary text-base flex items-center gap-2">
+                    <span class="material-symbols-outlined text-secondary">upload_file</span>
+                    <span>رفع مستند رسمي وتأمينه</span>
+                </h3>
+                <button type="button" onclick="closeDocModal()" class="w-8 h-8 rounded-lg hover:bg-surface-container text-on-surface-variant flex items-center justify-center">
+                    <span class="material-symbols-outlined text-[20px]">close</span>
+                </button>
+            </div>
+            <form id="mfg-doc-form" onsubmit="submitDocUpload(event)" class="p-6 space-y-4 text-xs">
+                <div>
+                    <label class="block font-bold text-primary mb-1">عنوان أو وصف المستند *</label>
+                    <input type="text" id="doc-title" required placeholder="مثال: شهادة الأيزو 22000 لعام 2026" class="w-full px-3 py-2.5 rounded-lg border border-outline-variant bg-surface-container-lowest text-xs text-primary focus:outline-none focus:border-secondary" />
+                </div>
+                <div>
+                    <label class="block font-bold text-primary mb-1">تصنيف المستند *</label>
+                    <select id="doc-type" required class="w-full px-3 py-2.5 rounded-lg border border-outline-variant bg-surface-container-lowest text-xs text-primary font-bold focus:outline-none focus:border-secondary">
+                        <option value="EXPORT">شهادة تصدير / جودة (EXPORT) - متاح للمبيعات والتصدير</option>
+                        <option value="LEGAL">وثيقة قانونية / ترخيص (LEGAL) - مقتصر على المالك فقط</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-bold text-primary mb-1">الملف (PDF, PNG, JPG - بحد أقصى 10 ميجابايت) *</label>
+                    <input type="file" id="doc-file" required accept=".pdf,.png,.jpg,.jpeg" class="w-full px-3 py-2 rounded-lg border border-outline-variant bg-surface-container-lowest text-xs text-primary file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-secondary file:text-white hover:file:bg-secondary/90" />
+                </div>
+                <div class="p-3 bg-surface-container-low rounded-xl border border-outline-variant/60 text-[11px] text-on-surface-variant leading-relaxed">
+                    يتم التحقق من البصمة الثنائية Magic Bytes وتخزين الملف في خزانة منفصلة مشفرة ومحمية من هجمات Path Traversal.
+                </div>
+                <div class="flex items-center justify-end gap-2 pt-2 border-t border-outline-variant/60">
+                    <button type="button" onclick="closeDocModal()" class="px-3.5 py-2 rounded-xl border border-outline-variant font-bold text-on-surface-variant hover:bg-surface-container">إلغاء</button>
+                    <button type="submit" id="doc-submit-btn" class="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-secondary hover:bg-secondary/90 text-white font-bold shadow-md transition-all">
+                        <span class="material-symbols-outlined text-[16px]">cloud_upload</span>
+                        <span>رفع وتأمين المستند</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/public/js/common.js"></script>
+    <script>
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        /**
+         * Redesigned «الحالة الراهنة» (Current Status for Import Batches)
+         * Fully accessible, RTL-compliant, with indicator dot, micro-icon, and high-contrast typography.
+         */
+        function renderBatchStatusBadge(status) {
+            const configs = {
+                'REVIEW_READY': {
+                    label: 'جاهز للمراجعة',
+                    icon: 'rule_settings',
+                    bg: 'bg-teal-50',
+                    text: 'text-teal-900',
+                    border: 'border-teal-200',
+                    dot: 'bg-teal-600'
+                },
+                'SUBMITTED': {
+                    label: 'قيد تدقيق الإدارة',
+                    icon: 'hourglass_top',
+                    bg: 'bg-purple-50',
+                    text: 'text-purple-900',
+                    border: 'border-purple-200',
+                    dot: 'bg-purple-600 animate-pulse'
+                },
+                'SAVED_DRAFT': {
+                    label: 'مسودة محفوظة',
+                    icon: 'edit_note',
+                    bg: 'bg-amber-50',
+                    text: 'text-amber-900',
+                    border: 'border-amber-200',
+                    dot: 'bg-amber-500'
+                },
+                'COMPLETED': {
+                    label: 'معتمد ومنشور',
+                    icon: 'verified',
+                    bg: 'bg-emerald-50',
+                    text: 'text-emerald-900',
+                    border: 'border-emerald-200',
+                    dot: 'bg-emerald-600'
+                },
+                'FAILED': {
+                    label: 'تعثرت المعالجة',
+                    icon: 'error',
+                    bg: 'bg-rose-50',
+                    text: 'text-rose-900',
+                    border: 'border-rose-200',
+                    dot: 'bg-rose-600'
+                },
+                'PROCESSING': {
+                    label: 'جاري الاستخراج',
+                    icon: 'sync',
+                    bg: 'bg-sky-50',
+                    text: 'text-sky-900',
+                    border: 'border-sky-200',
+                    dot: 'bg-sky-600 animate-spin'
+                },
+                'QUEUED': {
+                    label: 'في قائمة الانتظار',
+                    icon: 'schedule',
+                    bg: 'bg-slate-50',
+                    text: 'text-slate-800',
+                    border: 'border-slate-200',
+                    dot: 'bg-slate-500'
+                }
+            };
+
+            const cfg = configs[status] || {
+                label: escapeHtml(status || 'غير محدد'),
+                icon: 'help_outline',
+                bg: 'bg-slate-100',
+                text: 'text-slate-800',
+                border: 'border-slate-200',
+                dot: 'bg-slate-400'
+            };
+
+            return `
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${cfg.bg} ${cfg.text} border ${cfg.border} shadow-xs whitespace-nowrap select-none" dir="rtl" title="الحالة الراهنة: ${cfg.label}">
+                    <span class="w-1.5 h-1.5 rounded-full shrink-0 ${cfg.dot}"></span>
+                    <span class="material-symbols-outlined text-[13px] shrink-0 opacity-80">${cfg.icon}</span>
+                    <span>${cfg.label}</span>
+                </span>
+            `;
+        }
+
+        /**
+         * Redesigned «حالة الطلب» (Order / RFQ Status)
+         * Fully accessible, RTL-compliant, with indicator dot, micro-icon, and high-contrast typography.
+         */
+        function renderRfqStatusBadge(status) {
+            const configs = {
+                'NEW': {
+                    label: 'طلب جديد',
+                    icon: 'fiber_new',
+                    bg: 'bg-blue-50',
+                    text: 'text-blue-900',
+                    border: 'border-blue-200',
+                    dot: 'bg-blue-600 animate-pulse'
+                },
+                'UNDER_REVIEW': {
+                    label: 'قيد الدراسة الفنية',
+                    icon: 'pending_actions',
+                    bg: 'bg-amber-50',
+                    text: 'text-amber-900',
+                    border: 'border-amber-200',
+                    dot: 'bg-amber-500'
+                },
+                'SENT_TO_MANUFACTURER': {
+                    label: 'محال للمصنع للتسعير',
+                    icon: 'forward_to_inbox',
+                    bg: 'bg-purple-50',
+                    text: 'text-purple-900',
+                    border: 'border-purple-200',
+                    dot: 'bg-purple-600 animate-pulse'
+                },
+                'QUOTED': {
+                    label: 'تم إرسال العرض',
+                    icon: 'local_offer',
+                    bg: 'bg-teal-50',
+                    text: 'text-teal-900',
+                    border: 'border-teal-200',
+                    dot: 'bg-teal-600'
+                },
+                'ACCEPTED': {
+                    label: 'معتمد ومقبول',
+                    icon: 'check_circle',
+                    bg: 'bg-emerald-50',
+                    text: 'text-emerald-900',
+                    border: 'border-emerald-200',
+                    dot: 'bg-emerald-600'
+                },
+                'REJECTED': {
+                    label: 'معتذر عنه / مرفوض',
+                    icon: 'cancel',
+                    bg: 'bg-rose-50',
+                    text: 'text-rose-900',
+                    border: 'border-rose-200',
+                    dot: 'bg-rose-600'
+                },
+                'CLOSED': {
+                    label: 'مكتمل ومغلق',
+                    icon: 'lock',
+                    bg: 'bg-slate-100',
+                    text: 'text-slate-800',
+                    border: 'border-slate-300',
+                    dot: 'bg-slate-500'
+                }
+            };
+
+            const cfg = configs[status] || {
+                label: escapeHtml(status || 'غير محدد'),
+                icon: 'help_outline',
+                bg: 'bg-slate-100',
+                text: 'text-slate-800',
+                border: 'border-slate-200',
+                dot: 'bg-slate-400'
+            };
+
+            return `
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${cfg.bg} ${cfg.text} border ${cfg.border} shadow-xs whitespace-nowrap select-none" dir="rtl" title="حالة الطلب: ${cfg.label}">
+                    <span class="w-1.5 h-1.5 rounded-full shrink-0 ${cfg.dot}"></span>
+                    <span class="material-symbols-outlined text-[13px] shrink-0 opacity-80">${cfg.icon}</span>
+                    <span>${cfg.label}</span>
+                </span>
+            `;
+        }
+
+        function renderQuoteStatusBadge(status) {
+            const configs = {
+                'SUBMITTED': { label: 'عرض صادر', bg: 'bg-teal-50 text-teal-900 border-teal-200', dot: 'bg-teal-600' },
+                'ACCEPTED': { label: 'مقبول من المشتري', bg: 'bg-emerald-50 text-emerald-900 border-emerald-200', dot: 'bg-emerald-600' },
+                'REJECTED': { label: 'مرفوض', bg: 'bg-rose-50 text-rose-900 border-rose-200', dot: 'bg-rose-600' },
+                'SUPERSEDED': { label: 'مستبدل بعرض أحدث', bg: 'bg-slate-100 text-slate-700 border-slate-200', dot: 'bg-slate-400' }
+            };
+            const cfg = configs[status] || { label: escapeHtml(status || '-'), bg: 'bg-slate-100 text-slate-700 border-slate-200', dot: 'bg-slate-400' };
+            return `<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold border ${cfg.bg} whitespace-nowrap shadow-xs"><span class="w-1.5 h-1.5 rounded-full ${cfg.dot}"></span><span>${cfg.label}</span></span>`;
+        }
+
+        async function checkMfgAuth() {
+            try {
+                const token = typeof getAuthToken === 'function' ? getAuthToken() : null;
+                const headers = {};
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                const res = await fetch('/api/auth/me', { headers });
+                if (!res.ok) {
+                    console.info('[Manufacturer Portal] Unauthenticated user session. Redirecting cleanly.');
+                    window.location.replace('/?auth_required=mfg');
+                    return null;
+                }
+                const data = await res.json();
+                if (!data.success || !data.user || !['MANUFACTURER', 'SUPER_ADMIN'].includes(data.user.role)) {
+                    console.warn('[Manufacturer Portal] Unauthorized role. Redirecting cleanly.');
+                    window.location.replace('/?unauthorized=mfg');
+                    return null;
+                }
+                return data.user;
+            } catch (err) {
+                console.warn('[Manufacturer Portal] Auth handshake check failed:', err.message);
+                window.location.replace('/?auth_required=mfg');
+                return null;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const mfgUser = await checkMfgAuth();
+            if (!mfgUser) return; // Clean redirect in progress; halt protected API calls!
+
+            currentMfgUser = mfgUser;
+            await renderZarsevHeader('portal-mfg');
+            await loadManufacturerDashboard();
+            await loadMfgRfqs();
+        });
+
+        let currentMfgRfqs = [];
+
+        async function loadMfgRfqs() {
+            const tbody = document.getElementById('mfg-rfqs-tbody');
+            try {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="p-8 text-center text-on-surface-variant">
+                            <span class="material-symbols-outlined animate-spin text-[24px]">progress_activity</span>
+                            <div class="mt-2 text-xs">جاري تحميل طلبات عروض الأسعار...</div>
+                        </td>
+                    </tr>
+                `;
+
+                const res = await zarsevFetch('/api/rfqs');
+                currentMfgRfqs = res.rfqs || [];
+                document.getElementById('mfg-rfqs-count').textContent = currentMfgRfqs.length;
+
+                if (currentMfgRfqs.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="7" class="p-8 text-center text-on-surface-variant">
+                                <span class="material-symbols-outlined text-outline text-[32px] mb-1">inbox</span>
+                                <div class="font-bold text-primary">لا توجد طلبات عروض أسعار واردة حالياً</div>
+                                <p class="text-xs mt-1">عندما يقوم المشترون الدوليون بطلب عروض أسعار لمنتجاتك المنشورة ستظهر هنا مباشرة.</p>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                tbody.innerHTML = currentMfgRfqs.map(r => `
+                    <tr class="hover:bg-surface-container-low transition-colors">
+                        <td class="p-3.5 font-mono font-bold text-secondary">${escapeHtml(r.reference_no)}</td>
+                        <td class="p-3.5">
+                            <div class="font-bold text-primary">${escapeHtml(r.buyer_name)}</div>
+                            <div class="text-[11px] text-on-surface-variant">${escapeHtml(r.company_name || '-')} (${escapeHtml(r.country || '-')})</div>
+                        </td>
+                        <td class="p-3.5">
+                            <div class="font-medium text-primary">${escapeHtml(r.product_name_ar || r.product_name_en || r.product_id)}</div>
+                            <div class="text-[10px] text-on-surface-variant font-mono">ID: ${escapeHtml(r.product_id)}</div>
+                        </td>
+                        <td class="p-3.5 text-center font-bold font-mono text-primary">${escapeHtml(r.quantity || r.requested_quantity)} ${escapeHtml(r.unit || r.unit_of_measurement)}</td>
+                        <td class="p-3.5">
+                            <div class="font-medium text-primary">${escapeHtml(r.destination_country || '-')}</div>
+                            <div class="text-[11px] text-on-surface-variant">${escapeHtml(r.destination_port || '-')}</div>
+                        </td>
+                        <td class="p-3.5 text-center whitespace-nowrap">${renderRfqStatusBadge(r.status)}</td>
+                        <td class="p-3.5 text-center">
+                            <button type="button" onclick="openMfgRfqModal('${escapeHtml(r.id)}')" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-primary font-bold text-xs transition-all">
+                                <span class="material-symbols-outlined text-[15px] text-secondary">visibility</span>
+                                <span>تفاصيل ورد</span>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                console.error('Error loading RFQs:', err);
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="p-6 text-center text-rose-600">
+                            فشل تحميل طلبات عروض الأسعار: ${err.message}
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        async function openMfgRfqModal(rfqId) {
+            const rfq = currentMfgRfqs.find(r => r.id === rfqId);
+            if (!rfq) return;
+
+            document.getElementById('mfg-quote-rfq-id').value = rfq.id;
+            document.getElementById('mfg-modal-ref').textContent = rfq.reference_no;
+            const statusBadgeEl = document.getElementById('mfg-modal-status-badge');
+            if (statusBadgeEl) {
+                statusBadgeEl.innerHTML = renderRfqStatusBadge(rfq.status);
+            }
+            document.getElementById('mfg-modal-buyer').textContent = `${rfq.buyer_name} — ${rfq.company_name || 'جهة غير محددة'} (${rfq.country || '-'})`;
+            document.getElementById('mfg-modal-contact').textContent = `${rfq.email} | ${rfq.phone || 'بدون هاتف'}`;
+            document.getElementById('mfg-modal-product').textContent = `${rfq.product_name_ar || rfq.product_name_en || rfq.product_id}`;
+            document.getElementById('mfg-modal-qty-port').textContent = `${rfq.quantity} ${rfq.unit} إلى [${rfq.destination_country || '-'} — ${rfq.destination_port || '-'}]`;
+            document.getElementById('mfg-modal-specs').textContent = rfq.specifications || 'لم يتم تحديد مواصفات إضافية من قِبل المشتري.';
+            document.getElementById('mfg-modal-message').textContent = rfq.message || 'لا توجد ملاحظات إضافية.';
+
+            // Prefill quote form
+            document.getElementById('mfg-quote-dest-port').value = rfq.destination_port || '';
+            document.getElementById('mfg-quote-moq').value = Math.max(1, Math.round(rfq.quantity / 2)) || 25;
+            document.getElementById('mfg-quote-unit').value = rfq.unit || 'MT';
+            document.getElementById('mfg-quote-loading-port').value = 'ميناء الإسكندرية / الدخيلة';
+            document.getElementById('mfg-quote-lead-time').value = 14;
+            document.getElementById('mfg-quote-packaging').value = 'كراتين تصدير قياسية 10 كجم معالجة، رص باليتات معتمدة للشحن البحري';
+            document.getElementById('mfg-quote-payment').value = '100% L/C at sight غير قابلة للإلغاء أو 30% دفعة مقدمة و70% مقابل المستندات';
+            
+            // Set validity to +30 days
+            const futureDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+            document.getElementById('mfg-quote-validity').value = futureDate.toISOString().split('T')[0];
+
+            // Fetch existing quotation history for this RFQ
+            const historyContainer = document.getElementById('mfg-quotes-history');
+            const historyList = document.getElementById('mfg-quotes-history-list');
+            try {
+                const quotesRes = await zarsevFetch(`/api/quotations/rfq/${rfq.id}`);
+                const quotes = quotesRes.quotations || [];
+                if (quotes.length > 0) {
+                    historyContainer.classList.remove('hidden');
+                    historyList.innerHTML = quotes.map(q => `
+                        <div class="p-3 bg-surface-container-lowest rounded-xl border border-outline-variant text-xs flex items-center justify-between">
+                            <div>
+                                <div class="font-bold text-primary font-mono">${escapeHtml(q.reference_no)} — ${escapeHtml(q.unit_price)} ${escapeHtml(q.currency)}/${escapeHtml(q.min_order_unit)} (${escapeHtml(q.incoterm)})</div>
+                                <div class="text-[11px] text-on-surface-variant">ميناء: ${escapeHtml(q.loading_port)} | مدة: ${escapeHtml(q.lead_time_days)} يوم | ساري حتى: ${q.validity_date ? escapeHtml(q.validity_date.substring(0, 10)) : '-'}</div>
+                            </div>
+                            <div>
+                                ${renderQuoteStatusBadge(q.status)}
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    historyContainer.classList.add('hidden');
+                    historyList.innerHTML = '';
+                }
+            } catch (err) {
+                historyContainer.classList.add('hidden');
+            }
+
+            document.getElementById('mfg-rfq-modal').classList.remove('hidden');
+        }
+
+        function closeMfgRfqModal() {
+            document.getElementById('mfg-rfq-modal').classList.add('hidden');
+        }
+
+        async function submitStructuredQuote(event) {
+            event.preventDefault();
+            const rfqId = document.getElementById('mfg-quote-rfq-id').value;
+            const submitBtn = document.getElementById('mfg-quote-submit-btn');
+
+            const payload = {
+                rfq_id: rfqId,
+                unit_price: parseFloat(document.getElementById('mfg-quote-price').value),
+                currency: document.getElementById('mfg-quote-currency').value,
+                incoterm: document.getElementById('mfg-quote-incoterm').value,
+                loading_port: document.getElementById('mfg-quote-loading-port').value,
+                destination_port: document.getElementById('mfg-quote-dest-port').value || undefined,
+                min_order_quantity: parseFloat(document.getElementById('mfg-quote-moq').value),
+                min_order_unit: document.getElementById('mfg-quote-unit').value,
+                lead_time_days: parseInt(document.getElementById('mfg-quote-lead-time').value, 10),
+                packaging_details: document.getElementById('mfg-quote-packaging').value,
+                payment_terms: document.getElementById('mfg-quote-payment').value,
+                validity_date: document.getElementById('mfg-quote-validity').value,
+                additional_terms: document.getElementById('mfg-quote-terms').value || undefined
+            };
+
+            try {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'جاري التوثيق والإرسال...';
+
+                const res = await zarsevFetch('/api/quotations', {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+
+                showToast(`تم إصدار العرض التجاري بنجاح برقم: ${res.reference_no}`, 'success');
+                closeMfgRfqModal();
+                await loadMfgRfqs();
+            } catch (err) {
+                console.error('Error submitting quotation:', err);
+                showToast('تعذر إصدار عرض السعر: ' + err.message, 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<span class="material-symbols-outlined text-[17px]">send</span><span>إرسال العرض التجاري المعتمد</span>';
+            }
+        }
+
+        async function quickUpdateMfgRfqStatus(newStatus) {
+            const rfqId = document.getElementById('mfg-quote-rfq-id').value;
+            try {
+                await zarsevFetch(`/api/rfqs/${rfqId}/status`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ status: newStatus })
+                });
+                showToast(`تم تحديث حالة الطلب إلى ${newStatus}`, 'success');
+                closeMfgRfqModal();
+                await loadMfgRfqs();
+            } catch (err) {
+                showToast('تعذر تحديث الحالة: ' + err.message, 'error');
+            }
+        }
+
+        let currentMfgUser = null;
+        let currentManufacturer = null;
+        let currentTeamMembers = [];
+        let currentInvitations = [];
+
+        function renderSubRoleBadge(subRole) {
+            const configs = {
+                'OWNER': { label: 'مالك المنشأة (OWNER)', bg: 'bg-amber-50 text-amber-900 border-amber-300', dot: 'bg-amber-600', icon: 'key' },
+                'SALES': { label: 'المبيعات والعقود (SALES)', bg: 'bg-teal-50 text-teal-900 border-teal-300', dot: 'bg-teal-600', icon: 'local_offer' },
+                'PRODUCTION': { label: 'الإنتاج والجودة (PRODUCTION)', bg: 'bg-indigo-50 text-indigo-900 border-indigo-300', dot: 'bg-indigo-600', icon: 'precision_manufacturing' },
+                'EXPORT': { label: 'الشحن والتصدير (EXPORT)', bg: 'bg-purple-50 text-purple-900 border-purple-300', dot: 'bg-purple-600', icon: 'local_shipping' }
+            };
+            const cfg = configs[subRole] || { label: escapeHtml(subRole || '-'), bg: 'bg-slate-100 text-slate-800 border-slate-200', dot: 'bg-slate-400', icon: 'person' };
+            return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${cfg.bg} whitespace-nowrap shadow-xs"><span class="w-1.5 h-1.5 rounded-full ${cfg.dot}"></span><span class="material-symbols-outlined text-[13px] opacity-80">${cfg.icon}</span><span>${cfg.label}</span></span>`;
+        }
+
+        function renderDocTypeBadge(docType) {
+            if (docType === 'LEGAL') {
+                return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-900 border border-blue-200 shadow-xs"><span class="material-symbols-outlined text-[13px]">gavel</span><span>وثيقة قانونية / ترخيص</span></span>`;
+            }
+            return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-900 border border-emerald-200 shadow-xs"><span class="material-symbols-outlined text-[13px]">verified</span><span>شهادة تصدير / جودة</span></span>`;
+        }
+
+        async function loadTeamAndSeats() {
+            const teamTbody = document.getElementById('mfg-team-tbody');
+            const invitesTbody = document.getElementById('mfg-invites-tbody');
+            try {
+                const res = await zarsevFetch('/api/manufacturer/team');
+                currentTeamMembers = res.members || [];
+                currentInvitations = res.invitations || [];
+                const seats = res.seats || { max: 5, used: currentTeamMembers.length + currentInvitations.length, active_members: currentTeamMembers.length, pending_invites: currentInvitations.length, remaining: 0 };
+
+                // Render seats metrics
+                document.getElementById('mfg-seats-badge').textContent = `${seats.used} / ${seats.max} مقعد`;
+                document.getElementById('mfg-stat-active-members').textContent = seats.active_members;
+                document.getElementById('mfg-stat-pending-invites').textContent = seats.pending_invites;
+                document.getElementById('mfg-stat-remaining-seats').textContent = Math.max(0, seats.remaining);
+                const pct = Math.min(100, Math.round((seats.used / (seats.max || 1)) * 100));
+                document.getElementById('mfg-seats-bar').style.width = `${pct}%`;
+                document.getElementById('mfg-seats-pct').textContent = `${pct}%`;
+
+                const isOwner = currentMfgUser && currentMfgUser.sub_role === 'OWNER';
+
+                // Render team members
+                if (currentTeamMembers.length === 0) {
+                    teamTbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-on-surface-variant">لا يوجد أعضاء مسجلين</td></tr>`;
+                } else {
+                    teamTbody.innerHTML = currentTeamMembers.map(m => {
+                        const isSelf = currentMfgUser && currentMfgUser.id === m.id;
+                        let actionsHtml = '';
+                        if (isOwner && !isSelf) {
+                            actionsHtml = `
+                                <div class="flex items-center justify-center gap-1.5 flex-wrap">
+                                    <button type="button" onclick="openRoleModal('${escapeHtml(m.id)}', '${escapeHtml(m.name)}', '${escapeHtml(m.sub_role)}')" class="px-2 py-1 rounded-md bg-surface-container hover:bg-surface-container-high text-[11px] font-bold text-primary transition-all">تعديل الدور</button>
+                                    <button type="button" onclick="toggleMemberActive('${escapeHtml(m.id)}', ${m.is_active ? 'false' : 'true'})" class="px-2 py-1 rounded-md ${m.is_active ? 'bg-rose-50 hover:bg-rose-100 text-rose-700' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700'} text-[11px] font-bold transition-all">${m.is_active ? 'تجميد' : 'تفعيل'}</button>
+                                    <button type="button" onclick="openTransferModal('${escapeHtml(m.id)}', '${escapeHtml(m.name)}')" class="px-2 py-1 rounded-md bg-amber-50 hover:bg-amber-100 text-amber-900 text-[11px] font-bold transition-all">نقل الملكية</button>
+                                </div>
+                            `;
+                        } else if (isSelf) {
+                            actionsHtml = `<span class="text-[11px] text-on-surface-variant font-medium">حسابك الحالي</span>`;
+                        } else {
+                            actionsHtml = `<span class="text-[11px] text-on-surface-variant font-medium">-</span>`;
+                        }
+
+                        const statusBadge = m.is_active
+                            ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200"><span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span><span>نشط</span></span>`
+                            : `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-800 border border-rose-200"><span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span><span>مجمد</span></span>`;
+
+                        return `
+                            <tr class="hover:bg-surface-container-low transition-colors">
+                                <td class="p-3.5 font-bold text-primary">${escapeHtml(m.name || 'عضو')}</td>
+                                <td class="p-3.5 font-mono text-on-surface-variant" dir="ltr">${escapeHtml(m.email)}</td>
+                                <td class="p-3.5 text-center">${renderSubRoleBadge(m.sub_role)}</td>
+                                <td class="p-3.5 text-center">${statusBadge}</td>
+                                <td class="p-3.5 font-mono text-on-surface-variant">${formatDate(m.created_at)}</td>
+                                <td class="p-3.5 text-center">${actionsHtml}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+
+                // Render pending invitations
+                document.getElementById('mfg-invites-count').textContent = currentInvitations.length;
+                if (currentInvitations.length === 0) {
+                    invitesTbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-on-surface-variant text-[11px]">لا توجد دعوات معلقة حالياً</td></tr>`;
+                } else {
+                    invitesTbody.innerHTML = currentInvitations.map(inv => {
+                        let actionBtn = isOwner
+                            ? `<button type="button" onclick="cancelInvitation('${escapeHtml(inv.id)}')" class="px-2 py-1 rounded bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[11px] transition-all">إلغاء الدعوة</button>`
+                            : `<span class="text-on-surface-variant">-</span>`;
+                        return `
+                            <tr class="hover:bg-surface-container-low transition-colors">
+                                <td class="p-3 font-mono font-medium text-primary" dir="ltr">${escapeHtml(inv.email)}</td>
+                                <td class="p-3 text-center">${renderSubRoleBadge(inv.sub_role)}</td>
+                                <td class="p-3 font-mono text-on-surface-variant text-[11px]">${formatDate(inv.created_at)}</td>
+                                <td class="p-3 font-mono text-on-surface-variant text-[11px]">${formatDate(inv.expires_at)}</td>
+                                <td class="p-3 text-center">${actionBtn}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+            } catch (err) {
+                console.error('Error loading team & seats:', err);
+                teamTbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-rose-600">تعذر تحميل بيانات الفريق: ${err.message}</td></tr>`;
+            }
+        }
+
+        async function loadManufacturerDocuments() {
+            const docsTbody = document.getElementById('mfg-docs-tbody');
+            try {
+                const res = await zarsevFetch('/api/manufacturer/documents');
+                const docs = res.documents || [];
+                document.getElementById('mfg-docs-count').textContent = docs.length;
+
+                if (docs.length === 0) {
+                    docsTbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-on-surface-variant">لا توجد مستندات مرفوعة حتى الآن. استخدم زر "رفع مستند جديد" أعلاه.</td></tr>`;
+                    return;
+                }
+
+                docsTbody.innerHTML = docs.map(d => {
+                    return `
+                        <tr class="hover:bg-surface-container-low transition-colors">
+                            <td class="p-3.5 font-bold text-primary">${escapeHtml(d.title)}</td>
+                            <td class="p-3.5 text-center">${renderDocTypeBadge(d.doc_type || d.document_type)}</td>
+                            <td class="p-3.5 font-mono text-on-surface-variant truncate max-w-[200px]">${escapeHtml(d.original_name || d.file_name || '-')}</td>
+                            <td class="p-3.5 text-center font-mono text-on-surface-variant">${formatBytes(d.file_size_bytes || d.file_size || 0)}</td>
+                            <td class="p-3.5 font-mono text-on-surface-variant">${formatDate(d.created_at)}</td>
+                            <td class="p-3.5 text-center">
+                                <a href="/api/manufacturer/documents/${d.id}/download" target="_blank" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-secondary font-bold text-xs transition-all shadow-xs">
+                                    <span class="material-symbols-outlined text-[15px]">download</span>
+                                    <span>تحميل</span>
+                                </a>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (err) {
+                console.error('Error loading documents:', err);
+                docsTbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-rose-600">تعذر تحميل المستندات: ${err.message}</td></tr>`;
+            }
+        }
+
+        function openInviteModal() {
+            document.getElementById('mfg-invite-modal').classList.remove('hidden');
+        }
+        function closeInviteModal() {
+            document.getElementById('mfg-invite-modal').classList.add('hidden');
+            document.getElementById('mfg-invite-form').reset();
+        }
+        async function submitInvite(event) {
+            event.preventDefault();
+            const email = document.getElementById('invite-email').value;
+            const sub_role = document.getElementById('invite-subrole').value;
+            const btn = document.getElementById('invite-submit-btn');
+            try {
+                btn.disabled = true;
+                btn.textContent = 'جاري الإرسال...';
+                await zarsevFetch('/api/manufacturer/team/invite', {
+                    method: 'POST',
+                    body: JSON.stringify({ email, sub_role })
+                });
+                showToast('تم إرسال رابط الدعوة بنجاح', 'success');
+                closeInviteModal();
+                await loadTeamAndSeats();
+            } catch (err) {
+                showToast('تعذر إرسال الدعوة: ' + err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span class="material-symbols-outlined text-[16px]">send</span><span>إرسال الدعوة</span>';
+            }
+        }
+
+        async function cancelInvitation(inviteId) {
+            if (!confirm('هل أنت متأكد من رغبتك في إلغاء هذه الدعوة واسترداد المقعد؟')) return;
+            try {
+                await zarsevFetch(`/api/manufacturer/team/invitations/${inviteId}`, { method: 'DELETE' });
+                showToast('تم إلغاء الدعوة واسترداد المقعد', 'success');
+                await loadTeamAndSeats();
+            } catch (err) {
+                showToast('تعذر إلغاء الدعوة: ' + err.message, 'error');
+            }
+        }
+
+        function openRoleModal(userId, userName, currentSubRole) {
+            document.getElementById('role-target-user-id').value = userId;
+            document.getElementById('role-target-user-name').textContent = userName;
+            document.getElementById('role-new-subrole').value = currentSubRole || 'SALES';
+            document.getElementById('mfg-role-modal').classList.remove('hidden');
+        }
+        function closeRoleModal() {
+            document.getElementById('mfg-role-modal').classList.add('hidden');
+        }
+        async function submitRoleChange(event) {
+            event.preventDefault();
+            const userId = document.getElementById('role-target-user-id').value;
+            const sub_role = document.getElementById('role-new-subrole').value;
+            const btn = document.getElementById('role-submit-btn');
+            try {
+                btn.disabled = true;
+                btn.textContent = 'جاري الحفظ...';
+                await zarsevFetch(`/api/manufacturer/team/users/${userId}/role`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ sub_role })
+                });
+                showToast('تم تحديث الدور بنجاح وإلغاء جلسات العضو القديمة', 'success');
+                closeRoleModal();
+                await loadTeamAndSeats();
+            } catch (err) {
+                showToast('تعذر تعديل الدور: ' + err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span class="material-symbols-outlined text-[16px]">save</span><span>حفظ الدور الجديد</span>';
+            }
+        }
+
+        async function toggleMemberActive(userId, newActive) {
+            const actionText = newActive ? 'تفعيل' : 'تجميد';
+            if (!confirm(`هل أنت متأكد من ${actionText} حساب هذا العضو؟`)) return;
+            try {
+                await zarsevFetch(`/api/manufacturer/team/users/${userId}/status`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ is_active: newActive })
+                });
+                showToast(`تم ${actionText} حساب العضو بنجاح`, 'success');
+                await loadTeamAndSeats();
+            } catch (err) {
+                showToast(`تعذر ${actionText} الحساب: ` + err.message, 'error');
+            }
+        }
+
+        function openTransferModal(userId, userName) {
+            document.getElementById('transfer-target-user-id').value = userId;
+            document.getElementById('transfer-target-user-name').textContent = userName;
+            document.getElementById('transfer-password').value = '';
+            document.getElementById('mfg-transfer-modal').classList.remove('hidden');
+        }
+        function closeTransferModal() {
+            document.getElementById('mfg-transfer-modal').classList.add('hidden');
+        }
+        async function submitTransferOwnership(event) {
+            event.preventDefault();
+            const targetUserId = document.getElementById('transfer-target-user-id').value;
+            const password = document.getElementById('transfer-password').value;
+            const demotedRole = document.getElementById('transfer-demoted-role').value;
+            const btn = document.getElementById('transfer-submit-btn');
+            try {
+                btn.disabled = true;
+                btn.textContent = 'جاري نقل الملكية...';
+                await zarsevFetch('/api/manufacturer/team/transfer-ownership', {
+                    method: 'POST',
+                    body: JSON.stringify({ target_user_id: targetUserId, password, demoted_role: demotedRole })
+                });
+                showToast('تم نقل الملكية بنجاح. سيتم إعادة تحميل الصفحة.', 'success');
+                closeTransferModal();
+                setTimeout(() => window.location.reload(), 1500);
+            } catch (err) {
+                showToast('تعذر نقل الملكية: ' + err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span class="material-symbols-outlined text-[16px]">verified_user</span><span>تأكيد نقل الملكية</span>';
+            }
+        }
+
+        function openDocModal() {
+            document.getElementById('mfg-doc-modal').classList.remove('hidden');
+        }
+        function closeDocModal() {
+            document.getElementById('mfg-doc-modal').classList.add('hidden');
+            document.getElementById('mfg-doc-form').reset();
+        }
+        async function submitDocUpload(event) {
+            event.preventDefault();
+            const title = document.getElementById('doc-title').value;
+            const doc_type = document.getElementById('doc-type').value;
+            const fileInput = document.getElementById('doc-file');
+            if (!fileInput.files || fileInput.files.length === 0) {
+                showToast('يرجى اختيار ملف للرفع', 'warning');
+                return;
+            }
+            const formData = new FormData();
+            formData.append('title', title);
+            formData.append('doc_type', doc_type);
+            formData.append('file', fileInput.files[0]);
+
+            const btn = document.getElementById('doc-submit-btn');
+            try {
+                btn.disabled = true;
+                btn.textContent = 'جاري فحص وتأمين الملف...';
+                await zarsevFetch('/api/manufacturer/documents', {
+                    method: 'POST',
+                    body: formData
+                });
+                showToast('تم رفع المستند وتأمينه بنجاح', 'success');
+                closeDocModal();
+                await loadManufacturerDocuments();
+            } catch (err) {
+                showToast('تعذر رفع المستند: ' + err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span class="material-symbols-outlined text-[16px]">cloud_upload</span><span>رفع وتأمين المستند</span>';
+            }
+        }
+
+        async function loadManufacturerDashboard() {
+            try {
+                const me = await zarsevFetch('/api/auth/me');
+                const user = me.user;
+                const mfg = me.manufacturer;
+                currentMfgUser = user;
+                currentManufacturer = mfg;
+
+                // Enforce suspension visual state & action locks
+                if (mfg && mfg.is_active === false) {
+                    const alertEl = document.getElementById('mfg-suspension-alert');
+                    if (alertEl) alertEl.classList.remove('hidden');
+
+                    const inviteBtn = document.getElementById('mfg-invite-btn');
+                    if (inviteBtn) {
+                        inviteBtn.disabled = true;
+                        inviteBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                        inviteBtn.title = 'حساب المنشأة معلق مؤقتاً';
+                    }
+                    const docBtn = document.getElementById('mfg-doc-upload-btn');
+                    if (docBtn) {
+                        docBtn.disabled = true;
+                        docBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                        docBtn.title = 'حساب المنشأة معلق مؤقتاً';
+                    }
+                    const quoteBtn = document.getElementById('mfg-quote-submit-btn');
+                    if (quoteBtn) {
+                        quoteBtn.disabled = true;
+                        quoteBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    }
+                }
+
+                if (mfg) {
+                    document.getElementById('mfg-name-title').textContent = mfg.name_ar;
+                    document.getElementById('mfg-code-badge').textContent = mfg.code || mfg.id;
+                } else {
+                    document.getElementById('mfg-name-title').textContent = user.name;
+                    document.getElementById('mfg-code-badge').textContent = user.id;
+                }
+
+                // Load History & Metrics
+                const historyRes = await zarsevFetch('/api/imports/history');
+                const history = historyRes.history || [];
+
+                document.getElementById('stat-total-batches').textContent = history.length;
+
+                // Quota
+                let totalItemsUploaded = 0;
+                let pendingCount = 0;
+                let validCount = 0;
+
+                history.forEach(h => {
+                    totalItemsUploaded += (h.total_detected || 0);
+                    if (h.status === 'SUBMITTED') pendingCount += (h.total_valid || 0);
+                    if (h.status === 'COMPLETED') validCount += (h.total_valid || 0);
+                });
+
+                document.getElementById('stat-active-products').textContent = validCount;
+                document.getElementById('stat-pending-products').textContent = pendingCount;
+
+                // Quota Limits based on plan
+                const quotaLimit = 500;
+                document.getElementById('stat-quota-used').textContent = totalItemsUploaded;
+                document.getElementById('stat-quota-limit').textContent = `/ ${quotaLimit} صنف`;
+                const pct = Math.min(100, Math.round((totalItemsUploaded / quotaLimit) * 100));
+                document.getElementById('stat-quota-bar').style.width = `${pct}%`;
+
+                // Render latest 5 batches
+                const tbody = document.getElementById('mfg-batches-tbody');
+                if (history.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="7" class="p-8 text-center text-on-surface-variant">
+                                <span class="material-symbols-outlined text-outline text-[32px] mb-1">inventory_2</span>
+                                <div class="font-bold text-primary">لا توجد دفعات كتالوجات مرفوعة حتى الآن</div>
+                                <p class="text-xs mt-1">ابدأ برفع أول ملف كتالوج عبر زر الرفع أعلاه لاستخراج المنتجات فورياً.</p>
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    tbody.innerHTML = history.slice(0, 5).map(h => {
+                        let actionBtn = '';
+                        if (h.status === 'REVIEW_READY' || h.status === 'SAVED_DRAFT') {
+                            actionBtn = `<a href="/importer/review/${h.id}" class="inline-flex items-center gap-1 px-3 py-1.5 rounded bg-secondary text-white font-bold hover:bg-secondary/90 transition-all">
+                                <span>مراجعة الأصناف</span>
+                                <span class="material-symbols-outlined text-[14px]">arrow_back</span>
+                            </a>`;
+                        } else if (h.status === 'FAILED') {
+                            actionBtn = `<a href="/importer/failed/${h.id}" class="inline-flex items-center gap-1 px-3 py-1.5 rounded bg-rose-700 text-white font-bold hover:bg-rose-800 transition-all">
+                                <span>تقرير الأخطاء</span>
+                            </a>`;
+                        } else {
+                            actionBtn = `<a href="/importer/review/${h.id}" class="inline-flex items-center gap-1 px-3 py-1.5 rounded bg-surface-container text-primary font-bold hover:bg-surface-container-high transition-all">
+                                <span>استعراض الدفعة</span>
+                            </a>`;
+                        }
+
+                        return `
+                            <tr class="hover:bg-surface-container-low transition-colors">
+                                <td class="p-3.5 font-mono font-bold text-primary">${h.id}</td>
+                                <td class="p-3.5 font-medium truncate max-w-[200px]">${h.original_filename || 'حزمة مستندات'}</td>
+                                <td class="p-3.5 text-on-surface-variant font-mono">${formatDate(h.created_at)}</td>
+                                <td class="p-3.5 text-center font-bold text-primary font-mono">${h.total_detected || 0}</td>
+                                <td class="p-3.5 text-center font-bold text-emerald-700 font-mono">${h.total_valid || 0}</td>
+                                <td class="p-3.5 text-center whitespace-nowrap">${renderBatchStatusBadge(h.status)}</td>
+                                <td class="p-3.5 text-center">${actionBtn}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+
+                // Load Team & Secure Documents
+                await loadTeamAndSeats();
+                await loadManufacturerDocuments();
+
+            } catch (err) {
+                console.error('Error loading dashboard:', err);
+                showToast('تعذر تحميل بيانات اللوحة: ' + err.message, 'error');
+            }
+        }
+    
+        // =========================================================================
+        // Manufacturer Portal Tab Navigation & Handlers (Phase 4.0 / 5.0)
+        // =========================================================================
+        const MFG_SECTIONS = ['rfqs', 'products', 'contracts', 'team', 'docs'];
+
+        function switchMfgSection(targetSection) {
+            MFG_SECTIONS.forEach(sec => {
+                const btn = document.getElementById(`mfg-tab-btn-${sec}`);
+                let el = null;
+                if (sec === 'rfqs') el = document.querySelector('.bg-surface-container-lowest.rounded-2xl.border.border-outline-variant.shadow-sm.overflow-hidden');
+                else if (sec === 'products') el = document.getElementById('mfg-section-products');
+                else if (sec === 'contracts') el = document.getElementById('mfg-section-contracts');
+                else if (sec === 'team') el = document.getElementById('mfg-team-section') || document.querySelector('#team-members-list')?.closest('.bg-surface-container-lowest');
+                else if (sec === 'docs') el = document.getElementById('mfg-docs-section') || document.querySelector('#secure-documents-list')?.closest('.bg-surface-container-lowest');
+
+                if (btn) {
+                    if (sec === targetSection) {
+                        btn.className = 'mfg-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 bg-primary text-white shadow-xs';
+                    } else {
+                        btn.className = 'mfg-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 text-primary hover:bg-surface-container-low';
+                    }
+                }
+                if (el) {
+                    if (sec === targetSection) {
+                        el.classList.remove('hidden');
+                    } else {
+                        el.classList.add('hidden');
+                    }
+                }
+            });
+
+            if (targetSection === 'products') loadMfgProducts();
+            else if (targetSection === 'contracts') loadMfgContractsAndBatches();
+        }
+
+        // -------------------------------------------------------------------------
+        // My Products Handlers
+        // -------------------------------------------------------------------------
+        let activeMfgProducts = [];
+
+        async function loadMfgProducts() {
+            const tbody = document.getElementById('mfg-products-tbody');
+            tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-on-surface-variant"><span class="material-symbols-outlined animate-spin text-[24px]">progress_activity</span><div class="mt-2 text-xs">جاري تحميل منتجات المصنع...</div></td></tr>';
+
+            try {
+                const res = await zarsevFetch('/api/products/my-catalog');
+                const products = res.products || [];
+                activeMfgProducts = products;
+
+                const badge = document.getElementById('mfg-my-prods-badge');
+                if (badge) badge.textContent = products.length;
+
+                if (products.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-on-surface-variant text-xs">لم يتم تسجيل أي منتجات معتمدة لهذا المصنع بعد. يمكنك استيراد أصناف جديدة من خلال معالج الاستيراد الذكي.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = products.map(p => `
+                    <tr class="hover:bg-surface-container-low transition-colors">
+                        <td class="p-3.5">
+                            <div class="font-bold text-primary text-xs">${escapeHtml(p.name_ar)}</div>
+                            <div class="font-mono text-[11px] text-on-surface-variant">${escapeHtml(p.name_en || '-')}</div>
+                        </td>
+                        <td class="p-3.5 font-semibold text-secondary">${escapeHtml(p.category_name || '-')}</td>
+                        <td class="p-3.5 font-mono font-bold text-primary">${p.price ? `${Number(p.price).toLocaleString()} ${escapeHtml(p.currency || 'USD')} / ${escapeHtml(p.price_unit || 'طن')}` : 'حسب التفاوض'}</td>
+                        <td class="p-3.5 font-mono text-on-surface-variant">${escapeHtml(p.moq || '1 حاوية')}</td>
+                        <td class="p-3.5 text-center">
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${p.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+                                ${p.status === 'APPROVED' ? 'معتمد ومنشور' : 'قيد المراجعة'}
+                            </span>
+                        </td>
+                        <td class="p-3.5 text-center">
+                            <button type="button" onclick="openMfgProductEditModal('${p.id}')" class="px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface text-secondary font-bold text-xs border border-outline-variant transition-all">
+                                تعديل الصنف
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-rose-600 text-xs">خطأ في استرجاع المنتجات: ${escapeHtml(err.message)}</td></tr>`;
+            }
+        }
+
+        function openMfgProductEditModal(id) {
+            const p = activeMfgProducts.find(x => x.id === id);
+            if (!p) return;
+
+            document.getElementById('edit-prod-id').value = p.id;
+            document.getElementById('edit-prod-name-ar').value = p.name_ar || '';
+            document.getElementById('edit-prod-name-en').value = p.name_en || '';
+            document.getElementById('edit-prod-price').value = p.price || '';
+            document.getElementById('edit-prod-currency').value = p.currency || 'USD';
+            document.getElementById('edit-prod-unit').value = p.price_unit || 'طن';
+            document.getElementById('edit-prod-moq').value = p.moq || '';
+            document.getElementById('edit-prod-packaging').value = p.packaging_info || '';
+
+            document.getElementById('mfg-edit-product-modal').classList.remove('hidden');
+        }
+
+        function closeMfgProductEditModal() {
+            document.getElementById('mfg-edit-product-modal').classList.add('hidden');
+        }
+
+        async function submitMfgProductUpdate() {
+            const id = document.getElementById('edit-prod-id').value;
+            const name_ar = document.getElementById('edit-prod-name-ar').value;
+            const name_en = document.getElementById('edit-prod-name-en').value;
+            const price = parseFloat(document.getElementById('edit-prod-price').value) || 0;
+            const currency = document.getElementById('edit-prod-currency').value;
+            const price_unit = document.getElementById('edit-prod-unit').value;
+            const moq = document.getElementById('edit-prod-moq').value;
+            const packaging_info = document.getElementById('edit-prod-packaging').value;
+            const btn = document.getElementById('btn-save-mfg-prod');
+
+            btn.disabled = true;
+            btn.textContent = 'جاري الحفظ...';
+
+            try {
+                const res = await zarsevFetch(`/api/products/${id}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        name_ar,
+                        name_en,
+                        price,
+                        currency,
+                        price_unit,
+                        moq,
+                        packaging_info
+                    })
+                });
+
+                showToast(res.message, 'success');
+                closeMfgProductEditModal();
+                await loadMfgProducts();
+            } catch (err) {
+                showToast(err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'حفظ التعديلات';
+            }
+        }
+
+        // -------------------------------------------------------------------------
+        // Contracts & Production Handlers
+        // -------------------------------------------------------------------------
+        async function loadMfgContractsAndBatches() {
+            const tbodyContracts = document.getElementById('mfg-contracts-tbody');
+            const batchesList = document.getElementById('mfg-batches-list');
+            const qcList = document.getElementById('mfg-qc-inspections-list');
+
+            tbodyContracts.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-on-surface-variant"><span class="material-symbols-outlined animate-spin text-[24px]">progress_activity</span><div class="mt-2 text-xs">جاري تحميل العقود...</div></td></tr>';
+
+            try {
+                const [resContracts, resBatches, resQc] = await Promise.all([
+                    zarsevFetch('/api/contracts').catch(() => ({ contracts: [] })),
+                    zarsevFetch('/api/production/batches').catch(() => ({ batches: [] })),
+                    zarsevFetch('/api/quality/inspections').catch(() => ({ inspections: [] }))
+                ]);
+
+                const contracts = resContracts.contracts || [];
+                const batches = resBatches.batches || [];
+                const inspections = resQc.inspections || [];
+
+                if (contracts.length === 0) {
+                    tbodyContracts.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-on-surface-variant text-xs">لا توجد عقود مبرمة حتى الآن. عند قبول المشتري لأحد عروض الأسعار، سيظهر العقد هنا للشروع في الإنتاج.</td></tr>';
+                } else {
+                    tbodyContracts.innerHTML = contracts.map(c => `
+                        <tr class="hover:bg-surface-container-low transition-colors">
+                            <td class="p-3.5 font-mono font-bold text-secondary">${escapeHtml(c.contract_no)}</td>
+                            <td class="p-3.5 font-bold text-primary">${escapeHtml(c.buyer_company)}<br/><span class="text-on-surface-variant text-[11px] font-normal">${escapeHtml(c.buyer_name)}</span></td>
+                            <td class="p-3.5 font-mono font-bold text-primary">${Number(c.total_amount).toLocaleString()} ${escapeHtml(c.currency)}</td>
+                            <td class="p-3.5 text-center"><span class="px-2 py-0.5 rounded bg-surface-container font-mono text-xs font-bold text-secondary">${escapeHtml(c.incoterm)}</span></td>
+                            <td class="p-3.5 font-mono text-on-surface-variant text-[11px]">${escapeHtml(c.delivery_deadline || '-')}</td>
+                            <td class="p-3.5 text-center"><span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">${escapeHtml(c.status)}</span></td>
+                            <td class="p-3.5 text-center">
+                                <button type="button" onclick="openCreateBatchModal('${c.id}')" class="px-3 py-1.5 rounded-lg bg-secondary text-white font-bold text-xs shadow-xs hover:bg-secondary/90 transition-all">
+                                    بدء خطة إنتاج
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+
+                if (batches.length === 0) {
+                    batchesList.innerHTML = '<div class="p-6 text-center text-on-surface-variant text-xs">لا توجد دفعات إنتاج نشطة حالياً.</div>';
+                } else {
+                    batchesList.innerHTML = batches.map(b => `
+                        <div class="p-3.5 rounded-xl border border-outline-variant bg-surface-container-low space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="font-mono font-bold text-primary text-xs">${escapeHtml(b.batch_no)}</span>
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-teal-100 text-teal-800">${escapeHtml(b.stage)}</span>
+                            </div>
+                            <div class="text-[11px] text-on-surface-variant flex justify-between">
+                                <span>التشغيلة: <strong class="font-mono text-primary">${escapeHtml(b.lot_number)}</strong></span>
+                                <span>الكمية: <strong class="font-mono text-primary">${b.target_quantity} ${b.uom}</strong></span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-1.5">
+                                <div class="bg-secondary h-1.5 rounded-full" style="width: ${b.readiness_pct || 15}%"></div>
+                            </div>
+                            <div class="text-[10px] text-left font-mono text-on-surface-variant font-bold">${b.readiness_pct || 15}% جاهزية</div>
+                        </div>
+                    `).join('');
+                }
+
+                if (inspections.length === 0) {
+                    qcList.innerHTML = '<div class="p-6 text-center text-on-surface-variant text-xs">لا توجد سجلات فحص جودة مسجلة.</div>';
+                } else {
+                    qcList.innerHTML = inspections.map(i => `
+                        <div class="p-3.5 rounded-xl border border-outline-variant bg-surface-container-low flex items-center justify-between">
+                            <div class="space-y-0.5">
+                                <div class="font-mono font-bold text-xs text-primary">${escapeHtml(i.inspection_no)}</div>
+                                <div class="text-[11px] text-on-surface-variant">${escapeHtml(i.inspection_type)} | مفتش: ${escapeHtml(i.inspector_name)}</div>
+                            </div>
+                            <div class="text-right">
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${i.verdict === 'PASSED' ? 'bg-emerald-100 text-emerald-800' : (i.verdict === 'CONDITIONAL_RELEASE' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800')}">
+                                    ${escapeHtml(i.verdict)}
+                                </span>
+                                <div class="text-[10px] font-mono text-on-surface-variant mt-1">نسبة الرفض: ${i.rejection_rate}%</div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function openCreateBatchModal(contractId) {
+            document.getElementById('new-batch-contract-id').value = contractId;
+            document.getElementById('mfg-new-batch-modal').classList.remove('hidden');
+        }
+
+        async function submitCreateBatch() {
+            const contractId = document.getElementById('new-batch-contract-id').value;
+            const lotNumber = document.getElementById('new-batch-lot-number').value;
+            const targetQty = document.getElementById('new-batch-target-qty').value;
+            const startDate = document.getElementById('new-batch-start-date').value;
+            const endDate = document.getElementById('new-batch-end-date').value;
+            const notes = document.getElementById('new-batch-notes').value;
+            const btn = document.getElementById('btn-submit-new-batch');
+
+            if (!lotNumber || !targetQty) {
+                showToast('يرجى إدخال رقم الدفعة والكمية المستهدفة', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'جاري الاعتماد...';
+
+            try {
+                const res = await zarsevFetch('/api/production/batches', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        contract_id: contractId,
+                        lot_number: lotNumber,
+                        target_quantity: parseFloat(targetQty),
+                        start_date: startDate,
+                        end_date: endDate,
+                        notes
+                    })
+                });
+
+                showToast(res.message, 'success');
+                document.getElementById('mfg-new-batch-modal').classList.add('hidden');
+                await loadMfgContractsAndBatches();
+            } catch (err) {
+                showToast(err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'بدء خطة التشغيل';
+            }
+        }
+
+    </script>
+</body>
+</html>

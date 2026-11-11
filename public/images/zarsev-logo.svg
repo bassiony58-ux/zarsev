@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 54" fill="none" class="zarsev-logo">
+  <defs>
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#172D46" />
+      <stop offset="100%" stop-color="#001830" />
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFDEA9" />
+      <stop offset="100%" stop-color="#C5A46D" />
+    </linearGradient>
+    <linearGradient id="tealGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#A8EBF2" />
+      <stop offset="100%" stop-color="#1F686E" />
+    </linearGradient>
+    <filter id="subtleShadow" x="-10%" y="-10%" width="125%" height="125%">
+      <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="#000000" flood-opacity="0.18" />
+    </filter>
+  </defs>
+
+  <!-- Logo Emblem Icon -->
+  <g transform="translate(6, 3)" filter="url(#subtleShadow)">
+    <!-- Base Rounded Shield / Container -->
+    <rect x="0" y="0" width="48" height="48" rx="12" fill="url(#shieldGrad)" stroke="#C5A46D" stroke-opacity="0.45" stroke-width="1.2" />
+    
+    <!-- Outer Sovereign Ring -->
+    <circle cx="24" cy="24" r="18" stroke="url(#goldGrad)" stroke-width="1" stroke-dasharray="2 1.5" opacity="0.6" />
+
+    <!-- Maritime Anchor Core -->
+    <path d="M24 10 V33 M18 16 H30" stroke="url(#goldGrad)" stroke-width="2.2" stroke-linecap="round" />
+    <circle cx="24" cy="11.5" r="2.8" stroke="url(#goldGrad)" stroke-width="2" fill="none" />
+    <!-- Flukes (Crown) -->
+    <path d="M14 26 C14 34, 34 34, 34 26" stroke="url(#goldGrad)" stroke-width="2.2" stroke-linecap="round" fill="none" />
+    <path d="M12.5 25.5 L14 28.5 L17 27 M35.5 25.5 L34 28.5 L31 27" stroke="url(#goldGrad)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+
+    <!-- Stylized Wheat / Industrial Ears & Waves -->
+    <path d="M19 38 C21.5 39.5, 26.5 39.5, 29 38" stroke="url(#tealGrad)" stroke-width="1.8" stroke-linecap="round" fill="none" />
+    <path d="M21 41 C22.5 42, 25.5 42, 27 41" stroke="url(#tealGrad)" stroke-width="1.4" stroke-linecap="round" fill="none" />
+  </g>
+
+  <!-- Typographic Wordmark -->
+  <g transform="translate(64, 12)">
+    <!-- English Sovereign Title -->
+    <text x="0" y="19" font-family="'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif" font-size="20" font-weight="700" letter-spacing="1.5" fill="#172D46">ZARSEV</text>
+    
+    <!-- Arabic Brand Badge -->
+    <rect x="96" y="5" width="54" height="18" rx="9" fill="#1F686E" fill-opacity="0.1" stroke="#1F686E" stroke-opacity="0.25" stroke-width="1" />
+    <text x="123" y="17.5" font-family="'IBM Plex Sans Arabic', -apple-system, sans-serif" font-size="10.5" font-weight="700" text-anchor="middle" fill="#1F686E">زرع وسيف</text>
+    
+    <!-- Subtitle Description -->
+    <text x="0" y="34" font-family="'IBM Plex Sans Arabic', -apple-system, sans-serif" font-size="9.5" font-weight="500" fill="#74777E">منصة الصادرات والصناعات الوطنية</text>
+  </g>
+</svg>

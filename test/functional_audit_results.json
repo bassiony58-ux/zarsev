@@ -1,0 +1,193 @@
+{
+  "timestamp": "2026-11-07T16:38:18.363Z",
+  "database": "zarsev_test",
+  "engine": "PostgreSQL",
+  "tests": [
+    {
+      "id": 1,
+      "category": "1. Manufacturer Journey",
+      "name": "Authentication & Profile Binding",
+      "operation": "Login as Nile Fruits Manufacturer",
+      "endpoint": "POST /api/auth/dev-login",
+      "dbTable": "users JOIN manufacturers",
+      "expected": "Role=MANUFACTURER, linked to mfg_nile_fruits",
+      "actual": "Role=MANUFACTURER, ManufacturerId=mfg_nile_fruits",
+      "status": "PASS",
+      "notes": ""
+    },
+    {
+      "id": 2,
+      "category": "1. Manufacturer Journey",
+      "name": "CSV Catalog Upload & Batch Creation",
+      "operation": "Upload CSV and process background extraction",
+      "endpoint": "POST /api/imports/upload",
+      "dbTable": "imports",
+      "expected": "Row created in imports with manufacturer_id=mfg_nile_fruits and progress_percent=100",
+      "actual": "Found row: id=imp_05bbbcf37cc4, status=REVIEW_READY, progress=100%, mfg=mfg_nile_fruits",
+      "status": "PASS",
+      "notes": ""
+    },
+    {
+      "id": 3,
+      "category": "1. Manufacturer Journey",
+      "name": "Extracted Products Database Persistence",
+      "operation": "Verify extracted products saved in import_items",
+      "endpoint": "GET /api/imports/:id/items",
+      "dbTable": "import_items",
+      "expected": "2 extracted items stored in import_items table",
+      "actual": "Retrieved 2 rows from PostgreSQL import_items",
+      "status": "PASS",
+      "notes": ""
+    },
+    {
+      "id": 4,
+      "category": "1. Manufacturer Journey",
+      "name": "Edit Product Details & Persistence",
+      "operation": "Update product price and packaging",
+      "endpoint": "PUT /api/imports/:id/items/:itemId",
+      "dbTable": "import_items.extracted_data",
+      "expected": "PostgreSQL record updated: price=3950, name_ar matches",
+      "actual": "PostgreSQL data: price=3950, name_ar=\"تمر مجدول فاخر درجة أولى - معدل للاختبار\"",
+      "status": "PASS",
+      "notes": ""
+    },
+    {
+      "id": 5,
+      "category": "1. Manufacturer Journey",
+      "name": "Submit for Approval & Products Table Population",
+      "operation": "Submit extracted items to platform governance queue",
+      "endpoint": "POST /api/imports/:id/submit-approval",
+      "dbTable": "products",
+      "expected": "2 products created with status=PENDING_APPROVAL and manufacturer_id=mfg_nile_fruits",
+      "actual": "Created 2 products, allPending=true, correctMfg=true, pricePreserved=true",
+      "status": "PASS",
+      "notes": ""
+    },
+    {
+      "id": 6,
+      "category": "2. Admin Governance Journey",
+      "name": "Approvals Queue Visibility",
+      "operation": "Fetch pending approval queue for Super Admin",
+      "endpoint": "GET /api/approvals/queue",
+      "dbTable": "products (status=PENDING_APPROVAL)",
+      "expected": "Submitted products appear in pending queue",
+      "actual": "Queue length=21, Contains new products=true",
+      "status": "PASS",
+      "notes": ""
+    },
+    {
+      "id": 7,
+      "category": "2. Admin Governance Journey",
+      "name": "Product Approval & State Change to PUBLISHED",
+      "operation": "Super Admin approves product",
+      "endpoint": "POST /api/approvals/:productId/decide (APPROVE)",
+      "dbTable": "products",
+      "expected": "PostgreSQL status updated to PUBLISHED, rejection_reason is NULL",
+      "actual": "Status=PUBLISHED, RejectionReason=null",
+      "status": "PASS",
+      "notes": ""
+    },
+    {
+      "id": 8,
+      "category": "2. Admin Governance Journey",
+      "name": "Product Rejection with Feedback Persistence",
+      "operation": "Super Admin rejects product with reason",
+      "endpoint": "POST /api/approvals/:productId/decide (REJECT)",
+      "dbTable": "products",
+      "expected": "PostgreSQL status updated to REJECTED with stored reason",
+      "actual": "Status=REJECTED, Reason=\"المواصفات الفنية غير مكتملة، يرجى توضيح كود التتبع ومعيار التبريد\"",
+      "status": "PASS",
+      "notes": ""
+    },
+    {
+      "id": 9,
+      "category": "2. Admin Governance Journey",
+      "name": "Public Catalog Selective Exposure",
+      "operation": "Query unauthenticated public catalog endpoint",
+      "endpoint": "GET /api/products",
+      "dbTable": "products (status=PUBLISHED filter)",
+      "expected": "Approved product is visible, Rejected product is strictly excluded",
+      "actual": "ApprovedVisible=true, RejectedVisible=false",
+      "status": "PASS",
+      "notes": ""
+    },
+    {
+      "id": 10,
+      "category": "3. Buyer Journey",
+      "name": "Public Catalog Keyword Search",
+      "operation": "Search for product by keyword \"تمر\"",
+      "endpoint": "GET /api/products?search=تمر",
+      "dbTable": "products",
+      "expected": "Returns published matching product",
+      "actual": "Results count=1, Contains approved item=true",
+      "status": "PASS",
+      "notes": ""
+    },
+    {
+      "id": 11,
+      "category": "3. Buyer Journey",
+      "name": "Product Details Retrieval",
+      "operation": "Fetch full product details and specifications",
+      "endpoint": "GET /api/products/:id",
+      "dbTable": "products JOIN manufacturers",
+      "expected": "Full specifications, manufacturer name and packaging returned",
+      "actual": "Product name=\"تمر مجدول فاخر درجة أولى - معدل للاختبار\", Manufacturer=\"شركة ثمار النيل للتصدير والاستثمار الزراعي\"",
+      "status": "PASS",
+      "notes": ""
+    },
+    {
+      "id": 12,
+      "category": "3. Buyer Journey",
+      "name": "RFQ / Order Inquiry Persistence",
+      "operation": "Submit RFQ form from product details page",
+      "endpoint": "POST /api/rfq or POST /contact (Frontend: handleRfqSubmit())",
+      "dbTable": "rfq / inquiries",
+      "expected": "RFQ record saved with buyer details, product ID, and quantity in PostgreSQL",
+      "actual": "Table exists: false, Backend route exists: false. Frontend uses client-side DOM mockup (handleRfqSubmit / handleFormSubmit) without API transmission.",
+      "status": "NOT_IMPLEMENTED",
+      "notes": "Critical Finding: RFQ and Contact forms currently only toggle UI visibility classes and do not submit to any backend API or persist to PostgreSQL."
+    },
+    {
+      "id": 13,
+      "category": "4. Logistics Journey",
+      "name": "Smart Fuzzy Matching Engine",
+      "operation": "Query fuzzy matcher with \"محطة البستان للتعبئة\"",
+      "endpoint": "GET /api/manufacturers/match?name=...",
+      "dbTable": "manufacturers",
+      "expected": "Identifies matching packhouse record with confidence score",
+      "actual": "Matched: \"محطة البستان للحاصلات الزراعية والتصدير\", Code=EGY-BUS-01, Model=DIRECT_CONTRACT, Confidence=0.65%",
+      "status": "PASS",
+      "notes": ""
+    },
+    {
+      "id": 14,
+      "category": "4. Logistics Journey",
+      "name": "Duplicate Packhouse Prevention",
+      "operation": "Attempt to register a packhouse with existing name",
+      "endpoint": "POST /api/manufacturers",
+      "dbTable": "manufacturers",
+      "expected": "HTTP 409 Conflict with duplicate warning message",
+      "actual": "Status=409, Error=\"يوجد بالفعل مصنع مسجل بنفس الاسم أو الكود: \"محطة البستان للحاصلات الزراعية والتصدير\" (كود: EGY-BUS-01)\"",
+      "status": "PASS",
+      "notes": ""
+    },
+    {
+      "id": 15,
+      "category": "4. Logistics Journey",
+      "name": "Create Manufacturer Record & Persistence",
+      "operation": "Register new packhouse record",
+      "endpoint": "POST /api/manufacturers",
+      "dbTable": "manufacturers",
+      "expected": "Record inserted with is_verified=true, business_model=DIRECT_CONTRACT",
+      "actual": "Inserted: id=mfg_36246e5b0e, name_ar=\"محطة الفيروز للتبريد السريع والتعبئة (تجريبي)\", code=EGY-TEST-44F4, is_verified=true",
+      "status": "PASS",
+      "notes": ""
+    }
+  ],
+  "summary": {
+    "total": 15,
+    "passed": 14,
+    "failed": 0,
+    "notImplemented": 1
+  }
+}

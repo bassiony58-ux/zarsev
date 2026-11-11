@@ -173,6 +173,12 @@
                         opt.textContent = `${m.name_ar} (${m.business_model === 'DIRECT_CONTRACT' ? 'عقد مباشر' : 'اشتراك تسويقي'})`;
                         select.appendChild(opt);
                     });
+
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const mfgParam = urlParams.get('mfg');
+                    if (mfgParam && select) {
+                        select.value = mfgParam;
+                    }
                 }
             } catch (err) {
                 console.error(err);

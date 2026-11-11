@@ -93,7 +93,7 @@
         const importId = window.location.pathname.split('/').pop();
 
         document.addEventListener('DOMContentLoaded', async () => {
-            await renderZarsevHeader('history');
+            await renderZarsevHeader('failed');
             document.getElementById('csv-download-btn').href = `/api/imports/${importId}/error-report`;
             loadFailedDetails();
         });

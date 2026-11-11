@@ -1,17 +1,17 @@
 const assert = require('assert');
 const path = require('path');
 const fs = require('fs');
+const { setupTestEnvironment, cleanupTestDatabase } = require('./test_helper');
 
 async function runE2EVerification() {
     console.log('--- 🧪 Test Suite 6: Full End-to-End System Integration Test ---');
     
+    // Set up isolated database environment BEFORE requiring app/routes
+    const { isolatedDbPath } = setupTestEnvironment('e2e_flow');
+
     // Start local server instance
     const app = require('../src/app');
-    const { initDb } = require('../src/db/database');
-    const { seedDatabase } = require('../src/db/seed');
     const { generateToken } = require('../src/utils/authUtils');
-    initDb();
-    seedDatabase();
 
     const adminToken = generateToken({ id: 'usr_super_admin', email: 'admin@zarsev.com' });
     const authHeaders = { 'Authorization': `Bearer ${adminToken}` };
@@ -125,6 +125,7 @@ async function runE2EVerification() {
         console.log('🎉 END-TO-END FLOW VERIFICATION COMPLETE AND 100% SUCCESSFUL!\n');
     } finally {
         server.close();
+        cleanupTestDatabase(isolatedDbPath);
     }
 }
 

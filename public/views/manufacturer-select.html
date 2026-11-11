@@ -156,7 +156,7 @@
         let currentFilter = 'ALL';
 
         document.addEventListener('DOMContentLoaded', async () => {
-            await renderZarsevHeader('upload');
+            await renderZarsevHeader('manufacturer-select');
             await loadManufacturers();
         });
 
@@ -222,7 +222,7 @@
                         </div>
                     </div>
                     <div class="pt-5 border-t border-outline-variant/40 mt-5 flex items-center justify-between">
-                        <a href="/importer/upload" class="inline-flex items-center gap-1 text-xs font-bold text-secondary hover:underline">
+                        <a href="/importer/upload?mfg=${m.id}" class="inline-flex items-center gap-1 text-xs font-bold text-secondary hover:underline">
                             <span>استيراد منتجات لهذا المصنع</span>
                             <span class="material-symbols-outlined text-[16px]">arrow_back</span>
                         </a>

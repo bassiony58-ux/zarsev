@@ -1,0 +1,448 @@
+{
+  "summary": {
+    "total": 28,
+    "passed": 28,
+    "failed": 0
+  },
+  "results": [
+    {
+      "id": "TC-MIG-PRE-01",
+      "name": "Provisioning DEC-03 Gate blocks unhandled orphan",
+      "status": "PASSED",
+      "passed": true,
+      "details": {
+        "message": "CANNOT_PROVISION [DEC-03]: Found 1 orphan MANUFACTURER user(s) with is_legacy_exempt = false. Project owner must resolve DEC-03 before running Provisioning!"
+      },
+      "error": null,
+      "timestamp": "2026-11-08T11:02:24.700Z"
+    },
+    {
+      "id": "TC-MIG-PROV-02",
+      "name": "Provisioning succeeds after DEC-03 resolved",
+      "status": "PASSED",
+      "passed": true,
+      "details": {},
+      "error": null,
+      "timestamp": "2026-11-08T11:02:24.720Z"
+    },
+    {
+      "id": "TC-MIG-10",
+      "name": "Finalize blocks when active manufacturer has sub_role IS NULL (DEC-01/DEC-02 Gate)",
+      "status": "PASSED",
+      "passed": true,
+      "details": {
+        "message": "CANNOT_FINALIZE [DEC-01/DEC-02]: Found 2 active MANUFACTURER user(s) with sub_role IS NULL. Project owner must decide and set roles for existing accounts before running Finalize!"
+      },
+      "error": null,
+      "timestamp": "2026-11-08T11:02:24.722Z"
+    },
+    {
+      "id": "TC-AUDIT-21",
+      "name": "manufacturer_audit_logs statement & row triggers reject UPDATE, DELETE, TRUNCATE under migrator & app roles",
+      "status": "PASSED",
+      "passed": true,
+      "details": {
+        "deleteBlocked": true,
+        "updateBlocked": true,
+        "truncateTriggerBlocked": true,
+        "appUpdateBlocked": true,
+        "appDeleteBlocked": true,
+        "appTruncateBlocked": true,
+        "selectAllowed": true
+      },
+      "error": null,
+      "timestamp": "2026-11-08T11:02:24.748Z"
+    },
+    {
+      "id": "TC-MIG-FIN-03",
+      "name": "Finalize succeeds after all decisions resolved",
+      "status": "PASSED",
+      "passed": true,
+      "details": {},
+      "error": null,
+      "timestamp": "2026-11-08T11:02:24.751Z"
+    },
+    {
+      "id": "TC-AUTH-11",
+      "name": "JWT without token_version rejected with 401 TOKEN_VERSION_REQUIRED",
+      "status": "PASSED",
+      "passed": true,
+      "details": {
+        "status": 401,
+        "body": {
+          "success": false,
+          "code": "TOKEN_VERSION_REQUIRED",
+          "error": "غير مصرح: رمز الجلسة يفتقر إلى إصدار التوكن الإلزامي"
+        }
+      },
+      "error": null,
+      "timestamp": "2026-11-08T11:02:25.581Z"
+    },
+    {
+      "id": "TC-AUTH-12",
+      "name": "JWT with stale token_version rejected with 401 SESSION_REVOKED",
+      "status": "PASSED",
+      "passed": true,
+      "details": {
+        "status": 401,
+        "body": {
+          "success": false,
+          "code": "SESSION_REVOKED",
+          "error": "غير مصرح: تم تسجيل الخروج وإبطال جلسة هذا الرمز (Session Revoked)"
+        }
+      },
+      "error": null,
+      "timestamp": "2026-11-08T11:02:25.586Z"
+    },
+    {
+      "id": "TC-TENANT-16",
+      "name": "Manufacturer user without manufacturer_id rejected at DB constraint and Middleware (403 MANUFACTURER_UNLINKED & 401 USER_INACTIVE)",
+      "status": "PASSED",
+      "passed": true,
+      "details": {
+        "dbConstraintBlocked": true,
+        "httpStatus": 401,
+        "httpCode": "USER_INACTIVE",
+        "mwStatusCode": 403,
+        "mwResponseBody": {
+          "success": false,
+          "code": "MANUFACTURER_UNLINKED",
+          "error": "غير مصرح: حساب المصنع غير مرتبط بمنشأة صالحة"
+        },
+        "nextCalled": false
+      },
+      "error": null,
+      "timestamp": "2026-11-08T11:02:25.609Z"
+    },
+    {
+      "id": "TC-RBAC-14",
+      "name": "SALES sub-role prevented from inviting team members (403 INSUFFICIENT_SUB_ROLE)",
+      "status": "PASSED",
+      "passed": true,
+      "details": {
+        "status": 403,
+        "body": {
+          "success": false,
+          "code": "INSUFFICIENT_SUB_ROLE",
+          "error": "غير مصرح: ليس لديك الدور الفرعي المطلوب لتنفيذ هذا الإجراء",
+          "required_sub_roles": [
+            "OWNER"
+          ],
+          "current_sub_role": "SALES"
+        }
+      },
+      "error": null,
+      "timestamp": "2026-11-08T11:02:25.628Z"
+    },
+    {
+      "id": "TC-RBAC-13",
+      "name": "PRODUCTION sub-role prevented from submitting quotations (403 INSUFFICIENT_SUB_ROLE)",
+      "status": "PASSED",
+      "passed": true,
+      "details": {
+        "status": 403,
+        "body": {
+          "success": false,
+          "code": "INSUFFICIENT_SUB_ROLE",
+          "error": "غير مصرح: ليس لديك الدور الفرعي المطلوب لتنفيذ هذا الإجراء",
+          "required_sub_roles": [
+            "OWNER",
+            "SALES"
+          ],
+          "current_sub_role": "PRODUCTION"
+        }
+      },
+      "error": null,
+      "timestamp": "2026-11-08T11:02:25.635Z"
+    },
+    {
+      "id": "TC-RBAC-15",
+      "name": "EXPORT sub-role prevented from changing member roles (403 INSUFFICIENT_SUB_ROLE)",
+      "status": "PASSED",
+      "passed": true,
+      "details": {
+        "status": 403,
+        "body": {
+          "success": false,
+          "code": "INSUFFICIENT_SUB_ROLE",
+          "error": "غير مصرح: ليس لديك الدور الفرعي المطلوب لتنفيذ هذا الإجراء",
+          "required_sub_roles": [
+            "OWNER"
+          ],
+          "current_sub_role": "EXPORT"
+        }
+      },
+      "error": null,
+      "timestamp": "2026-11-08T11:02:25.638Z"
+    },
+    {
+      "id": "TC-OWNER-20",
+      "name": "Prevent deactivating sole active OWNER of the manufacturer",
+      "status": "PASSED",
+      "passed": true,
+      "details": {
+        "status": 400,
+        "body": {
+          "success": false,
+          "error": "غير مصرح: لا يمكن تجميد أو تعطيل المالك الوحيد للمنشأة. يلزم نقل الملكية أولاً"
+        }
+      },
+      "error": null,
+      "timestamp": "2026-11-08T11:02:25.644Z"
+    },
+    {
+      "id": "TC-CONC-04",
+      "name": "Inviting existing registered user email rejected",
+      "status": "PASSED",
+      "passed": true,
+      "details": {
+        "status": 400,
+        "body": {
+          "success": false,
+          "error": "البريد الإلكتروني مسجل بالفعل لمستخدم آخر في المنظومة"
+        }
+      },
+      "error": null,
+      "timestamp": "2026-11-08T11:02:25.647Z"
+    },
+    {
+      "id": "TC-INV-EMPTY",
+      "name": "GET /api/manufacturer/team returns empty invitations list and accurate seats when no invites exist",
+      "status": "PASSED",
+      "passed": true,
+      "details": {
+        "status": 200,
+        "invitationsCount": 0,
+        "pendingInvites": 0
+      },
+      "error": null,
+      "timestamp": "2026-11-08T11:02:25.664Z"
+    },
+    {
+      "id": "TC-CONC-01",
+      "name": "Two concurrent invites for last available seat: Exactly 1 succeeds, 1 receives quota error",
+      "status": "PASSED",
+      "passed": true,
+      "details": {
+        "res1Status": 201,
+        "res2Status": 400,
+        "res1Body": {
+          "success": true,
+          "message": "تم إنشاء وإرسال الدعوة بنجاح",
+          "invitation": {
+            "invitationId": "inv_e2bccbd7079210cb",
+            "email": "candidate1@zarsev.com",
+            "subRole": "SALES",
+            "rawToken": "3f2eb875f290be0aed3b7bf08985beb043e6120c13eb2b149d44f5be42ee87f6",
+            "expiresInHours": 48
+          }
+        },
+        "res2Body": {
+          "success": false,
+          "error": "تم بلوغ الحد الأقصى للمقاعد المتاحة لاشتراك المنشأة (2 مقاعد)"
+        }
+      },
+      "error": null,
+      "timestamp": "2026-11-08T11:02:25.693Z"
+    },
+    {
+      "id": "TC-SEAT-19",
+      "name": "Strict seat quota calculation (Active + Pending < Seats) enforced",
+      "status": "PASSED",
+      "passed": true,
+      "details": {
+        "statuses": [
+          201,
+          400
+        ]
+      },
+      "error": null,
+      "timestamp": "2026-11-08T11:02:25.693Z"
+    },
+    {
+      "id": "TC-INV-LIST",
+      "name": "GET /api/manufacturer/team returns pending invitations with invited_by_user_id alias and enforces quota",
+      "status": "PASSED",
+      "passed": true,
+      "details": {
+        "status": 200,
+        "invitations": [
+          {
+            "id": "inv_e2bccbd7079210cb",
+            "email": "candidate1@zarsev.com",
+            "sub_role": "SALES",
+            "status": "PENDING",
+            "expires_at": "2026-11-10T11:02:25.669Z",
+            "created_at": "2026-11-08T11:02:25.669Z",
+            "invited_by_user_id": "usr_mfg_delta_iqf"
+          }
+        ],
+        "seatStats": {
+          "maxSeats": 2,
+          "activeMembers": 1,
+          "pendingInvites": 1,
+          "totalAllocated": 2,
+          "remainingSeats": 0,
+          "isQuotaAvailable": false,
+          "manufacturer": {
+            "id": "mfg_delta_iqf",
+            "name_ar": "شركة الدلتا للصناعات التجميدية",
+            "subscription_id": "sub_standard",
+            "max_team_seats": 2,
+            "is_active": true
+          }
+        },
+        "dbRows": [
+          {
+            "id": "inv_e2bccbd7079210cb",
+            "email": "candidate1@zarsev.com",
+            "sub_role": "SALES",
+            "status": "PENDING",
+            "invited_by": "usr_mfg_delta_iqf"
+          }
+        ]
+      },
+      "error": null,
+      "timestamp": "2026-11-08T11:02:25.698Z"
+    },
+    {
+      "id": "TC-CONC-02",
+      "name": "Re-inviting an email after previous invitation revoked succeeds",
+      "status": "PASSED",
+      "passed": true,
+      "details": {
+        "revRes": 200,
+        "reRes": 201
+      },
+      "error": null,
+      "timestamp": "2026-11-08T11:02:25.709Z"
+    },
+    {
+      "id": "TC-CONC-03",
+      "name": "Accepting invitation twice (replay attack): 1st succeeds, 2nd rejected",
+      "status": "PASSED",
+      "passed": true,
+      "details": {
+        "accept1Status": 201,
+        "accept2Status": 400,
+        "accept2Error": "هذه الدعوة لم تعد صالحة (الحالة: ACCEPTED)"
+      },
+      "error": null,
+      "timestamp": "2026-11-08T11:02:25.828Z"
+    },
+    {
+      "id": "TC-INV-18",
+      "name": "Attempt to accept expired invitation rejected",
+      "status": "PASSED",
+      "passed": true,
+      "details": {
+        "status": 400,
+        "error": "انتهت صلاحية هذه الدعوة (أكثر من 48 ساعة)"
+      },
+      "error": null,
+      "timestamp": "2026-11-08T11:02:25.831Z"
+    },
+    {
+      "id": "TC-CONC-05",
+      "name": "Concurrent second active OWNER blocked by PostgreSQL partial unique index",
+      "status": "PASSED",
+      "passed": true,
+      "details": {
+        "indexRejected": true
+      },
+      "error": null,
+      "timestamp": "2026-11-08T11:02:25.831Z"
+    },
+    {
+      "id": "TC-CONC-06",
+      "name": "Ownership transfer rolls back on failure; original owner intact",
+      "status": "PASSED",
+      "passed": true,
+      "details": {
+        "failRes": 400,
+        "isStillOwner": true
+      },
+      "error": null,
+      "timestamp": "2026-11-08T11:02:25.948Z"
+    },
+    {
+      "id": "TC-CONC-07",
+      "name": "Suspending manufacturer immediately blocks active user sessions with 403 MANUFACTURER_SUSPENDED",
+      "status": "PASSED",
+      "passed": true,
+      "details": {
+        "status": 403,
+        "body": {
+          "success": false,
+          "code": "MANUFACTURER_SUSPENDED",
+          "error": "غير مصرح: تم تعليق أو تجميد منشأة المصنع"
+        }
+      },
+      "error": null,
+      "timestamp": "2026-11-08T11:02:25.951Z"
+    },
+    {
+      "id": "TC-SEC-08",
+      "name": "Cross-tenant document download attempt blocked with 403",
+      "status": "PASSED",
+      "passed": true,
+      "details": {
+        "status": 403,
+        "body": {
+          "success": false,
+          "error": "غير مصرح: لا يمكنك الوصول إلى مستندات تخص منشأة أخرى"
+        }
+      },
+      "error": null,
+      "timestamp": "2026-11-08T11:02:25.958Z"
+    },
+    {
+      "id": "TC-SEC-09",
+      "name": "Path traversal in secure document service strictly prevented",
+      "status": "PASSED",
+      "passed": true,
+      "details": {
+        "traversalBlocked": true
+      },
+      "error": null,
+      "timestamp": "2026-11-08T11:02:25.958Z"
+    },
+    {
+      "id": "TC-TENANT-17",
+      "name": "Tenant isolation: Manufacturer B cannot view RFQ quotations of Manufacturer A",
+      "status": "PASSED",
+      "passed": true,
+      "details": {
+        "status": 403,
+        "body": {
+          "success": false,
+          "error": "غير مصرح باستعراض عروض أسعار هذا الطلب"
+        }
+      },
+      "error": null,
+      "timestamp": "2026-11-08T11:02:25.966Z"
+    },
+    {
+      "id": "TC-MIG-ROLLBACK-01",
+      "name": "Rollback Stop Condition blocks rollback when accepted invitations exist",
+      "status": "PASSED",
+      "passed": true,
+      "details": {
+        "rollbackStopTriggered": true
+      },
+      "error": null,
+      "timestamp": "2026-11-08T11:02:25.988Z"
+    },
+    {
+      "id": "TC-MIG-ROLLBACK-02",
+      "name": "Clean rollback executes with full snapshot and registers in _migration_archive_log",
+      "status": "PASSED",
+      "passed": true,
+      "details": {
+        "rollbackCleanSuccess": true
+      },
+      "error": null,
+      "timestamp": "2026-11-08T11:02:26.011Z"
+    }
+  ]
+}

@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>ZARSEV - لوحة العمليات واللوجستيات الملاحية</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#001830",
+                        "primary-container": "#172D46",
+                        secondary: "#1F686E",
+                        "secondary-container": "#A8EBF2",
+                        tertiary: "#C5A46D",
+                        background: "#F9F9FF",
+                        surface: "#F9F9FF",
+                        "surface-container-low": "#F0F3FF",
+                        "surface-container": "#E7EEFF",
+                        "surface-container-lowest": "#FFFFFF",
+                        "on-surface": "#0F1C2E",
+                        "on-surface-variant": "#43474D",
+                        outline: "#74777E",
+                        "outline-variant": "#E4E7EC"
+                    },
+                    fontFamily: {
+                        sans: ["IBM Plex Sans Arabic", "IBM Plex Sans", "sans-serif"]
+                    }
+                }
+            }
+        };
+    </script>
+</head>
+<body class="bg-background font-sans text-on-surface antialiased min-h-screen flex flex-col">
+    <div id="zarsev-header-mount"></div>
+
+    <main class="flex-1 w-full max-w-[1440px] mx-auto px-4 md:px-8 py-8 space-y-8">
+        <!-- Orientation & Logistics Banner -->
+        <div class="bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div class="space-y-2">
+                <div class="flex items-center gap-2">
+                    <span class="px-2.5 py-1 rounded bg-blue-100 text-blue-800 text-xs font-bold font-mono">
+                        بوابة العمليات واللوجستيات الملاحية | LOGISTICS OPERATIONS
+                    </span>
+                    <span class="text-xs text-on-surface-variant">الربط اللوجستي: <strong class="text-secondary font-semibold">موانئ دمياط، الإسكندرية، وبورسعيد</strong></span>
+                </div>
+                <h1 class="text-2xl font-bold text-primary flex items-center gap-2">
+                    <span>إدارة سلاسل الإمداد ومحطات الفرز والتعبئة التصديرية</span>
+                </h1>
+                <p class="text-xs text-on-surface-variant leading-relaxed max-w-3xl">
+                    من هنا يشرف مسؤولو العمليات اللوجستية على مطابقة أسماء المنشآت المصدرة، منع تكرار فتح سجلات مكررة للمحطات عبر خوارزميات التشابه الذكية، فحص كود التخليص المسبق ACI، وتنسيق دخول الحاويات المبردة لأرصفة الموانئ.
+                </p>
+            </div>
+
+            <div class="flex items-center gap-3 shrink-0">
+                <a href="/importer/manufacturer-select" class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-secondary hover:bg-secondary/90 text-white font-bold text-xs shadow-md transition-all transform hover:-translate-y-0.5">
+                    <span class="material-symbols-outlined text-[19px]">domain_add</span>
+                    <span>إضافة محطة / مطابقة الموردين</span>
+                </a>
+                <button type="button" onclick="openHelpModal('logistics')" class="inline-flex items-center gap-1.5 px-4 py-3 rounded-xl bg-surface-container-low hover:bg-surface-container text-primary font-semibold text-xs border border-outline-variant transition-all">
+                    <span class="material-symbols-outlined text-[18px] text-secondary">help</span>
+                    <span>دليل العمليات</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Logistics KPIs -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <!-- 1. Total Packhouses -->
+            <div class="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant shadow-sm hover:shadow-md transition-all">
+                <div class="flex items-center justify-between pb-3">
+                    <span class="text-xs text-on-surface-variant font-semibold">إجمالي محطات الفرز المعتمدة</span>
+                    <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[22px]">factory</span>
+                    </div>
+                </div>
+                <div class="flex items-baseline gap-2">
+                    <h3 id="log-stat-total" class="text-3xl font-bold text-primary font-mono">0</h3>
+                    <span class="text-xs text-blue-700 font-semibold">محطة مسجلة</span>
+                </div>
+                <p class="text-[11px] text-on-surface-variant mt-2 border-t border-outline-variant/40 pt-2">مربوطة بشبكة الأرصفة الجمركية</p>
+            </div>
+
+            <!-- 2. Direct Contract Packhouses -->
+            <div class="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant shadow-sm hover:shadow-md transition-all">
+                <div class="flex items-center justify-between pb-3">
+                    <span class="text-xs text-on-surface-variant font-semibold">منشآت بعقود مباشرة</span>
+                    <div class="w-10 h-10 rounded-xl bg-teal-50 text-secondary flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[22px]">handshake</span>
+                    </div>
+                </div>
+                <div class="flex items-baseline gap-2">
+                    <h3 id="log-stat-direct" class="text-3xl font-bold text-primary font-mono">0</h3>
+                    <span class="text-xs text-secondary font-semibold">عقد مباشر</span>
+                </div>
+                <p class="text-[11px] text-on-surface-variant mt-2 border-t border-outline-variant/40 pt-2">شحن بحري حصري مع زارسيف</p>
+            </div>
+
+            <!-- 3. Marketing Subscription Packhouses -->
+            <div class="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant shadow-sm hover:shadow-md transition-all">
+                <div class="flex items-center justify-between pb-3">
+                    <span class="text-xs text-on-surface-variant font-semibold">اشتراكات تسويقية ذاتية</span>
+                    <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[22px]">card_membership</span>
+                    </div>
+                </div>
+                <div class="flex items-baseline gap-2">
+                    <h3 id="log-stat-marketing" class="text-3xl font-bold text-primary font-mono">0</h3>
+                    <span class="text-xs text-purple-700 font-semibold">حساب نشط</span>
+                </div>
+                <p class="text-[11px] text-on-surface-variant mt-2 border-t border-outline-variant/40 pt-2">تسويق ذاتي عبر الكتالوج الدولي</p>
+            </div>
+
+            <!-- 4. Seaport Terminals Active -->
+            <div class="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant shadow-sm hover:shadow-md transition-all">
+                <div class="flex items-center justify-between pb-3">
+                    <span class="text-xs text-on-surface-variant font-semibold">المنافذ والموانئ البحرية المعتمدة</span>
+                    <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[22px]">anchor</span>
+                    </div>
+                </div>
+                <div class="flex items-baseline gap-2">
+                    <h3 class="text-3xl font-bold text-primary font-mono">3</h3>
+                    <span class="text-xs text-amber-700 font-semibold">موانئ رئيسية</span>
+                </div>
+                <p class="text-[11px] text-on-surface-variant mt-2 border-t border-outline-variant/40 pt-2">دمياط • الإسكندرية • بورسعيد</p>
+            </div>
+        </div>
+
+        <!-- Embedded Smart Fuzzy Matcher Tool -->
+        <div class="bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant shadow-sm space-y-4">
+            <div class="flex items-center justify-between flex-wrap gap-4 pb-3 border-b border-outline-variant/60">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-secondary text-[24px]">psychology</span>
+                    <div>
+                        <h2 class="font-bold text-primary text-base">محرك المطابقة الذكي ومنع التكرار (Fuzzy Matcher)</h2>
+                        <p class="text-xs text-on-surface-variant mt-0.5">افحص اسم أي محطة فرز أو شركة تصدير للتحقق الفوري من وجود سجل مسبق لها ومنع تكرار الحسابات</p>
+                    </div>
+                </div>
+                <span class="px-2.5 py-1 rounded bg-secondary/10 text-secondary text-[11px] font-bold">خوارزمية Jaro-Winkler الملاحية</span>
+            </div>
+
+            <div class="flex items-center gap-3 max-w-2xl">
+                <input type="text" id="log-matcher-input" placeholder="اكتب اسم المنشأة (مثال: محطة البستان، ثمار النيل، دلتا للتصدير...)" class="flex-1 h-11 px-4 rounded-lg bg-surface-container-low border border-outline-variant text-xs text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary"/>
+                <button type="button" onclick="runLogisticsMatcher()" class="px-6 h-11 rounded-lg bg-secondary text-white font-bold text-xs hover:bg-secondary/90 transition-all flex items-center gap-1.5 shadow-sm">
+                    <span class="material-symbols-outlined text-[18px]">search</span>
+                    <span>فحص المطابقة</span>
+                </button>
+            </div>
+
+            <div id="log-matcher-result" class="p-4 rounded-xl bg-surface-container-low border border-outline-variant/60 text-xs hidden"></div>
+        </div>
+
+        <!-- Monitored Packhouses Table -->
+        <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
+            <div class="p-5 border-b border-outline-variant/60 flex items-center justify-between flex-wrap gap-4">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-secondary text-[22px]">warehouse</span>
+                    <h2 class="font-bold text-primary text-base">سجل محطات الفرز ومستودعات التبريد المرتبطة</h2>
+                </div>
+                <a href="/importer/manufacturer-select" class="text-xs font-bold text-secondary hover:underline flex items-center gap-1">
+                    <span>فتح الدليل الكامل وإضافة محطة</span>
+                    <span class="material-symbols-outlined text-[16px]">chevron_left</span>
+                </a>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-right text-xs">
+                    <thead class="bg-surface-container-low text-primary font-bold border-b border-outline-variant">
+                        <tr>
+                            <th class="p-3.5">اسم المحطة التصديرية</th>
+                            <th class="p-3.5">الكود الملاحي</th>
+                            <th class="p-3.5">الميناء الرئيسي</th>
+                            <th class="p-3.5 text-center">نوع الاتفاقية</th>
+                            <th class="p-3.5 text-center">مسار التبريد والتخزين</th>
+                            <th class="p-3.5 text-center">الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="log-packhouses-tbody" class="divide-y divide-outline-variant/40">
+                        <tr>
+                            <td colspan="6" class="p-8 text-center text-on-surface-variant">جاري تحميل المحطات...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Active Shipments & Reefer Cold-Chain Monitoring Section (Phase 6.0) -->
+        <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden p-5 space-y-4">
+            <div class="flex items-center justify-between pb-3 border-b border-outline-variant/60">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-secondary text-[24px]">directions_boat</span>
+                    <div>
+                        <h2 class="font-bold text-primary text-base">حركة الشحن البحري وتتبع الحاويات المبردة (Ocean Reefer Fleet)</h2>
+                        <p class="text-xs text-on-surface-variant">متابعة الحاويات المبردة المغادرة من دمياط، الإسكندرية، وبورسعيد والتحقق من سلامة درجات الحرارة وبوالص الشحن</p>
+                    </div>
+                </div>
+                <button type="button" onclick="loadLogisticsShipments()" class="h-9 px-3 rounded-lg bg-surface-container-low hover:bg-surface-container text-primary text-xs font-semibold border border-outline-variant flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[16px]">refresh</span>
+                    <span>تحديث الأسطول</span>
+                </button>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-right text-xs">
+                    <thead class="bg-surface-container-low text-primary font-bold border-b border-outline-variant">
+                        <tr>
+                            <th class="p-3.5">رقم الشحنة</th>
+                            <th class="p-3.5">الحاوية والناقل</th>
+                            <th class="p-3.5">المصنع المصدر</th>
+                            <th class="p-3.5">مسار الشحن (POL ← POD)</th>
+                            <th class="p-3.5">موعد الإبحار والوصول</th>
+                            <th class="p-3.5 text-center">حالة الشحنة</th>
+                            <th class="p-3.5 text-center">سلسلة التبريد</th>
+                        </tr>
+                    </thead>
+                    <tbody id="log-shipments-tbody" class="divide-y divide-outline-variant/40">
+                        <tr>
+                            <td colspan="7" class="p-8 text-center text-on-surface-variant">جاري تحميل الشحنات...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script src="/public/js/common.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            await renderZarsevHeader('portal-logistics');
+            await loadLogisticsDashboard();
+        });
+
+        async function loadLogisticsDashboard() {
+            try {
+                const res = await zarsevFetch('/api/manufacturers');
+                const mfgs = res.manufacturers || [];
+
+                document.getElementById('log-stat-total').textContent = mfgs.length;
+                const direct = mfgs.filter(m => m.business_model === 'DIRECT_CONTRACT').length;
+                const marketing = mfgs.filter(m => m.business_model === 'MARKETING_SUBSCRIPTION').length;
+
+                document.getElementById('log-stat-direct').textContent = direct;
+                document.getElementById('log-stat-marketing').textContent = marketing;
+
+                const tbody = document.getElementById('log-packhouses-tbody');
+                tbody.innerHTML = mfgs.map(m => `
+                    <tr class="hover:bg-surface-container-low transition-colors">
+                        <td class="p-3.5 font-bold text-primary flex items-center gap-2">
+                            <span class="material-symbols-outlined text-secondary text-[18px]">verified</span>
+                            <span>${m.name_ar}</span>
+                        </td>
+                        <td class="p-3.5 font-mono text-on-surface-variant">${m.code || m.id}</td>
+                        <td class="p-3.5 text-on-surface-variant">${m.city || 'ميناء دمياط'}</td>
+                        <td class="p-3.5 text-center">
+                            <span class="px-2.5 py-1 rounded text-[11px] font-bold ${m.business_model === 'DIRECT_CONTRACT' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}">
+                                ${m.business_model === 'DIRECT_CONTRACT' ? 'عقد مباشر' : 'اشتراك تسويقي'}
+                            </span>
+                        </td>
+                        <td class="p-3.5 text-center">
+                            <span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700">مستودع مبرد معتمد</span>
+                        </td>
+                        <td class="p-3.5 text-center">
+                            <a href="/catalog?mfg=${m.id}" class="text-secondary font-bold hover:underline">فحص الشحنات</a>
+                        </td>
+                    </tr>
+                `).join('');
+
+            } catch (err) {
+                console.error(err);
+                showToast('تعذر تحميل بيانات اللوجستيات: ' + err.message, 'error');
+            }
+        }
+
+        async function runLogisticsMatcher() {
+            const input = document.getElementById('log-matcher-input').value.trim();
+            const resultBox = document.getElementById('log-matcher-result');
+
+            if (!input) {
+                showToast('يرجى كتابة اسم المصنع أو المحطة أولاً', 'warning');
+                return;
+            }
+
+            try {
+                const res = await zarsevFetch(`/api/manufacturers/match?name=${encodeURIComponent(input)}`);
+                resultBox.classList.remove('hidden');
+
+                if (res.matched) {
+                    const m = res.matched_manufacturer;
+                    resultBox.className = 'p-4 rounded-xl bg-teal-50 border border-teal-300 text-xs text-teal-900 space-y-1';
+                    resultBox.innerHTML = `
+                        <div class="font-bold flex items-center gap-1.5 text-teal-800 text-sm">
+                            <span class="material-symbols-outlined text-[20px]">verified</span>
+                            <span>تم العثور على منشأة مطابقة بنسبة (${res.similarity_percentage}%):</span>
+                        </div>
+                        <div class="font-semibold text-primary text-sm pt-1">${m.name_ar} ${m.code ? `[${m.code}]` : ''}</div>
+                        <div class="text-teal-700">الموقع والميناء: ${m.city || 'ميناء دمياط'} | نوع التعاقد: <strong>${m.business_model === 'DIRECT_CONTRACT' ? 'عقد مباشر مع زارسيف' : 'اشتراك تسويقي'}</strong></div>
+                        <p class="text-[11px] text-teal-800 pt-1">
+                            تنبيه: لتجنب التكرار في قواعد البيانات، يرجى ربط الشحنات بالسجل المعتمد أعلاه بدلاً من إنشاء ملف جديد.
+                        </p>
+                    `;
+                } else {
+                    resultBox.className = 'p-4 rounded-xl bg-surface-container border border-outline-variant/60 text-xs text-on-surface-variant space-y-1';
+                    resultBox.innerHTML = `
+                        <div class="font-bold text-primary flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-outline text-[18px]">info</span>
+                            <span>لم يتم العثور على منشأة سابقة مطابقة للاسم ("${input}").</span>
+                        </div>
+                        <p class="text-[11px]">يمكنك إضافة هذه المحطة بأمان كمنشأة تصديرية جديدة من شاشة تسجيل المصانع دون قلق من التكرار.</p>
+                    `;
+                }
+            } catch (err) {
+                showToast('فشل فحص المطابقة: ' + err.message, 'error');
+            }
+        }
+    
+        async function loadLogisticsShipments() {
+            const tbody = document.getElementById('log-shipments-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-on-surface-variant"><span class="material-symbols-outlined animate-spin text-[24px]">progress_activity</span><div class="mt-2 text-xs">جاري فحص وتحديث قراءات الحاويات المبردة...</div></td></tr>';
+
+            try {
+                const res = await zarsevFetch('/api/shipping/shipments');
+                const shipments = res.shipments || [];
+
+                if (shipments.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-on-surface-variant text-xs">لا توجد شحنات بحرية محجوزة في الوقت الراهن.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = shipments.map(s => `
+                    <tr class="hover:bg-surface-container-low transition-colors">
+                        <td class="p-3.5 font-mono font-bold text-secondary">${s.shipment_no}</td>
+                        <td class="p-3.5">
+                            <div class="font-mono font-bold text-primary">${s.container_no}</div>
+                            <div class="text-[11px] text-on-surface-variant">${s.vessel_name} (${s.carrier_name})</div>
+                        </td>
+                        <td class="p-3.5 font-bold text-primary">${s.mfg_name_ar || '-'}</td>
+                        <td class="p-3.5 text-on-surface-variant text-[11px]">${s.pol} ← ${s.pod}</td>
+                        <td class="p-3.5 font-mono text-on-surface-variant text-[11px]">ETD: ${s.etd}<br/>ETA: ${s.eta}</td>
+                        <td class="p-3.5 text-center"><span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-teal-100 text-teal-800">${s.status}</span></td>
+                        <td class="p-3.5 text-center">
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">مستقر (4.0°C)</span>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-rose-600 text-xs">خطأ في استرجاع الشحنات: ${err.message}</td></tr>`;
+            }
+        }
+
+        // Auto call loadLogisticsShipments
+        const origDOMContentLoaded = window.onload;
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(loadLogisticsShipments, 800);
+        });
+</script>
+</body>
+</html>

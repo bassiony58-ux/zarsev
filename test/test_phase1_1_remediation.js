@@ -6,6 +6,7 @@ const { DatabaseSync } = require('node:sqlite');
 
 const config = require('../src/config');
 const { initDb, getDb, closeDb } = require('../src/db/database');
+const { setupTestEnvironment, cleanupTestDatabase, SANDBOX_DIR } = require('./test_helper');
 const {
     hashPassword,
     verifyPassword,
@@ -29,8 +30,9 @@ async function runRemediationTests() {
     const prevJwtSecret = process.env.JWT_SECRET;
     const prevOrigins = process.env.ALLOWED_ORIGINS;
 
-    const testDbPath = path.join(__dirname, 'remediation_test.db');
-    if (fs.existsSync(testDbPath)) fs.unlinkSync(testDbPath);
+    if (!fs.existsSync(SANDBOX_DIR)) fs.mkdirSync(SANDBOX_DIR, { recursive: true });
+    const testDbPath = path.join(SANDBOX_DIR, 'remediation_test.db');
+    cleanupTestDatabase(testDbPath);
 
     process.env.DB_PATH = testDbPath;
     process.env.NODE_ENV = 'test';
@@ -140,10 +142,16 @@ async function runRemediationTests() {
     const userLegacySalt = crypto.randomBytes(16).toString('hex');
     const userLegacyHash = `${userLegacySalt}:${crypto.pbkdf2Sync(legacyUserPwd, userLegacySalt, 1000, 64, 'sha512').toString('hex')}`;
 
+    const testIsolatedMfgId = 'mfg_sandbox_legacy_test';
     db.prepare(`
-        INSERT OR REPLACE INTO users (id, name, email, password_hash, role, is_active, is_demo)
-        VALUES ('usr_legacy_test_01', 'Legacy User', ?, ?, 'MANUFACTURER', 1, 0)
-    `).run(legacyUserEmail, userLegacyHash);
+        INSERT OR REPLACE INTO manufacturers (id, code, name_ar, name_en, business_model, city, is_demo)
+        VALUES (?, 'LEGACY_TEST_MFG', 'منشأة اختبار عزل تجريبية', 'Sandbox Test Mfg', 'DIRECT_CONTRACT', 'Cairo', 0)
+    `).run(testIsolatedMfgId);
+
+    db.prepare(`
+        INSERT OR REPLACE INTO users (id, name, email, password_hash, role, manufacturer_id, is_active, is_demo)
+        VALUES ('usr_legacy_sandbox_01', 'Legacy User', ?, ?, 'MANUFACTURER', ?, 1, 0)
+    `).run(legacyUserEmail, userLegacyHash, testIsolatedMfgId);
 
     // Verify DB currently holds legacy hash
     const beforeUser = db.prepare('SELECT password_hash FROM users WHERE email = ?').get(legacyUserEmail);
@@ -446,16 +454,11 @@ async function runRemediationTests() {
         console.log('================================================================\n');
     } finally {
         server.close();
-        try { closeDb(); } catch (e) {}
-        try { if (fs.existsSync(testDbPath)) fs.unlinkSync(testDbPath); } catch (e) {}
+        cleanupTestDatabase(testDbPath);
         if (prevDbPath !== undefined) process.env.DB_PATH = prevDbPath;
-        else delete process.env.DB_PATH;
         if (prevNodeEnv !== undefined) process.env.NODE_ENV = prevNodeEnv;
-        else delete process.env.NODE_ENV;
         if (prevJwtSecret !== undefined) process.env.JWT_SECRET = prevJwtSecret;
-        else delete process.env.JWT_SECRET;
         if (prevOrigins !== undefined) process.env.ALLOWED_ORIGINS = prevOrigins;
-        else delete process.env.ALLOWED_ORIGINS;
     }
 }
 

@@ -1,5 +1,3 @@
-const { getDb } = require('../../db/database');
-
 // Keywords mapping to ZARSEV Category IDs
 const CATEGORY_KEYWORDS = {
     cat_citrus: ['برتقال', 'ليمون', 'يوسفي', 'جريب فروت', 'حمضيات', 'موالح', 'orange', 'lemon', 'mandarin', 'citrus', 'valencia'],

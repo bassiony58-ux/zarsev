@@ -1,7 +1,7 @@
 const assert = require('assert');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const { initDb, getDb } = require('../src/db/database');
+const { setupTestEnvironment, cleanupTestDatabase } = require('./test_helper');
 const { seedDatabase } = require('../src/db/seed');
 const { generateToken } = require('../src/utils/authUtils');
 const config = require('../src/config');
@@ -12,8 +12,7 @@ async function runSecurityP0Tests() {
     console.log('🔒 ZARSEV P0 Security Lockdown & Demo Data Isolation Test Suite');
     console.log('================================================================\n');
 
-    initDb();
-    const db = getDb();
+    const { db, isolatedDbPath } = setupTestEnvironment('security_p0');
 
     // Start dedicated test server
     const TEST_PORT = 3355;
@@ -298,6 +297,7 @@ async function runSecurityP0Tests() {
         console.log('================================================================\n');
     } finally {
         server.close();
+        cleanupTestDatabase(isolatedDbPath);
     }
 }
 

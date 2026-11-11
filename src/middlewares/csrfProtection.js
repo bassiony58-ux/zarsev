@@ -37,6 +37,18 @@ function csrfProtection(req, res, next) {
         return next();
     }
 
+    // Authentication, dev-login, and public buyer RFQ/inquiry endpoints are exempt from prior session CSRF mismatch
+    if (req.originalUrl && (
+        req.originalUrl.includes('/api/auth/dev-login') ||
+        req.originalUrl.includes('/api/auth/login') ||
+        req.originalUrl.includes('/api/rfqs') ||
+        req.originalUrl.includes('/api/quotations') ||
+        req.originalUrl.includes('/api/inquiries') ||
+        req.originalUrl.includes('/api/contact')
+    )) {
+        return next();
+    }
+
     // 2. Explicit Bearer token authentication is immune to ambient cookie CSRF
     const authHeader = req.headers['authorization'];
     if (authHeader && authHeader.startsWith('Bearer ')) {

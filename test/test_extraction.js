@@ -2,6 +2,7 @@ const assert = require('assert');
 const path = require('path');
 const fs = require('fs');
 const { Jimp } = require('jimp');
+const { setupTestEnvironment, cleanupTestDatabase } = require('./test_helper');
 const { parseExcel } = require('../src/services/parsers/excelParser');
 const { parseCsv } = require('../src/services/parsers/csvParser');
 const { parseImage } = require('../src/services/parsers/imageParser');
@@ -11,6 +12,11 @@ const { processAndNormalizeItem } = require('../src/services/ai/aiService');
 
 async function runExtractionTests() {
     console.log('--- 🧪 Test Suite 1: File Parsing, OCR & Multi-Format Extractor ---');
+    const { isolatedDbPath } = setupTestEnvironment('extraction');
+    const tempImgPath = path.join(__dirname, 'temp_test_image.png');
+    const unzippedTarget = path.join(__dirname, 'unzipped_test');
+
+    try {
 
     // 1. Test Excel Parsing
     const excelPath = path.join(__dirname, 'sample_products.xlsx');
@@ -74,12 +80,19 @@ async function runExtractionTests() {
     assert.strictEqual(normalized.extracted_data.price, null, 'Price must NOT be invented');
     assert.ok(normalized.validation_warnings.some(w => w.includes('السعر غير متوفر')), 'Warning must flag missing price');
 
-    // Clean up
-    if (fs.existsSync(tempImgPath)) fs.unlinkSync(tempImgPath);
-    if (fs.existsSync(path.join(__dirname, 'test_real.png'))) fs.unlinkSync(path.join(__dirname, 'test_real.png'));
-    if (fs.existsSync(unzippedTarget)) fs.rmSync(unzippedTarget, { recursive: true, force: true });
-
     console.log('✅ ALL EXTRACTION TESTS PASSED!\n');
+    } finally {
+        if (fs.existsSync(tempImgPath)) {
+            try { fs.unlinkSync(tempImgPath); } catch (_) {}
+        }
+        if (fs.existsSync(path.join(__dirname, 'test_real.png'))) {
+            try { fs.unlinkSync(path.join(__dirname, 'test_real.png')); } catch (_) {}
+        }
+        if (fs.existsSync(unzippedTarget)) {
+            try { fs.rmSync(unzippedTarget, { recursive: true, force: true }); } catch (_) {}
+        }
+        cleanupTestDatabase(isolatedDbPath);
+    }
 }
 
 if (require.main === module) {

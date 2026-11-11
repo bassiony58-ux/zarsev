@@ -1,14 +1,13 @@
 const assert = require('assert');
-const { getDb, initDb } = require('../src/db/database');
-const { seedDatabase } = require('../src/db/seed');
+const { setupTestEnvironment, cleanupTestDatabase } = require('./test_helper');
 const { checkSubscriptionLimits } = require('../src/middlewares/subscriptionGuard');
 const { requireRole } = require('../src/middlewares/auth');
 
 async function runAuthorizationTests() {
     console.log('--- 🧪 Test Suite 3: Authorization, RBAC & Subscription Quotas ---');
-    initDb();
-    seedDatabase();
-    const db = getDb();
+    const { db, isolatedDbPath } = setupTestEnvironment('authorization');
+
+    try {
 
     // 1. Role Authorization Middleware Test
     const adminUser = { role: 'SUPER_ADMIN' };
@@ -63,6 +62,9 @@ async function runAuthorizationTests() {
     updateStmt.run(JSON.stringify(['xlsx', 'csv', 'images']), 50, 'sub_standard');
 
     console.log('✅ ALL AUTHORIZATION & SUBSCRIPTION TESTS PASSED!\n');
+    } finally {
+        cleanupTestDatabase(isolatedDbPath);
+    }
 }
 
 if (require.main === module) {

@@ -1,0 +1,1520 @@
+
+        <!-- Admin Navigation Tabs (Maritime Sovereign Editorial) -->
+        <div class="bg-surface-container-lowest p-2 rounded-2xl border border-outline-variant shadow-sm flex items-center gap-2 overflow-x-auto">
+            <button type="button" onclick="switchAdminTab('overview')" id="tab-btn-overview" class="admin-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 bg-primary text-white shadow-xs">
+                <span class="material-symbols-outlined text-[18px]">dashboard</span>
+                <span>الرئيسية والطلبات</span>
+            </button>
+            <button type="button" onclick="switchAdminTab('inquiries')" id="tab-btn-inquiries" class="admin-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 text-primary hover:bg-surface-container-low">
+                <span class="material-symbols-outlined text-[18px]">contact_support</span>
+                <span>صندوق الاستفسارات</span>
+                <span id="tab-inquiries-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EBF5F5] text-[#1F686E] font-mono">0</span>
+            </button>
+            <button type="button" onclick="switchAdminTab('staff')" id="tab-btn-staff" class="admin-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 text-primary hover:bg-surface-container-low">
+                <span class="material-symbols-outlined text-[18px]">badge</span>
+                <span>فريق العمل والصلاحيات</span>
+            </button>
+            <button type="button" onclick="switchAdminTab('plans')" id="tab-btn-plans" class="admin-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 text-primary hover:bg-surface-container-low">
+                <span class="material-symbols-outlined text-[18px]">card_membership</span>
+                <span>خطط الاشتراكات</span>
+            </button>
+            <button type="button" onclick="switchAdminTab('audit')" id="tab-btn-audit" class="admin-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 text-primary hover:bg-surface-container-low">
+                <span class="material-symbols-outlined text-[18px]">manage_search</span>
+                <span>سجل التدقيق المركزي</span>
+            </button>
+            <button type="button" onclick="switchAdminTab('contracts')" id="tab-btn-contracts" class="admin-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 text-primary hover:bg-surface-container-low">
+                <span class="material-symbols-outlined text-[18px]">assignment</span>
+                <span>العقود واللوجستيات</span>
+            </button>
+        </div>
+
+        <!-- TAB 1: Overview, RFQs & Manufacturers -->
+        <div id="admin-tab-content-overview" class="space-y-8">
+</div>
+        </div>
+
+        <!-- Live Approvals Queue Widget -->
+        <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
+            <div class="p-5 border-b border-outline-variant/60 flex items-center justify-between flex-wrap gap-4 bg-amber-50/50">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-amber-700 text-[22px]">rate_review</span>
+                    <h2 class="font-bold text-primary text-base">طابور فحص طلبات الاعتماد العاجلة</h2>
+                    <span id="queue-live-tag" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-200 text-amber-900 font-mono">0 طلب</span>
+                </div>
+                <a href="/admin/approvals" class="text-xs font-bold text-amber-800 hover:underline flex items-center gap-1">
+                    <span>فتح الشاشة الكاملة للاعتمادات</span>
+                    <span class="material-symbols-outlined text-[16px]">chevron_left</span>
+                </a>
+            </div>
+
+            <div id="admin-queue-widget-list" class="divide-y divide-outline-variant/40 p-2">
+                <div class="p-8 text-center text-on-surface-variant">
+                    <span class="material-symbols-outlined animate-spin text-[24px]">progress_activity</span>
+                    <div class="mt-2 text-xs">جاري تحميل طابور المنتجات المعلقة...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- International Buyer RFQ Management Area -->
+        <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden space-y-4 p-5">
+            <div class="flex items-center justify-between flex-wrap gap-4 pb-4 border-b border-outline-variant/60">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-[#1F686E] text-[24px]">request_quote</span>
+                    <h2 class="font-bold text-primary text-base">إدارة طلبات عروض الأسعار الدولية (RFQ Management)</h2>
+                    <span id="rfq-total-badge" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#EBF5F5] text-[#1F686E] font-mono">0 طلب</span>
+                </div>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <select id="rfq-filter-status" onchange="loadAdminRfqs()" class="h-9 px-3 rounded-lg border border-outline-variant text-xs font-semibold bg-surface-container-low text-primary focus:outline-none focus:ring-1 focus:ring-secondary">
+                        <option value="">كافة الحالات</option>
+                        <option value="NEW">جديد (NEW)</option>
+                        <option value="UNDER_REVIEW">قيد المراجعة</option>
+                        <option value="SENT_TO_MANUFACTURER">محال للمصنع</option>
+                        <option value="QUOTED">تم التسعير</option>
+                        <option value="ACCEPTED">مقبول</option>
+                        <option value="REJECTED">مرفوض</option>
+                        <option value="CLOSED">مغلق</option>
+                    </select>
+                    <input id="rfq-search-input" oninput="loadAdminRfqs()" placeholder="بحث برقم الطلب، الشركة، أو المشتري..." class="h-9 px-3 rounded-lg border border-outline-variant text-xs bg-surface-container-low text-primary placeholder:text-outline focus:outline-none focus:ring-1 focus:ring-secondary w-64"/>
+                </div>
+            </div>
+
+            <!-- Mobile Horizontal Scroll Indicator (RTL-aware) -->
+            <div class="md:hidden flex items-center justify-between px-3 py-1.5 bg-[#EBF5F5] border-b border-outline-variant/40 text-[11px] text-[#1F686E] font-medium" id="mobile-rfq-scroll-hint">
+                <span class="flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-[15px] animate-pulse">swipe_left</span>
+                    <span>اسحب الجدول لليسار (←) لاستعراض كافة بيانات الطلب والقرارات</span>
+                </span>
+                <span class="px-2 py-0.5 rounded bg-white text-secondary font-mono text-[10px] font-bold border border-secondary/20 shadow-xs">7 أعمدة</span>
+            </div>
+
+            <div class="relative group">
+                <!-- Subtle RTL gradient shadow on left boundary indicating scrollable overflow -->
+                <div class="pointer-events-none md:hidden absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-primary/10 to-transparent z-10"></div>
+                <div class="overflow-x-auto scrollbar-thin">
+                    <table class="w-full text-right text-xs min-w-[700px]">
+                        <thead class="bg-surface-container-low text-primary font-bold border-b border-outline-variant">
+                            <tr>
+                                <th class="p-3">الرقم المرجعي</th>
+                                <th class="p-3">المشتري والمؤسسة</th>
+                                <th class="p-3">المنتج والكمية</th>
+                                <th class="p-3">الوجهة المستهدفة</th>
+                                <th class="p-3 text-center">حالة الطلب</th>
+                                <th class="p-3">المصنع المحال إليه</th>
+                                <th class="p-3 text-center">الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-rfqs-tbody" class="divide-y divide-outline-variant/40">
+                            <tr>
+                                <td colspan="7" class="p-8 text-center text-on-surface-variant">جاري تحميل طلبات عروض الأسعار...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- RFQ Detail & Routing Modal -->
+        <div id="admin-rfq-modal" class="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+            <div class="bg-surface-container-lowest rounded-2xl max-w-2xl w-full border border-outline-variant shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                <div class="p-5 border-b border-outline-variant flex items-center justify-between bg-surface-container-low">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[#1F686E]">assignment</span>
+                        <h3 class="font-bold text-primary text-sm">تفاصيل وإدارة طلب عرض السعر: <span id="modal-rfq-ref" class="font-mono text-secondary">-</span></h3>
+                    </div>
+                    <button type="button" onclick="closeAdminRfqModal()" class="text-outline hover:text-error p-1">
+                        <span class="material-symbols-outlined text-[20px]">close</span>
+                    </button>
+                </div>
+
+                <div class="p-6 overflow-y-auto space-y-5 text-xs">
+                    <!-- Buyer Card -->
+                    <div class="p-4 rounded-xl bg-surface-container-low border border-outline-variant/60 grid grid-cols-2 gap-3">
+                        <div><span class="text-on-surface-variant">اسم المشتري:</span> <strong id="modal-rfq-buyer" class="text-primary">-</strong></div>
+                        <div><span class="text-on-surface-variant">المؤسسة المستوردة:</span> <strong id="modal-rfq-company" class="text-primary">-</strong></div>
+                        <div><span class="text-on-surface-variant">البريد الإلكتروني:</span> <span id="modal-rfq-email" class="font-mono text-primary">-</span></div>
+                        <div><span class="text-on-surface-variant">الهاتف / واتساب:</span> <span id="modal-rfq-phone" class="font-mono text-primary">-</span></div>
+                        <div><span class="text-on-surface-variant">الدولة والوجهة:</span> <strong id="modal-rfq-dest" class="text-primary">-</strong></div>
+                        <div><span class="text-on-surface-variant">ميناء الوصول:</span> <strong id="modal-rfq-port" class="text-primary">-</strong></div>
+                    </div>
+
+                    <!-- Product & Qty -->
+                    <div class="p-4 rounded-xl bg-[#EBF5F5] border border-[#1F686E]/20 space-y-1.5">
+                        <div class="text-[11px] text-[#1F686E] font-bold">السلعة التصديرية المطلوبة:</div>
+                        <div class="flex items-center justify-between">
+                            <span id="modal-rfq-prod-name" class="font-bold text-sm text-primary">-</span>
+                            <span id="modal-rfq-qty" class="font-bold text-sm text-secondary font-mono">-</span>
+                        </div>
+                        <div id="modal-rfq-message" class="text-on-surface-variant text-[11px] pt-1 border-t border-secondary/15"></div>
+                    </div>
+
+                    <!-- Official Structured Quotation Card -->
+                    <div id="admin-modal-quote-card" class="hidden p-4 rounded-xl bg-amber-50/70 border border-amber-200 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-outlined text-amber-700 text-[18px]">verified</span>
+                                <span class="text-xs font-bold text-amber-900">عرض الأسعار التجاري المعتمد:</span>
+                                <span id="admin-quote-ref" class="font-mono text-xs font-bold text-secondary">-</span>
+                            </div>
+                            <span id="admin-quote-status-badge" class="px-2 py-0.5 rounded text-[10px] font-bold">-</span>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs pt-1 border-t border-amber-200/60">
+                            <div><span class="text-on-surface-variant text-[10px] block">السعر والعملة:</span> <strong id="admin-quote-price" class="text-primary font-mono">-</strong></div>
+                            <div><span class="text-on-surface-variant text-[10px] block">شرط الشحن وميناء التحميل:</span> <strong id="admin-quote-incoterm-port" class="text-primary">-</strong></div>
+                            <div><span class="text-on-surface-variant text-[10px] block">الحد الأدنى ومدة التجهيز:</span> <strong id="admin-quote-moq-lead" class="text-primary">-</strong></div>
+                            <div><span class="text-on-surface-variant text-[10px] block">صلاحية العرض:</span> <strong id="admin-quote-validity" class="text-primary font-mono">-</strong></div>
+                        </div>
+                        <div class="text-[11px] text-on-surface-variant pt-1 border-t border-amber-200/40">
+                            <span>شروط الدفع والتعبئة: </span><span id="admin-quote-terms-text" class="text-primary font-medium">-</span>
+                        </div>
+                        <div id="admin-quote-buyer-decision" class="hidden text-[11px] p-2 rounded bg-white/80 border border-amber-200">
+                            <span class="font-bold">قرار المشتري الدولي: </span><span id="admin-quote-decision-text">-</span>
+                        </div>
+                    </div>
+
+                    <!-- Workflow Update Form -->
+                    <form id="admin-rfq-form" onsubmit="event.preventDefault(); submitAdminRfqUpdate();" class="space-y-4 pt-2 border-t border-outline-variant/60">
+                        <input type="hidden" id="modal-rfq-id"/>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block font-bold text-primary mb-1">تحديث حالة الطلب</label>
+                                <select id="modal-rfq-status-select" class="w-full h-10 px-3 rounded-lg border border-outline-variant bg-surface-container-lowest font-semibold text-xs text-primary">
+                                    <option value="NEW">جديد (NEW)</option>
+                                    <option value="UNDER_REVIEW">قيد المراجعة الفنية</option>
+                                    <option value="SENT_TO_MANUFACTURER">إحالة إلى المصنع للتسعير</option>
+                                    <option value="QUOTED">تم تقديم عرض الأسعار الرسمي</option>
+                                    <option value="ACCEPTED">تم قبول العرض والتعاقد</option>
+                                    <option value="REJECTED">مرفوض</option>
+                                    <option value="CLOSED">مغلق</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block font-bold text-primary mb-1">توجيه / إحالة إلى منشأة تصديرية</label>
+                                <select id="modal-rfq-mfg-select" class="w-full h-10 px-3 rounded-lg border border-outline-variant bg-surface-container-lowest font-semibold text-xs text-primary">
+                                    <option value="">المصنع الأصلي للمنتج</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-primary mb-1">ملاحظات إدارية وتدوين الإجراء</label>
+                            <textarea id="modal-rfq-note" class="w-full p-2.5 rounded-lg border border-outline-variant bg-surface-container-lowest text-xs resize-y" rows="2" placeholder="أضف ملاحظات حول الاتصال بالمستورد، أسعار الشحن المتفق عليها، أو تعليمات المحطة..."></textarea>
+                        </div>
+
+                        <div class="flex items-center justify-end gap-2 pt-2">
+                            <button type="button" onclick="closeAdminRfqModal()" class="px-4 py-2 rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container font-semibold text-xs">إلغاء</button>
+                            <button type="submit" id="modal-rfq-save-btn" class="px-5 py-2 rounded-lg bg-[#1F686E] hover:bg-[#185358] text-white font-bold text-xs shadow-sm">حفظ التحديث وتوثيق الإجراء</button>
+                        </div>
+                    </form>
+
+                    <!-- Audit Timeline -->
+                    <div class="space-y-2 pt-3 border-t border-outline-variant/60">
+                        <div class="font-bold text-primary text-[11px]">سجل التدقيق والتتبع التاريخي للطلب:</div>
+                        <div id="modal-rfq-timeline" class="space-y-2 max-h-40 overflow-y-auto divide-y divide-outline-variant/30 text-[11px]"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Grid of Registered Manufacturers with Business Models -->
+        <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
+            <div class="p-5 border-b border-outline-variant/60 flex items-center justify-between flex-wrap gap-4">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-secondary text-[22px]">business</span>
+                    <h2 class="font-bold text-primary text-base">المنشآت والمصانع المصدرة المسجلة</h2>
+                </div>
+                <a href="/importer/manufacturer-select" class="text-xs font-bold text-secondary hover:underline flex items-center gap-1">
+                    <span>إضافة مصنع جديد أو مطابقة</span>
+                    <span class="material-symbols-outlined text-[16px]">chevron_left</span>
+                </a>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-right text-xs">
+                    <thead class="bg-surface-container-low text-primary font-bold border-b border-outline-variant">
+                        <tr>
+                            <th class="p-3.5">اسم المصنع</th>
+                            <th class="p-3.5">كود المنشأة</th>
+                            <th class="p-3.5">المدينة والميناء</th>
+                            <th class="p-3.5 text-center">نموذج التعاقد</th>
+                            <th class="p-3.5 text-center">حالة الحساب</th>
+                            <th class="p-3.5 text-center">الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-mfgs-tbody" class="divide-y divide-outline-variant/40">
+                        <tr>
+                            <td colspan="6" class="p-8 text-center text-on-surface-variant">جاري تحميل المصانع...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        </div>
+
+        <!-- TAB 2: Contact Inquiries Inbox (Phase 4.0-C) -->
+        <div id="admin-tab-content-inquiries" class="hidden space-y-6">
+            <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm p-5 space-y-4">
+                <div class="flex items-center justify-between flex-wrap gap-4 pb-4 border-b border-outline-variant/60">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-secondary text-[24px]">inbox</span>
+                        <div>
+                            <h2 class="font-bold text-primary text-base">صندوق استفسارات التواصل الدولية (Inquiries Inbox)</h2>
+                            <p class="text-[11px] text-on-surface-variant">متابعة طلبات المشترين وإثبات محاضر التواصل (Proof-of-Contact) عبر دورة الحالات الست</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <select id="inquiries-filter-status" onchange="loadAdminInquiries()" class="h-9 px-3 rounded-lg border border-outline-variant text-xs font-semibold bg-surface-container-low text-primary focus:outline-none focus:ring-1 focus:ring-secondary">
+                            <option value="">كافة الحالات</option>
+                            <option value="NEW">جديد (NEW)</option>
+                            <option value="IN_REVIEW">قيد المراجعة (IN_REVIEW)</option>
+                            <option value="CONTACTED">تم التواصل (CONTACTED)</option>
+                            <option value="RESOLVED">تم الحل (RESOLVED)</option>
+                            <option value="CLOSED">مغلق (CLOSED)</option>
+                            <option value="SPAM">رسائل مشبوهة (SPAM)</option>
+                        </select>
+                        <input id="inquiries-search-input" oninput="loadAdminInquiries()" placeholder="بحث برقم الاستفسار، الاسم، الشركة..." class="h-9 px-3 rounded-lg border border-outline-variant text-xs bg-surface-container-low text-primary placeholder:text-outline focus:outline-none focus:ring-1 focus:ring-secondary w-64"/>
+                        <button type="button" onclick="loadAdminInquiries()" class="h-9 px-3 rounded-lg bg-surface-container-low hover:bg-surface-container text-primary text-xs font-semibold border border-outline-variant flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[16px]">refresh</span>
+                            <span>تحديث</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right text-xs">
+                        <thead class="bg-surface-container-low text-primary font-bold border-b border-outline-variant">
+                            <tr>
+                                <th class="p-3.5">الرقم المرجعي</th>
+                                <th class="p-3.5">اسم المستفسر</th>
+                                <th class="p-3.5">الشركة والدولة</th>
+                                <th class="p-3.5">البريد والهاتف</th>
+                                <th class="p-3.5">المنتج المستفسر عنه</th>
+                                <th class="p-3.5 text-center">الحالة</th>
+                                <th class="p-3.5">التاريخ</th>
+                                <th class="p-3.5 text-center">الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-inquiries-tbody" class="divide-y divide-outline-variant/40">
+                            <tr>
+                                <td colspan="8" class="p-8 text-center text-on-surface-variant">جاري تحميل الاستفسارات...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: Staff Management & Invitations (Phase 4.0-A) -->
+        <div id="admin-tab-content-staff" class="hidden space-y-6">
+            <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm p-5 space-y-4">
+                <div class="flex items-center justify-between flex-wrap gap-4 pb-4 border-b border-outline-variant/60">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-secondary text-[24px]">group_add</span>
+                        <div>
+                            <h2 class="font-bold text-primary text-base">إدارة موظفي المنصة المركزية والصلاحيات (Admin & Logistics Staff)</h2>
+                            <p class="text-[11px] text-on-surface-variant">دعوة الموظفين بروابط مشفرة وتفعيل آمن فردي مع حماية آخر SUPER_ADMIN</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="openStaffInviteModal()" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-secondary hover:bg-secondary/90 text-white font-bold text-xs shadow-sm transition-all">
+                        <span class="material-symbols-outlined text-[18px]">person_add</span>
+                        <span>دعوة موظف جديد</span>
+                    </button>
+                </div>
+
+                <!-- Active Staff Table -->
+                <div class="space-y-2">
+                    <h3 class="text-xs font-bold text-primary">الموظفون الحاليون النشطون في المنصة</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right text-xs">
+                            <thead class="bg-surface-container-low text-primary font-bold border-b border-outline-variant">
+                                <tr>
+                                    <th class="p-3.5">الاسم</th>
+                                    <th class="p-3.5">البريد الإلكتروني</th>
+                                    <th class="p-3.5 text-center">الدور العام</th>
+                                    <th class="p-3.5 text-center">الصلاحية الوظيفية</th>
+                                    <th class="p-3.5 text-center">الحالة</th>
+                                    <th class="p-3.5">تاريخ الانضمام</th>
+                                    <th class="p-3.5 text-center">الإجراء</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-staff-tbody" class="divide-y divide-outline-variant/40">
+                                <tr>
+                                    <td colspan="7" class="p-8 text-center text-on-surface-variant">جاري تحميل فريق العمل...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Pending Invitations Table -->
+                <div class="space-y-2 pt-4 border-t border-outline-variant/60">
+                    <h3 class="text-xs font-bold text-primary">دعوات الانضمام المعلقة (Pending Invitations)</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right text-xs">
+                            <thead class="bg-surface-container-low text-primary font-bold border-b border-outline-variant">
+                                <tr>
+                                    <th class="p-3.5">البريد المدعو</th>
+                                    <th class="p-3.5 text-center">الدور</th>
+                                    <th class="p-3.5 text-center">الصلاحية الفرعية</th>
+                                    <th class="p-3.5 text-center">الحالة</th>
+                                    <th class="p-3.5">تاريخ الانتهاء</th>
+                                    <th class="p-3.5 text-center">الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-staff-invites-tbody" class="divide-y divide-outline-variant/40">
+                                <tr>
+                                    <td colspan="6" class="p-8 text-center text-on-surface-variant">جاري تحميل الدعوات...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: Subscription Plans Management (Phase 4.0-B) -->
+        <div id="admin-tab-content-plans" class="hidden space-y-6">
+            <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm p-5 space-y-4">
+                <div class="flex items-center justify-between flex-wrap gap-4 pb-4 border-b border-outline-variant/60">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-secondary text-[24px]">card_membership</span>
+                        <div>
+                            <h2 class="font-bold text-primary text-base">إدارة خطط الاشتراكات التسويقية (Plan Templates)</h2>
+                            <p class="text-[11px] text-on-surface-variant">تعديل حدود الاستيراد والمقاعد وصيغ الملفات المقبولة للمصانع والشركات الزراعية</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="admin-plans-cards-grid" class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+                    <div class="p-8 text-center text-on-surface-variant col-span-3">جاري تحميل خطط الاشتراكات...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 5: Central Audit Explorer (Phase 4.0-D) -->
+        <div id="admin-tab-content-audit" class="hidden space-y-6">
+            <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm p-5 space-y-4">
+                <div class="flex items-center justify-between flex-wrap gap-4 pb-4 border-b border-outline-variant/60">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-secondary text-[24px]">policy</span>
+                        <div>
+                            <h2 class="font-bold text-primary text-base">مستكشف سجلات التدقيق المركزي (Central Audit Explorer)</h2>
+                            <p class="text-[11px] text-on-surface-variant">سجلات العمليات المشفرة مع حجب البيانات الحساسة (Multi-Layer Data Masking)</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <select id="audit-filter-source" onchange="loadAdminAuditLogs()" class="h-9 px-3 rounded-lg border border-outline-variant text-xs font-semibold bg-surface-container-low text-primary focus:outline-none focus:ring-1 focus:ring-secondary">
+                            <option value="all">كافة المصادر</option>
+                            <option value="manufacturer">حسابات المصانع</option>
+                            <option value="rfq">طلبات الأسعار</option>
+                        </select>
+                        <input id="audit-filter-action" oninput="loadAdminAuditLogs()" placeholder="بحث بنوع الإجراء..." class="h-9 px-3 rounded-lg border border-outline-variant text-xs bg-surface-container-low text-primary placeholder:text-outline focus:outline-none focus:ring-1 focus:ring-secondary w-48"/>
+                        <button type="button" onclick="loadAdminAuditLogs()" class="h-9 px-3 rounded-lg bg-surface-container-low hover:bg-surface-container text-primary text-xs font-semibold border border-outline-variant flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[16px]">refresh</span>
+                            <span>تحديث</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right text-xs">
+                        <thead class="bg-surface-container-low text-primary font-bold border-b border-outline-variant">
+                            <tr>
+                                <th class="p-3.5">الوقت والتاريخ</th>
+                                <th class="p-3.5">الكيان</th>
+                                <th class="p-3.5">المنفذ</th>
+                                <th class="p-3.5">نوع الإجراء</th>
+                                <th class="p-3.5">التفاصيل المحجوبة (Masked)</th>
+                                <th class="p-3.5">عنوان IP</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-audit-tbody" class="divide-y divide-outline-variant/40">
+                            <tr>
+                                <td colspan="6" class="p-8 text-center text-on-surface-variant">جاري تحميل سجل التدقيق...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 6: Commercial Contracts & Logistics (Phase 5.0 / 6.0) -->
+        <div id="admin-tab-content-contracts" class="hidden space-y-6">
+            <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm p-5 space-y-4">
+                <div class="flex items-center justify-between flex-wrap gap-4 pb-4 border-b border-outline-variant/60">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-secondary text-[24px]">contract</span>
+                        <div>
+                            <h2 class="font-bold text-primary text-base">العقود التجارية المصدرة واللوجستيات (Commercial Contracts & Shipping)</h2>
+                            <p class="text-[11px] text-on-surface-variant">متابعة العقود المبرمة، خطط الإنتاج، شهادات الجودة، والشحنات البحرية</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="loadAdminContracts()" class="h-9 px-3 rounded-lg bg-surface-container-low hover:bg-surface-container text-primary text-xs font-semibold border border-outline-variant flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[16px]">refresh</span>
+                        <span>تحديث</span>
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right text-xs">
+                        <thead class="bg-surface-container-low text-primary font-bold border-b border-outline-variant">
+                            <tr>
+                                <th class="p-3.5">رقم العقد</th>
+                                <th class="p-3.5">المصنع المصدر</th>
+                                <th class="p-3.5">المشتري والشركة</th>
+                                <th class="p-3.5 font-mono">القيمة الإجمالية</th>
+                                <th class="p-3.5 text-center">شرط التسليم (Incoterm)</th>
+                                <th class="p-3.5 text-center">الحالة</th>
+                                <th class="p-3.5">تاريخ الإبرام</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-contracts-tbody" class="divide-y divide-outline-variant/40">
+                            <tr>
+                                <td colspan="7" class="p-8 text-center text-on-surface-variant">جاري تحميل العقود...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: Contact Inquiry Details & Proof of Contact -->
+        <div id="admin-inquiry-modal" class="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+            <div class="bg-surface-container-lowest rounded-2xl max-w-2xl w-full border border-outline-variant shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                <div class="p-5 border-b border-outline-variant flex items-center justify-between bg-surface-container-low">
+                    <h3 class="font-bold text-primary text-sm flex items-center gap-2">
+                        <span class="material-symbols-outlined text-secondary">contact_support</span>
+                        <span>تفاصيل الاستفسار ومحضر التواصل: <span id="modal-inquiry-ref" class="font-mono text-secondary">-</span></span>
+                    </h3>
+                    <button type="button" onclick="closeAdminInquiryModal()" class="text-on-surface-variant hover:text-primary">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+
+                <div class="p-6 overflow-y-auto space-y-5 text-xs">
+                    <!-- Customer Information Grid -->
+                    <div class="grid grid-cols-2 gap-3 p-3.5 rounded-xl bg-surface-container-low border border-outline-variant/60">
+                        <div><span class="text-on-surface-variant">اسم العميل:</span> <strong id="modal-inq-name" class="text-primary">-</strong></div>
+                        <div><span class="text-on-surface-variant">الشركة:</span> <strong id="modal-inq-company" class="text-primary">-</strong></div>
+                        <div><span class="text-on-surface-variant">البريد:</span> <span id="modal-inq-email" class="font-mono text-primary">-</span></div>
+                        <div><span class="text-on-surface-variant">الهاتف:</span> <span id="modal-inq-phone" class="font-mono text-primary">-</span></div>
+                        <div><span class="text-on-surface-variant">الدولة:</span> <strong id="modal-inq-country" class="text-primary">-</strong></div>
+                        <div><span class="text-on-surface-variant">المنتج المستفسر عنه:</span> <strong id="modal-inq-product" class="text-secondary">-</strong></div>
+                    </div>
+
+                    <!-- Message Body -->
+                    <div class="space-y-1">
+                        <label class="font-bold text-primary block">نص رسالة العميل:</label>
+                        <div id="modal-inq-message" class="p-3.5 rounded-xl bg-gray-50 border border-outline-variant text-primary leading-relaxed whitespace-pre-wrap"></div>
+                    </div>
+
+                    <!-- Proof of Contact Logs -->
+                    <div class="space-y-2">
+                        <label class="font-bold text-primary block">سجل محاضر التواصل السابقة (Proof-of-Contact):</label>
+                        <div id="modal-inq-logs-list" class="space-y-2 max-h-36 overflow-y-auto divide-y divide-outline-variant/40 border border-outline-variant rounded-xl p-3 bg-surface-container-lowest">
+                            <div class="text-on-surface-variant text-center py-2">لا توجد محاضر تواصل سابقة لهذا الاستفسار.</div>
+                        </div>
+                    </div>
+
+                    <!-- Add Proof of Contact Form -->
+                    <div class="p-4 rounded-xl bg-[#EBF5F5] border border-secondary/20 space-y-3">
+                        <h4 class="font-bold text-secondary text-xs flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-[17px]">record_voice_over</span>
+                            <span>إضافة محضر إثبات تواصل جديد (Proof-of-Contact)</span>
+                        </h4>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="font-semibold text-primary block pb-1">وسيلة التواصل:</label>
+                                <select id="inq-contact-method" class="w-full h-8 px-2 rounded-lg border border-outline-variant bg-white text-xs">
+                                    <option value="PHONE">اتصال هاتفي (PHONE)</option>
+                                    <option value="EMAIL">بريد إلكتروني رسمي (EMAIL)</option>
+                                    <option value="WHATSAPP">واتساب أعمال (WHATSAPP)</option>
+                                    <option value="IN_PERSON">مقابلة شخصية (IN_PERSON)</option>
+                                    <option value="OFFICIAL_LETTER">خطاب رسمي (OFFICIAL_LETTER)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="font-semibold text-primary block pb-1">الحالة الجديدة للاستفسار:</label>
+                                <select id="inq-new-status" class="w-full h-8 px-2 rounded-lg border border-outline-variant bg-white text-xs">
+                                    <option value="CONTACTED">تم التواصل (CONTACTED)</option>
+                                    <option value="RESOLVED">تم الحل والرد الشامل (RESOLVED)</option>
+                                    <option value="IN_REVIEW">قيد المراجعة (IN_REVIEW)</option>
+                                    <option value="CLOSED">إغلاق الاستفسار (CLOSED)</option>
+                                    <option value="SPAM">رسالة مشبوهة (SPAM)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="font-semibold text-primary block pb-1">ملخص محضر التواصل والملاحظات:</label>
+                            <textarea id="inq-contact-notes" rows="2" placeholder="اكتب ملخص ما تم الاتفاق عليه مع العميل أو الرد المرسل إليه..." class="w-full p-2 rounded-lg border border-outline-variant bg-white text-xs"></textarea>
+                        </div>
+                        <button type="button" onclick="submitProofOfContact()" id="btn-save-contact-log" class="px-4 py-2 rounded-lg bg-secondary hover:bg-secondary/90 text-white font-bold text-xs shadow-xs">
+                            تسجيل محضر التواصل وتحديث الحالة
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: Staff Invitation -->
+        <div id="admin-staff-invite-modal" class="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+            <div class="bg-surface-container-lowest rounded-2xl max-w-md w-full border border-outline-variant shadow-2xl p-6 space-y-4">
+                <div class="flex items-center justify-between pb-3 border-b border-outline-variant">
+                    <h3 class="font-bold text-primary text-sm flex items-center gap-2">
+                        <span class="material-symbols-outlined text-secondary">person_add</span>
+                        <span>دعوة موظف جديد لمنظومة زارسيف</span>
+                    </h3>
+                    <button type="button" onclick="closeStaffInviteModal()" class="text-on-surface-variant hover:text-primary">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <div class="space-y-3 text-xs">
+                    <div>
+                        <label class="font-semibold text-primary block pb-1">البريد الإلكتروني للموظف:</label>
+                        <input id="staff-invite-email" type="email" placeholder="name@zarsev.com" class="w-full h-9 px-3 rounded-lg border border-outline-variant bg-surface-container-low text-xs" />
+                    </div>
+                    <div>
+                        <label class="font-semibold text-primary block pb-1">الدور العام (Role):</label>
+                        <select id="staff-invite-role" class="w-full h-9 px-3 rounded-lg border border-outline-variant bg-surface-container-low text-xs">
+                            <option value="ADMIN">إدارة النظام (ADMIN)</option>
+                            <option value="LOGISTICS">لوجستيات وموانئ (LOGISTICS)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="font-semibold text-primary block pb-1">الصلاحية الفرعية (Sub Role):</label>
+                        <select id="staff-invite-subrole" class="w-full h-9 px-3 rounded-lg border border-outline-variant bg-surface-container-low text-xs">
+                            <option value="LOGISTICS_OFFICER">مسؤول لوجستيات وعمليات (LOGISTICS_OFFICER)</option>
+                            <option value="SUPER_ADMIN">مدير عام سيادي (SUPER_ADMIN)</option>
+                        </select>
+                    </div>
+                    <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-[11px] leading-relaxed">
+                        سيتم توليد رمز تفعيل عشوائي فائق الأمان مشفر عبر SHA-256، يقوم الموظف من خلاله بإنشاء كلمة مروره الفردية وتفعيل حسابه.
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeStaffInviteModal()" class="px-4 py-2 rounded-lg bg-surface-container-low text-xs font-semibold">إلغاء</button>
+                    <button type="button" onclick="submitStaffInvite()" id="btn-submit-staff-invite" class="px-5 py-2 rounded-lg bg-secondary text-white font-bold text-xs shadow-xs">إرسال الدعوة وتوليد الرابط</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: Staff Invite Success (Display Token Link) -->
+        <div id="admin-staff-invite-success-modal" class="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+            <div class="bg-surface-container-lowest rounded-2xl max-w-lg w-full border border-outline-variant shadow-2xl p-6 space-y-4">
+                <div class="flex items-center gap-2 text-emerald-700">
+                    <span class="material-symbols-outlined text-[24px]">task_alt</span>
+                    <h3 class="font-bold text-sm">تم إنشاء دعوة الموظف بنجاح</h3>
+                </div>
+                <p class="text-xs text-on-surface-variant leading-relaxed">
+                    تم تخزين الهاش المشفر فقط في قاعدة البيانات لحماية الخصوصية. يرجى تزويد الموظف برابط التفعيل التالي لتعيين كلمة المرور:
+                </p>
+                <div class="p-3 rounded-xl bg-surface-container-low border border-outline-variant flex items-center justify-between gap-2">
+                    <input id="staff-invite-link-input" readonly class="bg-transparent font-mono text-[11px] text-primary w-full outline-none" />
+                    <button type="button" onclick="copyStaffInviteLink()" class="px-3 py-1.5 rounded-lg bg-secondary text-white text-xs font-bold shrink-0">نسخ</button>
+                </div>
+                <div class="flex justify-end pt-2">
+                    <button type="button" onclick="document.getElementById('admin-staff-invite-success-modal').classList.add('hidden')" class="px-5 py-2 rounded-lg bg-primary text-white text-xs font-bold">تم</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: Edit Subscription Plan Template -->
+        <div id="admin-plan-edit-modal" class="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+            <div class="bg-surface-container-lowest rounded-2xl max-w-md w-full border border-outline-variant shadow-2xl p-6 space-y-4">
+                <div class="flex items-center justify-between pb-3 border-b border-outline-variant">
+                    <h3 class="font-bold text-primary text-sm flex items-center gap-2">
+                        <span class="material-symbols-outlined text-secondary">tune</span>
+                        <span>تعديل إعدادات الخطة: <span id="modal-plan-name" class="text-secondary">-</span></span>
+                    </h3>
+                    <button type="button" onclick="closePlanEditModal()" class="text-on-surface-variant hover:text-primary">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <input type="hidden" id="modal-plan-id" />
+                <div class="space-y-3 text-xs">
+                    <div>
+                        <label class="font-semibold text-primary block pb-1">الحد الأقصى للمنتجات لكل عملية استيراد:</label>
+                        <input id="plan-max-products" type="number" class="w-full h-9 px-3 rounded-lg border border-outline-variant bg-surface-container-low font-mono" />
+                    </div>
+                    <div>
+                        <label class="font-semibold text-primary block pb-1">الحد الأقصى لعمليات الاستيراد الشهرية:</label>
+                        <input id="plan-max-monthly" type="number" class="w-full h-9 px-3 rounded-lg border border-outline-variant bg-surface-container-low font-mono" />
+                    </div>
+                    <div>
+                        <label class="font-semibold text-primary block pb-1">الحد الأقصى لحجم الملف (ميجابايت):</label>
+                        <input id="plan-max-filesize" type="number" class="w-full h-9 px-3 rounded-lg border border-outline-variant bg-surface-container-low font-mono" />
+                    </div>
+                    <div class="flex items-center justify-between p-3 rounded-xl bg-surface-container-low">
+                        <span class="font-semibold text-primary">تفعيل الاستخراج الذكي بالذكاء الاصطناعي</span>
+                        <input id="plan-ai-enabled" type="checkbox" class="w-4 h-4 accent-secondary" />
+                    </div>
+                    <div class="flex items-center justify-between p-3 rounded-xl bg-surface-container-low">
+                        <span class="font-semibold text-primary">تفعيل الاستيراد المجمع السريع</span>
+                        <input id="plan-bulk-enabled" type="checkbox" class="w-4 h-4 accent-secondary" />
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closePlanEditModal()" class="px-4 py-2 rounded-lg bg-surface-container-low text-xs font-semibold">إلغاء</button>
+                    <button type="button" onclick="submitPlanUpdate()" id="btn-save-plan" class="px-5 py-2 rounded-lg bg-secondary text-white font-bold text-xs shadow-xs">حفظ تعديلات الخطة</button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script src="/public/js/common.js"></script>
+    <script>
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        async function checkAdminAuth() {
+            try {
+                const token = typeof getAuthToken === 'function' ? getAuthToken() : null;
+                const headers = {};
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                const res = await fetch('/api/auth/me', { headers });
+                if (!res.ok) {
+                    console.info('[Admin Portal] Unauthenticated user session. Redirecting cleanly.');
+                    window.location.replace('/?auth_required=admin');
+                    return null;
+                }
+                const data = await res.json();
+                if (!data.success || !data.user || data.user.role !== 'SUPER_ADMIN') {
+                    console.warn('[Admin Portal] Unauthorized role. Redirecting cleanly.');
+                    window.location.replace('/?unauthorized=admin');
+                    return null;
+                }
+                return data.user;
+            } catch (err) {
+                console.warn('[Admin Portal] Auth handshake check failed:', err.message);
+                window.location.replace('/?auth_required=admin');
+                return null;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const adminUser = await checkAdminAuth();
+            if (!adminUser) return; // Clean redirect in progress; prevent protected API execution!
+
+            await renderZarsevHeader('portal-admin');
+            await loadAdminDashboard();
+            await loadAdminRfqs();
+        });
+
+        async function loadAdminDashboard() {
+            try {
+                // 1. Queue
+                const qRes = await zarsevFetch('/api/approvals/queue');
+                const queue = qRes.queue || [];
+                document.getElementById('admin-stat-pending').textContent = queue.length;
+                document.getElementById('btn-pending-badge').textContent = queue.length;
+                document.getElementById('queue-live-tag').textContent = `${queue.length} طلب معلق`;
+
+                const queueWidget = document.getElementById('admin-queue-widget-list');
+                if (queue.length === 0) {
+                    queueWidget.innerHTML = `
+                        <div class="p-8 text-center text-on-surface-variant">
+                            <span class="material-symbols-outlined text-emerald-600 text-[36px] mb-1">task_alt</span>
+                            <div class="font-bold text-primary">طابور الاعتماد فارغ حالياً</div>
+                            <p class="text-xs mt-1">تمت مراجعة واعتماد كافة الحاصلات التصديرية المقدمة بنجاح.</p>
+                        </div>
+                    `;
+                } else {
+                    queueWidget.innerHTML = queue.slice(0, 4).map(p => `
+                        <div class="p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 hover:bg-surface-container-low transition-colors rounded-xl">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 rounded-lg bg-surface-container overflow-hidden shrink-0 border border-outline-variant">
+                                    ${p.primary_image ? `<img src="${p.primary_image}" class="w-full h-full object-cover"/>` : `
+                                        <div class="w-full h-full flex items-center justify-center text-outline text-[10px]">بدون صورة</div>
+                                    `}
+                                </div>
+                                <div class="text-xs space-y-0.5">
+                                    <h4 class="font-bold text-primary text-sm">${p.name_ar}</h4>
+                                    <div class="text-on-surface-variant">المصنع: <strong>${p.manufacturer_name}</strong> | كود: <span class="font-mono text-primary">${p.sku || '-'}</span></div>
+                                    <div class="text-[11px] text-secondary font-mono font-bold">${p.price ? `${p.price} ${p.currency} / ${p.price_unit}` : 'سعر استرشادي'}</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2 shrink-0">
+                                <button type="button" onclick="quickDecide('${p.id}', 'APPROVE')" class="px-4 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs shadow-sm transition-all">
+                                    اعتماد ونشر
+                                </button>
+                                <a href="/admin/approvals" class="px-3 py-2 rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container font-semibold text-xs transition-all">
+                                    فحص وتدقيق
+                                </a>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+
+                // 2. Active Products
+                const prodsRes = await zarsevFetch('/api/products?limit=100');
+                const products = prodsRes.products || [];
+                document.getElementById('admin-stat-active-prods').textContent = products.length;
+
+                // 3. Manufacturers
+                const mfgsRes = await zarsevFetch('/api/manufacturers');
+                const mfgs = mfgsRes.manufacturers || [];
+                allManufacturersCache = mfgs;
+                document.getElementById('admin-stat-mfgs').textContent = mfgs.length;
+
+                const mfgsTbody = document.getElementById('admin-mfgs-tbody');
+                mfgsTbody.innerHTML = mfgs.map(m => `
+                    <tr class="hover:bg-surface-container-low transition-colors">
+                        <td class="p-3.5 font-bold text-primary">${m.name_ar}</td>
+                        <td class="p-3.5 font-mono text-on-surface-variant">${m.code || m.id}</td>
+                        <td class="p-3.5 text-on-surface-variant">${m.city || 'ميناء دمياط'}</td>
+                        <td class="p-3.5 text-center">
+                            <span class="px-2.5 py-1 rounded text-[11px] font-bold ${m.business_model === 'DIRECT_CONTRACT' ? 'bg-blue-100 text-blue-800' : 'bg-teal-100 text-teal-800'}">
+                                ${m.business_model === 'DIRECT_CONTRACT' ? 'عقد مباشر' : 'اشتراك تسويقي'}
+                            </span>
+                        </td>
+                        <td class="p-3.5 text-center">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">نشط ومعتمد</span>
+                        </td>
+                        <td class="p-3.5 text-center">
+                            <a href="/catalog?mfg=${m.id}" class="text-secondary font-bold hover:underline">عرض المنتجات</a>
+                        </td>
+                    </tr>
+                `).join('');
+
+                // 4. Global Batches
+                const histRes = await zarsevFetch('/api/imports/history');
+                document.getElementById('admin-stat-global-batches').textContent = (histRes.history || []).length;
+
+            } catch (err) {
+                console.error(err);
+                showToast('خطأ في تحميل مؤشرات لوحة الإدارة: ' + err.message, 'error');
+            }
+        }
+
+        async function quickDecide(productId, decision) {
+            try {
+                const res = await zarsevFetch(`/api/approvals/${productId}/decide`, {
+                    method: 'POST',
+                    body: JSON.stringify({ decision })
+                });
+                showToast(res.message, 'success');
+                await loadAdminDashboard();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        let adminRfqsCache = [];
+        let allManufacturersCache = [];
+
+        async function loadAdminRfqs() {
+            try {
+                const status = document.getElementById('rfq-filter-status')?.value || '';
+                const search = document.getElementById('rfq-search-input')?.value || '';
+                let url = '/api/rfqs?';
+                if (status) url += `status=${encodeURIComponent(status)}&`;
+                if (search) url += `search=${encodeURIComponent(search)}&`;
+
+                const res = await zarsevFetch(url);
+                adminRfqsCache = res.rfqs || [];
+                document.getElementById('rfq-total-badge').textContent = `${adminRfqsCache.length} طلب`;
+
+                const tbody = document.getElementById('admin-rfqs-tbody');
+                if (adminRfqsCache.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="7" class="p-8 text-center text-on-surface-variant">لا توجد طلبات عروض أسعار مطابقة</td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                const statusBadges = {
+                    'NEW': 'bg-blue-100 text-blue-800',
+                    'UNDER_REVIEW': 'bg-amber-100 text-amber-800',
+                    'SENT_TO_MANUFACTURER': 'bg-purple-100 text-purple-800',
+                    'QUOTED': 'bg-teal-100 text-teal-800',
+                    'ACCEPTED': 'bg-emerald-100 text-emerald-800',
+                    'REJECTED': 'bg-rose-100 text-rose-800',
+                    'CLOSED': 'bg-gray-100 text-gray-800'
+                };
+
+                const statusLabels = {
+                    'NEW': 'جديد (NEW)',
+                    'UNDER_REVIEW': 'قيد المراجعة',
+                    'SENT_TO_MANUFACTURER': 'محال للمصنع',
+                    'QUOTED': 'تم التسعير',
+                    'ACCEPTED': 'مقبول',
+                    'REJECTED': 'مرفوض',
+                    'CLOSED': 'مغلق'
+                };
+
+                tbody.innerHTML = adminRfqsCache.map(r => `
+                    <tr class="hover:bg-surface-container-low transition-colors">
+                        <td class="p-3 font-mono font-bold text-secondary">${escapeHtml(r.reference_no)}</td>
+                        <td class="p-3">
+                            <div class="font-bold text-primary">${escapeHtml(r.buyer_name)}</div>
+                            <div class="text-[10px] text-on-surface-variant">${escapeHtml(r.company_name)}</div>
+                        </td>
+                        <td class="p-3">
+                            <div class="font-semibold text-primary">${escapeHtml(r.product_name_ar)}</div>
+                            <div class="text-[11px] font-mono font-bold text-secondary">${escapeHtml(r.requested_quantity)} ${escapeHtml(r.unit_of_measurement)}</div>
+                        </td>
+                        <td class="p-3 text-on-surface-variant">
+                            <div>${escapeHtml(r.destination_country)}</div>
+                            <div class="text-[10px] text-outline">${escapeHtml(r.destination_port || 'غير محدد')}</div>
+                        </td>
+                        <td class="p-3 text-center">
+                            <span class="px-2.5 py-1 rounded text-[10px] font-bold ${statusBadges[r.status] || 'bg-gray-100 text-gray-800'}">
+                                ${statusLabels[r.status] || escapeHtml(r.status)}
+                            </span>
+                        </td>
+                        <td class="p-3 text-on-surface-variant font-medium">
+                            ${escapeHtml(r.assigned_mfg_name_ar || r.manufacturer_name_ar || 'غير محدد')}
+                        </td>
+                        <td class="p-3 text-center">
+                            <button type="button" onclick="openAdminRfqModal('${escapeHtml(r.id)}')" class="px-3 py-1.5 rounded bg-secondary hover:bg-secondary/90 text-white font-bold text-xs transition-all shadow-xs">
+                                فحص وإدارة
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+
+            } catch (err) {
+                console.error('Failed to load RFQs:', err);
+            }
+        }
+
+        async function openAdminRfqModal(rfqId) {
+            try {
+                const res = await zarsevFetch(`/api/rfqs/${rfqId}`);
+                const r = res.rfq;
+                const logs = res.audit_logs || [];
+
+                document.getElementById('modal-rfq-id').value = r.id;
+                document.getElementById('modal-rfq-ref').textContent = r.reference_no;
+                document.getElementById('modal-rfq-buyer').textContent = r.buyer_name;
+                document.getElementById('modal-rfq-company').textContent = r.company_name;
+                document.getElementById('modal-rfq-email').textContent = r.business_email;
+                document.getElementById('modal-rfq-phone').textContent = r.phone;
+                document.getElementById('modal-rfq-dest').textContent = r.destination_country;
+                document.getElementById('modal-rfq-port').textContent = r.destination_port || 'غير محدد';
+                document.getElementById('modal-rfq-prod-name').textContent = r.product_name_ar;
+                document.getElementById('modal-rfq-qty').textContent = `${r.requested_quantity} ${r.unit_of_measurement}`;
+                document.getElementById('modal-rfq-message').textContent = r.additional_message ? `ملاحظات المشتري: "${r.additional_message}"` : 'لا توجد ملاحظات إضافية من المشتري.';
+
+                document.getElementById('modal-rfq-status-select').value = r.status;
+                document.getElementById('modal-rfq-note').value = '';
+
+                // Populate manufacturers dropdown
+                const mfgSelect = document.getElementById('modal-rfq-mfg-select');
+                mfgSelect.innerHTML = `<option value="">المصنع الأصلي (${r.manufacturer_name_ar})</option>` +
+                    allManufacturersCache.map(m => `
+                        <option value="${m.id}" ${m.id === r.assigned_manufacturer_id ? 'selected' : ''}>
+                            ${m.name_ar} (${m.city})
+                        </option>
+                    `).join('');
+
+                // Render Timeline (SEC-09: XSS safe escaping)
+                const timeline = document.getElementById('modal-rfq-timeline');
+                timeline.innerHTML = logs.map(l => `
+                    <div class="py-1.5 flex items-start justify-between">
+                        <div>
+                            <span class="font-bold text-primary">${escapeHtml(l.action)}</span>:
+                            <span class="text-on-surface-variant">${escapeHtml(l.notes || '-')}</span>
+                            <span class="text-[10px] text-outline block">بواسطة: ${escapeHtml(l.user_name || 'المنظومة')} (${escapeHtml(l.to_status)})</span>
+                        </div>
+                        <span class="text-[10px] font-mono text-outline">${new Date(l.created_at).toLocaleString('ar-EG')}</span>
+                    </div>
+                `).join('');
+
+                // Fetch and Render Structured Quotation (if exists)
+                const quoteCard = document.getElementById('admin-modal-quote-card');
+                try {
+                    const quotesRes = await zarsevFetch(`/api/quotations/rfq/${r.id}`);
+                    const quotes = quotesRes.quotations || [];
+                    const activeQuote = quotes.find(q => ['SUBMITTED', 'ACCEPTED', 'REJECTED'].includes(q.status)) || quotes[0];
+                    if (activeQuote) {
+                        quoteCard.classList.remove('hidden');
+                        document.getElementById('admin-quote-ref').textContent = activeQuote.reference_no;
+                        const badge = document.getElementById('admin-quote-status-badge');
+                        badge.textContent = activeQuote.status;
+                        badge.className = `px-2 py-0.5 rounded text-[10px] font-bold ${activeQuote.status === 'ACCEPTED' ? 'bg-emerald-100 text-emerald-800' : activeQuote.status === 'REJECTED' ? 'bg-rose-100 text-rose-800' : 'bg-teal-100 text-teal-800'}`;
+                        document.getElementById('admin-quote-price').textContent = `${activeQuote.unit_price} ${activeQuote.currency}`;
+                        document.getElementById('admin-quote-incoterm-port').textContent = `${activeQuote.incoterm} (${activeQuote.loading_port || '-'})`;
+                        document.getElementById('admin-quote-moq-lead').textContent = `${activeQuote.min_order_quantity} ${activeQuote.min_order_unit} / ${activeQuote.lead_time_days} يوم`;
+                        document.getElementById('admin-quote-validity').textContent = activeQuote.validity_date ? activeQuote.validity_date.substring(0, 10) : '-';
+                        document.getElementById('admin-quote-terms-text').textContent = `الدفع: ${activeQuote.payment_terms || '-'} | التعبئة: ${activeQuote.packaging_details || '-'}`;
+
+                        const decisionEl = document.getElementById('admin-quote-buyer-decision');
+                        if (activeQuote.buyer_decision_at) {
+                            decisionEl.classList.remove('hidden');
+                            document.getElementById('admin-quote-decision-text').textContent = `${activeQuote.status} بتوقيت ${new Date(activeQuote.buyer_decision_at).toLocaleString('ar-EG')}. ${activeQuote.buyer_decision_notes ? `ملاحظات: "${activeQuote.buyer_decision_notes}"` : ''}`;
+                        } else {
+                            decisionEl.classList.add('hidden');
+                        }
+                    } else {
+                        quoteCard.classList.add('hidden');
+                    }
+                } catch (_) {
+                    quoteCard.classList.add('hidden');
+                }
+
+                document.getElementById('admin-rfq-modal').classList.remove('hidden');
+
+            } catch (err) {
+                showToast('خطأ في استرجاع تفاصيل الطلب: ' + err.message, 'error');
+            }
+        }
+
+        function closeAdminRfqModal() {
+            document.getElementById('admin-rfq-modal').classList.add('hidden');
+        }
+
+        async function submitAdminRfqUpdate() {
+            const rfqId = document.getElementById('modal-rfq-id').value;
+            const status = document.getElementById('modal-rfq-status-select').value;
+            const assigned_manufacturer_id = document.getElementById('modal-rfq-mfg-select').value;
+            const action_note = document.getElementById('modal-rfq-note').value;
+            const btn = document.getElementById('modal-rfq-save-btn');
+
+            btn.disabled = true;
+            btn.textContent = 'جاري الحفظ...';
+
+            try {
+                const res = await zarsevFetch(`/api/rfqs/${rfqId}/status`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({
+                        status,
+                        assigned_manufacturer_id,
+                        action_note
+                    })
+                });
+
+                showToast(res.message, 'success');
+                closeAdminRfqModal();
+                await loadAdminRfqs();
+
+            } catch (err) {
+                showToast(err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'حفظ التحديث وتوثيق الإجراء';
+            }
+        }
+    
+        // =========================================================================
+        // Tab Navigation & Multi-Tab Admin Portal Handlers (Phase 4.0)
+        // =========================================================================
+        const ADMIN_TABS = ['overview', 'inquiries', 'staff', 'plans', 'audit', 'contracts'];
+
+        function switchAdminTab(targetTab) {
+            ADMIN_TABS.forEach(tab => {
+                const btn = document.getElementById(`tab-btn-${tab}`);
+                const content = document.getElementById(`admin-tab-content-${tab}`);
+                if (btn) {
+                    if (tab === targetTab) {
+                        btn.className = 'admin-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 bg-primary text-white shadow-xs';
+                    } else {
+                        btn.className = 'admin-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 text-primary hover:bg-surface-container-low';
+                    }
+                }
+                if (content) {
+                    if (tab === targetTab) {
+                        content.classList.remove('hidden');
+                    } else {
+                        content.classList.add('hidden');
+                    }
+                }
+            });
+
+            // Lazy-load data for target tab
+            if (targetTab === 'inquiries') loadAdminInquiries();
+            else if (targetTab === 'staff') loadAdminStaff();
+            else if (targetTab === 'plans') loadAdminPlans();
+            else if (targetTab === 'audit') loadAdminAuditLogs();
+            else if (targetTab === 'contracts') loadAdminContracts();
+        }
+
+        // -------------------------------------------------------------------------
+        // Inquiries Management Handlers
+        // -------------------------------------------------------------------------
+        let activeInquiriesList = [];
+        let currentSelectedInquiry = null;
+
+        async function loadAdminInquiries() {
+            const tbody = document.getElementById('admin-inquiries-tbody');
+            tbody.innerHTML = '<tr><td colspan="8" class="p-8 text-center text-on-surface-variant"><span class="material-symbols-outlined animate-spin text-[24px]">progress_activity</span><div class="mt-2 text-xs">جاري تحميل الاستفسارات...</div></td></tr>';
+
+            const status = document.getElementById('inquiries-filter-status')?.value || '';
+            const search = document.getElementById('inquiries-search-input')?.value || '';
+
+            try {
+                let url = '/api/inquiries/all?';
+                if (status) url += `status=${encodeURIComponent(status)}&`;
+                if (search) url += `search=${encodeURIComponent(search)}&`;
+
+                const res = await zarsevFetch(url);
+                const inquiries = res.inquiries || [];
+                activeInquiriesList = inquiries;
+
+                const badge = document.getElementById('tab-inquiries-badge');
+                if (badge) badge.textContent = inquiries.length;
+
+                if (inquiries.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" class="p-8 text-center text-on-surface-variant text-xs">لا توجد استفسارات مسجلة تطابق معايير البحث.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = inquiries.map(inq => {
+                    const statusColorMap = {
+                        'NEW': 'bg-blue-100 text-blue-800',
+                        'IN_REVIEW': 'bg-amber-100 text-amber-800',
+                        'CONTACTED': 'bg-purple-100 text-purple-800',
+                        'RESOLVED': 'bg-emerald-100 text-emerald-800',
+                        'CLOSED': 'bg-gray-100 text-gray-800',
+                        'SPAM': 'bg-rose-100 text-rose-800'
+                    };
+                    const color = statusColorMap[inq.status] || 'bg-gray-100 text-gray-800';
+
+                    return `
+                        <tr class="hover:bg-surface-container-low transition-colors">
+                            <td class="p-3.5 font-mono text-secondary font-bold">${escapeHtml(inq.reference_no || inq.id.substring(0, 8))}</td>
+                            <td class="p-3.5 font-bold text-primary">${escapeHtml(inq.full_name || '-')}</td>
+                            <td class="p-3.5 text-on-surface-variant">${escapeHtml(inq.company_name || '-')} (${escapeHtml(inq.country || '-')})</td>
+                            <td class="p-3.5 font-mono text-[11px]">${escapeHtml(inq.email)}<br/><span class="text-on-surface-variant">${escapeHtml(inq.phone || '-')}</span></td>
+                            <td class="p-3.5 font-semibold text-secondary">${escapeHtml(inq.product_name_ar || 'استفسار عام')}</td>
+                            <td class="p-3.5 text-center"><span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${color}">${inq.status}</span></td>
+                            <td class="p-3.5 text-on-surface-variant text-[11px]">${new Date(inq.created_at).toLocaleDateString('ar-EG')}</td>
+                            <td class="p-3.5 text-center">
+                                <button type="button" onclick="openAdminInquiryModal('${inq.id}')" class="px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface text-secondary font-bold text-xs border border-outline-variant transition-all">
+                                    فحص وتواصل
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-rose-600 text-xs">خطأ في استرجاع الاستفسارات: ${escapeHtml(err.message)}</td></tr>`;
+            }
+        }
+
+        async function openAdminInquiryModal(id) {
+            try {
+                const res = await zarsevFetch(`/api/inquiries/${id}`);
+                const inq = res.inquiry;
+                const logs = res.contact_logs || [];
+                currentSelectedInquiry = inq;
+
+                document.getElementById('modal-inquiry-ref').textContent = inq.reference_no || inq.id;
+                document.getElementById('modal-inq-name').textContent = inq.full_name || '-';
+                document.getElementById('modal-inq-company').textContent = inq.company_name || '-';
+                document.getElementById('modal-inq-email').textContent = inq.email || '-';
+                document.getElementById('modal-inq-phone').textContent = inq.phone || '-';
+                document.getElementById('modal-inq-country').textContent = inq.country || '-';
+                document.getElementById('modal-inq-product').textContent = inq.product_name_ar || 'طلب عام';
+                document.getElementById('modal-inq-message').textContent = inq.message || inq.notes || 'لا توجد تفاصيل إضافية';
+
+                const logsList = document.getElementById('modal-inq-logs-list');
+                if (logs.length === 0) {
+                    logsList.innerHTML = '<div class="text-on-surface-variant text-center py-2 text-xs">لا توجد محاضر تواصل سابقة لهذا الاستفسار.</div>';
+                } else {
+                    logsList.innerHTML = logs.map(l => `
+                        <div class="py-2 text-[11px] space-y-1">
+                            <div class="flex items-center justify-between font-bold text-primary">
+                                <span>${escapeHtml(l.officer_name)} (${l.contact_method})</span>
+                                <span class="font-mono text-on-surface-variant text-[10px]">${new Date(l.created_at).toLocaleString('ar-EG')}</span>
+                            </div>
+                            <p class="text-on-surface-variant">${escapeHtml(l.notes)}</p>
+                            <div class="text-[10px] text-secondary">الحالة: ${l.from_status} ← ${l.to_status}</div>
+                        </div>
+                    `).join('');
+                }
+
+                document.getElementById('admin-inquiry-modal').classList.remove('hidden');
+            } catch (err) {
+                showToast('خطأ في استرجاع بيانات الاستفسار: ' + err.message, 'error');
+            }
+        }
+
+        function closeAdminInquiryModal() {
+            document.getElementById('admin-inquiry-modal').classList.add('hidden');
+        }
+
+        async function submitProofOfContact() {
+            if (!currentSelectedInquiry) return;
+            const method = document.getElementById('inq-contact-method').value;
+            const toStatus = document.getElementById('inq-new-status').value;
+            const notes = document.getElementById('inq-contact-notes').value;
+            const btn = document.getElementById('btn-save-contact-log');
+
+            if (!notes.trim()) {
+                showToast('يرجى كتابة ملخص محضر التواصل', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'جاري التوثيق...';
+
+            try {
+                const res = await zarsevFetch(`/api/inquiries/${currentSelectedInquiry.id}/contact-log`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        contact_method: method,
+                        to_status: toStatus,
+                        notes: notes.trim()
+                    })
+                });
+
+                showToast(res.message, 'success');
+                document.getElementById('inq-contact-notes').value = '';
+                await openAdminInquiryModal(currentSelectedInquiry.id);
+                await loadAdminInquiries();
+            } catch (err) {
+                showToast(err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'تسجيل محضر التواصل وتحديث الحالة';
+            }
+        }
+
+        // -------------------------------------------------------------------------
+        // Staff Management Handlers
+        // -------------------------------------------------------------------------
+        async function loadAdminStaff() {
+            const tbodyStaff = document.getElementById('admin-staff-tbody');
+            const tbodyInvites = document.getElementById('admin-staff-invites-tbody');
+
+            tbodyStaff.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-on-surface-variant"><span class="material-symbols-outlined animate-spin text-[24px]">progress_activity</span><div class="mt-2 text-xs">جاري تحميل الموظفين...</div></td></tr>';
+
+            try {
+                const res = await zarsevFetch('/api/admin/staff');
+                const staff = res.staff || [];
+                const invites = res.invitations || [];
+
+                tbodyStaff.innerHTML = staff.map(u => `
+                    <tr class="hover:bg-surface-container-low transition-colors">
+                        <td class="p-3.5 font-bold text-primary">${escapeHtml(u.name)}</td>
+                        <td class="p-3.5 font-mono text-secondary">${escapeHtml(u.email)}</td>
+                        <td class="p-3.5 text-center font-bold text-xs">${escapeHtml(u.role)}</td>
+                        <td class="p-3.5 text-center"><span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${u.sub_role === 'SUPER_ADMIN' ? 'bg-amber-100 text-amber-800' : 'bg-teal-100 text-teal-800'}">${escapeHtml(u.sub_role || '-')}</span></td>
+                        <td class="p-3.5 text-center">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${u.is_active ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+                                ${u.is_active ? 'نشط' : 'مجمد'}
+                            </span>
+                        </td>
+                        <td class="p-3.5 text-on-surface-variant text-[11px]">${new Date(u.created_at).toLocaleDateString('ar-EG')}</td>
+                        <td class="p-3.5 text-center">
+                            <button type="button" onclick="toggleStaffActive('${u.id}', ${Boolean(u.is_active)})" class="px-2.5 py-1 rounded text-xs font-semibold ${u.is_active ? 'bg-rose-50 text-rose-700 hover:bg-rose-100' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'}">
+                                ${u.is_active ? 'تجميد الحساب' : 'تنشيط'}
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+
+                if (invites.length === 0) {
+                    tbodyInvites.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-on-surface-variant text-xs">لا توجد دعوات موظفين معلقة حالياً.</td></tr>';
+                } else {
+                    tbodyInvites.innerHTML = invites.map(inv => `
+                        <tr class="hover:bg-surface-container-low transition-colors">
+                            <td class="p-3.5 font-mono text-primary font-bold">${escapeHtml(inv.email)}</td>
+                            <td class="p-3.5 text-center text-xs">${escapeHtml(inv.role)}</td>
+                            <td class="p-3.5 text-center text-xs font-semibold">${escapeHtml(inv.sub_role)}</td>
+                            <td class="p-3.5 text-center"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${inv.status === 'PENDING' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-800'}">${inv.status}</span></td>
+                            <td class="p-3.5 text-on-surface-variant text-[11px]">${new Date(inv.expires_at).toLocaleDateString('ar-EG')}</td>
+                            <td class="p-3.5 text-center flex items-center justify-center gap-1.5">
+                                ${inv.status === 'PENDING' ? `
+                                    <button type="button" onclick="resendStaffInvite('${inv.id}')" class="px-2 py-1 rounded bg-teal-50 text-teal-700 hover:bg-teal-100 text-[11px] font-bold">إعادة إصدار</button>
+                                    <button type="button" onclick="revokeStaffInvite('${inv.id}')" class="px-2 py-1 rounded bg-rose-50 text-rose-700 hover:bg-rose-100 text-[11px] font-bold">إلغاء</button>
+                                ` : '-'}
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+
+            } catch (err) {
+                tbodyStaff.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-rose-600 text-xs">خطأ في تحميل الموظفين: ${escapeHtml(err.message)}</td></tr>`;
+            }
+        }
+
+        function openStaffInviteModal() {
+            document.getElementById('admin-staff-invite-modal').classList.remove('hidden');
+        }
+        function closeStaffInviteModal() {
+            document.getElementById('admin-staff-invite-modal').classList.add('hidden');
+        }
+
+        async function submitStaffInvite() {
+            const email = document.getElementById('staff-invite-email').value;
+            const role = document.getElementById('staff-invite-role').value;
+            const subRole = document.getElementById('staff-invite-subrole').value;
+            const btn = document.getElementById('btn-submit-staff-invite');
+
+            if (!email) {
+                showToast('يرجى إدخال البريد الإلكتروني للموظف', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'جاري المعالجة...';
+
+            try {
+                const res = await zarsevFetch('/api/admin/staff/invite', {
+                    method: 'POST',
+                    body: JSON.stringify({ email, role, sub_role: subRole })
+                });
+
+                closeStaffInviteModal();
+                showToast(res.message, 'success');
+
+                const activationUrl = `${window.location.origin}/portal/staff-activate?token=${res.invitation.raw_token}`;
+                document.getElementById('staff-invite-link-input').value = activationUrl;
+                document.getElementById('admin-staff-invite-success-modal').classList.remove('hidden');
+
+                await loadAdminStaff();
+            } catch (err) {
+                showToast(err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'إرسال الدعوة وتوليد الرابط';
+            }
+        }
+
+        function copyStaffInviteLink() {
+            const copyInput = document.getElementById('staff-invite-link-input');
+            copyInput.select();
+            navigator.clipboard.writeText(copyInput.value);
+            showToast('تم نسخ رابط التفعيل إلى الحافظة بنجاح!', 'success');
+        }
+
+        async function toggleStaffActive(id, currentActive) {
+            if (!confirm(`هل أنت متأكد من ${currentActive ? 'تجميد' : 'إعادة تفعيل'} هذا الحساب؟`)) return;
+
+            try {
+                const res = await zarsevFetch(`/api/admin/staff/${id}`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ is_active: !currentActive })
+                });
+                showToast(res.message, 'success');
+                await loadAdminStaff();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function resendStaffInvite(id) {
+            try {
+                const res = await zarsevFetch(`/api/admin/staff/invitations/${id}/resend`, { method: 'POST' });
+                showToast(res.message, 'success');
+                const activationUrl = `${window.location.origin}/portal/staff-activate?token=${res.invitation.raw_token}`;
+                document.getElementById('staff-invite-link-input').value = activationUrl;
+                document.getElementById('admin-staff-invite-success-modal').classList.remove('hidden');
+                await loadAdminStaff();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function revokeStaffInvite(id) {
+            if (!confirm('هل أنت متأكد من رغبتك في إلغاء هذه الدعوة نهائياً؟')) return;
+            try {
+                const res = await zarsevFetch(`/api/admin/staff/invitations/${id}/revoke`, { method: 'POST' });
+                showToast(res.message, 'success');
+                await loadAdminStaff();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        // -------------------------------------------------------------------------
+        // Subscription Plans Handlers
+        // -------------------------------------------------------------------------
+        let activePlansList = [];
+
+        async function loadAdminPlans() {
+            const container = document.getElementById('admin-plans-cards-grid');
+            container.innerHTML = '<div class="p-8 text-center text-on-surface-variant col-span-3"><span class="material-symbols-outlined animate-spin text-[24px]">progress_activity</span><div class="mt-2 text-xs">جاري تحميل خطط الاشتراكات...</div></div>';
+
+            try {
+                const res = await zarsevFetch('/api/subscriptions/plans');
+                const plans = res.plans || [];
+                activePlansList = plans;
+
+                container.innerHTML = plans.map(p => `
+                    <div class="bg-surface-container-lowest rounded-2xl border ${p.id === 'sub_enterprise' ? 'border-amber-300 shadow-md ring-1 ring-amber-300' : 'border-outline-variant'} p-6 space-y-4 flex flex-col justify-between">
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <h3 class="font-bold text-base text-primary">${escapeHtml(p.name)}</h3>
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#EBF5F5] text-secondary font-mono">${p.id}</span>
+                            </div>
+                            <div class="space-y-2 text-xs text-on-surface-variant divide-y divide-outline-variant/40 pt-2">
+                                <div class="flex justify-between py-1.5">
+                                    <span>الحد الأقصى للمنتجات لكل رفع:</span>
+                                    <strong class="text-primary font-mono">${p.max_products_per_import} صنف</strong>
+                                </div>
+                                <div class="flex justify-between py-1.5">
+                                    <span>عمليات الاستيراد الشهرية:</span>
+                                    <strong class="text-primary font-mono">${p.max_monthly_imports} عملية</strong>
+                                </div>
+                                <div class="flex justify-between py-1.5">
+                                    <span>الحد الأقصى لحجم الملف:</span>
+                                    <strong class="text-primary font-mono">${p.max_file_size_mb} MB</strong>
+                                </div>
+                                <div class="flex justify-between py-1.5">
+                                    <span>الاستخراج بالذكاء الاصطناعي:</span>
+                                    <strong class="${p.ai_extraction_enabled ? 'text-emerald-700' : 'text-rose-600'}">${p.ai_extraction_enabled ? 'متاح ومفعل' : 'غير متاح'}</strong>
+                                </div>
+                                <div class="flex justify-between py-1.5">
+                                    <span>صيغ الملفات المقبولة:</span>
+                                    <div class="flex flex-wrap gap-1 justify-end max-w-[150px]">
+                                        ${(p.allowed_formats || []).map(f => `<span class="px-1.5 py-0.2 rounded bg-surface-container-low text-[10px] font-mono">${f}</span>`).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="button" onclick="openPlanEditModal('${p.id}')" class="w-full py-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container text-primary font-bold text-xs border border-outline-variant flex items-center justify-center gap-1.5 transition-all">
+                            <span class="material-symbols-outlined text-[17px] text-secondary">tune</span>
+                            <span>تعديل إعدادات الخطة</span>
+                        </button>
+                    </div>
+                `).join('');
+
+            } catch (err) {
+                container.innerHTML = `<div class="p-8 text-center text-rose-600 text-xs col-span-3">خطأ في استرجاع الخطط: ${escapeHtml(err.message)}</div>`;
+            }
+        }
+
+        function openPlanEditModal(id) {
+            const plan = activePlansList.find(p => p.id === id);
+            if (!plan) return;
+
+            document.getElementById('modal-plan-id').value = plan.id;
+            document.getElementById('modal-plan-name').textContent = plan.name;
+            document.getElementById('plan-max-products').value = plan.max_products_per_import;
+            document.getElementById('plan-max-monthly').value = plan.max_monthly_imports;
+            document.getElementById('plan-max-filesize').value = plan.max_file_size_mb;
+            document.getElementById('plan-ai-enabled').checked = Boolean(plan.ai_extraction_enabled);
+            document.getElementById('plan-bulk-enabled').checked = Boolean(plan.bulk_import_enabled);
+
+            document.getElementById('admin-plan-edit-modal').classList.remove('hidden');
+        }
+
+        function closePlanEditModal() {
+            document.getElementById('admin-plan-edit-modal').classList.add('hidden');
+        }
+
+        async function submitPlanUpdate() {
+            const planId = document.getElementById('modal-plan-id').value;
+            const maxProducts = parseInt(document.getElementById('plan-max-products').value, 10);
+            const maxMonthly = parseInt(document.getElementById('plan-max-monthly').value, 10);
+            const maxFileSize = parseInt(document.getElementById('plan-max-filesize').value, 10);
+            const aiEnabled = document.getElementById('plan-ai-enabled').checked;
+            const bulkEnabled = document.getElementById('plan-bulk-enabled').checked;
+            const btn = document.getElementById('btn-save-plan');
+
+            btn.disabled = true;
+            btn.textContent = 'جاري الحفظ...';
+
+            try {
+                const res = await zarsevFetch(`/api/subscriptions/plans/${planId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        max_products_per_import: maxProducts,
+                        max_monthly_imports: maxMonthly,
+                        max_file_size_mb: maxFileSize,
+                        ai_extraction_enabled: aiEnabled,
+                        bulk_import_enabled: bulkEnabled
+                    })
+                });
+
+                showToast(res.message, 'success');
+                closePlanEditModal();
+                await loadAdminPlans();
+            } catch (err) {
+                showToast(err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'حفظ تعديلات الخطة';
+            }
+        }
+
+        // -------------------------------------------------------------------------
+        // Central Audit Explorer Handlers
+        // -------------------------------------------------------------------------
+        async function loadAdminAuditLogs() {
+            const tbody = document.getElementById('admin-audit-tbody');
+            tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-on-surface-variant"><span class="material-symbols-outlined animate-spin text-[24px]">progress_activity</span><div class="mt-2 text-xs">جاري فحص وتطبيق حجب البيانات لسجل التدقيق...</div></td></tr>';
+
+            const source = document.getElementById('audit-filter-source')?.value || 'all';
+            const action = document.getElementById('audit-filter-action')?.value || '';
+
+            try {
+                let url = `/api/admin/audit-logs?source=${encodeURIComponent(source)}&`;
+                if (action) url += `action=${encodeURIComponent(action)}&`;
+
+                const res = await zarsevFetch(url);
+                const logs = res.logs || [];
+
+                if (logs.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-on-surface-variant text-xs">لا توجد سجلات تدقيق مسجلة.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = logs.map(l => `
+                    <tr class="hover:bg-surface-container-low transition-colors text-[11px]">
+                        <td class="p-3.5 font-mono text-on-surface-variant">${new Date(l.created_at).toLocaleString('ar-EG')}</td>
+                        <td class="p-3.5 font-bold text-primary">${escapeHtml(l.entity_type)} (${escapeHtml((l.entity_id || '').substring(0, 10))})</td>
+                        <td class="p-3.5 font-mono text-secondary">${escapeHtml(l.actor_id)} <span class="text-[10px] text-on-surface-variant">(${escapeHtml(l.actor_type || '-')})</span></td>
+                        <td class="p-3.5"><span class="px-2 py-0.5 rounded font-mono text-[10px] font-bold bg-surface-container-low text-primary">${escapeHtml(l.action)}</span></td>
+                        <td class="p-3.5 font-mono text-[10px] text-on-surface-variant max-w-xs truncate" title='${escapeHtml(JSON.stringify(l.details || {}))}'>${escapeHtml(JSON.stringify(l.details || {}))}</td>
+                        <td class="p-3.5 font-mono text-[11px] text-on-surface-variant">${escapeHtml(l.ip_address || '-')}</td>
+                    </tr>
+                `).join('');
+
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-rose-600 text-xs">خطأ في استرجاع سجلات التدقيق: ${escapeHtml(err.message)}</td></tr>`;
+            }
+        }
+
+        // -------------------------------------------------------------------------
+        // Commercial Contracts Overview Handlers
+        // -------------------------------------------------------------------------
+        async function loadAdminContracts() {
+            const tbody = document.getElementById('admin-contracts-tbody');
+            tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-on-surface-variant"><span class="material-symbols-outlined animate-spin text-[24px]">progress_activity</span><div class="mt-2 text-xs">جاري تحميل العقود المصدرة...</div></td></tr>';
+
+            try {
+                const res = await zarsevFetch('/api/contracts');
+                const contracts = res.contracts || [];
+
+                if (contracts.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-on-surface-variant text-xs">لا توجد عقود تجارية مبرمة حتى الآن.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = contracts.map(c => `
+                    <tr class="hover:bg-surface-container-low transition-colors">
+                        <td class="p-3.5 font-mono font-bold text-secondary">${escapeHtml(c.contract_no)}</td>
+                        <td class="p-3.5 font-bold text-primary">${escapeHtml(c.mfg_name_ar || '-')}</td>
+                        <td class="p-3.5 text-on-surface-variant">${escapeHtml(c.buyer_company)} (${escapeHtml(c.buyer_name)})</td>
+                        <td class="p-3.5 font-mono font-bold text-primary">${Number(c.total_amount).toLocaleString()} ${escapeHtml(c.currency)}</td>
+                        <td class="p-3.5 text-center"><span class="px-2 py-0.5 rounded bg-surface-container-low font-mono text-xs font-bold text-secondary">${escapeHtml(c.incoterm)}</span></td>
+                        <td class="p-3.5 text-center"><span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">${escapeHtml(c.status)}</span></td>
+                        <td class="p-3.5 font-mono text-[11px] text-on-surface-variant">${new Date(c.created_at).toLocaleDateString('ar-EG')}</td>
+                    </tr>
+                `).join('');
+
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-rose-600 text-xs">خطأ في استرجاع العقود: ${escapeHtml(err.message)}</td></tr>`;
+            }
+        }
+
+    </script>
+</body>
+</html>

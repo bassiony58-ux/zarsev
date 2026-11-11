@@ -1,7 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
-const { getDb } = require('../db/database');
+const dbClient = require('../db/dbClient');
 const config = require('../config');
 const { parseExcel } = require('./parsers/excelParser');
 const { parseCsv } = require('./parsers/csvParser');
@@ -14,27 +14,35 @@ const { processAndNormalizeItem } = require('./ai/aiService');
 const { findMatchingManufacturer } = require('./duplicateDetectionService');
 
 /**
- * Appends a log entry to import_logs table.
+ * Appends a log entry to import_logs table asynchronously.
+ * @param {string} importId
+ * @param {string} step
+ * @param {string} message
+ * @param {string} [severity='INFO']
+ * @param {Object} [dbOpts={}] - Database routing options
  */
-function logImportStep(importId, step, message, severity = 'INFO') {
+async function logImportStep(importId, step, message, severity = 'INFO', dbOpts = {}) {
     try {
-        const db = getDb();
         const logId = 'log_' + crypto.randomBytes(6).toString('hex');
-        db.prepare(`
+        await dbClient.execute(`
             INSERT INTO import_logs (id, import_id, step, message, severity)
             VALUES (?, ?, ?, ?, ?)
-        `).run(logId, importId, step, message, severity);
+        `, [logId, importId, step, message, severity], dbOpts);
     } catch (err) {
-        console.error('Failed to write import log:', err);
+        console.error('Failed to write import log:', err.message);
     }
 }
 
 /**
- * Updates import progress and status.
+ * Updates import progress and status asynchronously.
+ * @param {string} importId
+ * @param {string} status
+ * @param {number} progressPercent
+ * @param {Object} [updates={}]
+ * @param {Object} [dbOpts={}] - Database routing options
  */
-function updateImportProgress(importId, status, progressPercent, updates = {}) {
+async function updateImportProgress(importId, status, progressPercent, updates = {}, dbOpts = {}) {
     try {
-        const db = getDb();
         let setClauses = ['status = ?', 'progress_percent = ?', 'updated_at = CURRENT_TIMESTAMP'];
         let params = [status, progressPercent];
 
@@ -60,25 +68,35 @@ function updateImportProgress(importId, status, progressPercent, updates = {}) {
         }
 
         params.push(importId);
-        db.prepare(`UPDATE imports SET ${setClauses.join(', ')} WHERE id = ?`).run(...params);
+        await dbClient.execute(`UPDATE imports SET ${setClauses.join(', ')} WHERE id = ?`, params, dbOpts);
     } catch (err) {
-        console.error('Failed to update import progress:', err);
+        console.error('Failed to update import progress:', err.message);
     }
 }
 
 /**
  * Asynchronous Background Worker that processes an import session.
+ * Preserves the in-memory event-loop execution model.
+ * 
+ * NOTE ON CRASH / RESTART RELIABILITY:
+ * This worker operates via Node.js in-memory event loop scheduling.
+ * If the server crashes or restarts during execution, jobs in PENDING,
+ * PARSING, or EXTRACTING states will remain interrupted in the database.
+ * 
+ * @param {string} importId
+ * @param {Object} [dbOpts={}] - Database routing options
  */
-async function processImportJob(importId) {
-    const db = getDb();
-    const importRecord = db.prepare('SELECT * FROM imports WHERE id = ?').get(importId);
+async function processImportJob(importId, dbOpts = {}) {
+    const importRecord = await dbClient.queryOne('SELECT * FROM imports WHERE id = ?', [importId], dbOpts);
     if (!importRecord) return;
 
     try {
-        logImportStep(importId, 'START', 'بدء معالجة حزمة الاستيراد والملفات المرفوعة...');
-        updateImportProgress(importId, 'PARSING', 15);
+        await logImportStep(importId, 'START', 'بدء معالجة حزمة الاستيراد والملفات المرفوعة...', 'INFO', dbOpts);
+        await updateImportProgress(importId, 'PARSING', 15, {}, dbOpts);
 
-        const sourceFiles = JSON.parse(importRecord.source_files || '[]');
+        const sourceFiles = typeof importRecord.source_files === 'object' && importRecord.source_files !== null
+            ? importRecord.source_files
+            : JSON.parse(importRecord.source_files || '[]');
         let targetManufacturerId = importRecord.manufacturer_id;
 
         // Collections for parsed contents
@@ -91,7 +109,7 @@ async function processImportJob(importId) {
         for (const file of sourceFiles) {
             const ext = path.extname(file.path).toLowerCase();
             if (ext === '.zip') {
-                logImportStep(importId, 'UNZIP', `فك ضغط الأرشيف: ${file.originalname}`);
+                await logImportStep(importId, 'UNZIP', `فك ضغط الأرشيف: ${file.originalname}`, 'INFO', dbOpts);
                 const extractDir = path.join(path.dirname(file.path), 'unzipped_' + path.basename(file.path, ext));
                 const zipContents = extractZip(file.path, extractDir);
                 unzippedDirs.push(extractDir);
@@ -104,7 +122,7 @@ async function processImportJob(importId) {
             }
         }
 
-        updateImportProgress(importId, 'PARSING', 35);
+        await updateImportProgress(importId, 'PARSING', 35, {}, dbOpts);
 
         // 2. Process all documents and images
         for (const file of filesToProcess) {
@@ -112,19 +130,19 @@ async function processImportJob(importId) {
             const filePath = file.path;
 
             if (['.xlsx', '.xls'].includes(ext)) {
-                logImportStep(importId, 'PARSE_EXCEL', `قراءة جدول البيانات: ${file.originalname}`);
+                await logImportStep(importId, 'PARSE_EXCEL', `قراءة جدول البيانات: ${file.originalname}`, 'INFO', dbOpts);
                 const excelRes = parseExcel(filePath);
                 extractedItems.push(...excelRes.items);
             } else if (ext === '.csv') {
-                logImportStep(importId, 'PARSE_CSV', `قراءة ملف CSV: ${file.originalname}`);
+                await logImportStep(importId, 'PARSE_CSV', `قراءة ملف CSV: ${file.originalname}`, 'INFO', dbOpts);
                 const csvRes = parseCsv(filePath);
                 extractedItems.push(...csvRes.items);
             } else if (['.docx', '.doc'].includes(ext)) {
-                logImportStep(importId, 'PARSE_DOCX', `قراءة مستند Word: ${file.originalname}`);
+                await logImportStep(importId, 'PARSE_DOCX', `قراءة مستند Word: ${file.originalname}`, 'INFO', dbOpts);
                 const docxRes = await parseDocx(filePath);
                 extractedItems.push(...docxRes.items);
             } else if (ext === '.pdf') {
-                logImportStep(importId, 'PARSE_PDF', `تحليل كتالوج PDF: ${file.originalname}`);
+                await logImportStep(importId, 'PARSE_PDF', `تحليل كتالوج PDF: ${file.originalname}`, 'INFO', dbOpts);
                 const pdfRes = await parsePdf(filePath);
                 extractedItems.push(...pdfRes.items);
             } else if (['.png', '.jpg', '.jpeg', '.webp'].includes(ext)) {
@@ -136,17 +154,16 @@ async function processImportJob(importId) {
             }
         }
 
-        updateImportProgress(importId, 'EXTRACTING', 60);
-        logImportStep(importId, 'IMAGE_CLUSTERING', `تنظيم وفرز الصور المرفوعة (العدد: ${parsedImages.length})...`);
+        await updateImportProgress(importId, 'EXTRACTING', 60, {}, dbOpts);
+        await logImportStep(importId, 'IMAGE_CLUSTERING', `تنظيم وفرز الصور المرفوعة (العدد: ${parsedImages.length})...`, 'INFO', dbOpts);
 
         // 3. Image grouping & Product matching
         if (extractedItems.length === 0 && parsedImages.length > 0) {
             // Case A: User uploaded ONLY images (or images in zip)
             const clustered = clusterImages(parsedImages);
-            logImportStep(importId, 'CLUSTER_DONE', `تم تجميع الصور إلى (${clustered.clusters.length}) أصناف مقترحة.`);
+            await logImportStep(importId, 'CLUSTER_DONE', `تم تجميع الصور إلى (${clustered.clusters.length}) أصناف مقترحة.`, 'INFO', dbOpts);
 
-            clustered.clusters.forEach((cl, idx) => {
-                const primaryImg = cl.images.find(img => img.is_primary) || cl.images[0];
+            clustered.clusters.forEach((cl) => {
                 extractedItems.push({
                     raw_data: { cluster_name: cl.suggested_title, images_count: cl.images.length },
                     extracted_data: {
@@ -200,17 +217,17 @@ async function processImportJob(importId) {
             });
         }
 
-        updateImportProgress(importId, 'EXTRACTING', 80);
-        logImportStep(importId, 'NORMALIZATION', 'تنقيح البيانات واكتشاف التكرارات وتصنيف المنتجات...');
+        await updateImportProgress(importId, 'EXTRACTING', 80, {}, dbOpts);
+        await logImportStep(importId, 'NORMALIZATION', 'تنقيح البيانات واكتشاف التكرارات وتصنيف المنتجات...', 'INFO', dbOpts);
 
         // 4. Auto-detect manufacturer from document if not selected
         if (!targetManufacturerId && extractedItems.length > 0) {
             for (const it of extractedItems) {
                 const detected = it.raw_data ? Object.values(it.raw_data).join(' ') : '';
-                const match = findMatchingManufacturer(detected);
+                const match = await findMatchingManufacturer(detected, dbOpts);
                 if (match && match.match_confidence > 0.5) {
                     targetManufacturerId = match.id;
-                    logImportStep(importId, 'MFG_MATCH', `تم اقتراح المصنع المطابق: "${match.name_ar}" (ثقة: ${Math.round(match.match_confidence * 100)}%)`);
+                    await logImportStep(importId, 'MFG_MATCH', `تم اقتراح المصنع المطابق: "${match.name_ar}" (ثقة: ${Math.round(match.match_confidence * 100)}%)`, 'INFO', dbOpts);
                     break;
                 }
             }
@@ -221,8 +238,12 @@ async function processImportJob(importId) {
         let validCount = 0;
         let failedCount = 0;
 
+        // Resolve active engine for boolean conversion
+        const activeEngine = dbOpts.engine || (dbOpts.dbNameOverride ? 'postgres' : ((process.env.DB_ENGINE || 'sqlite').toLowerCase() === 'postgres' ? 'postgres' : 'sqlite'));
+        const isPg = activeEngine === 'postgres';
+
         for (const item of extractedItems) {
-            const processed = await processAndNormalizeItem(item, targetManufacturerId);
+            const processed = await processAndNormalizeItem(item, targetManufacturerId, dbOpts);
             
             // Generate DB record for import_items
             const itemId = 'item_' + crypto.randomBytes(6).toString('hex');
@@ -230,13 +251,15 @@ async function processImportJob(importId) {
             if (status === 'AWAITING_REVIEW') validCount++;
             else failedCount++;
 
-            db.prepare(`
+            const isDuplicateVal = isPg ? Boolean(processed.is_duplicate) : (processed.is_duplicate ? 1 : 0);
+
+            await dbClient.execute(`
                 INSERT INTO import_items (
                     id, import_id, suggested_manufacturer_id, suggested_category_id,
                     raw_data, extracted_data, confidence_score, validation_warnings,
                     is_duplicate, duplicate_matched_id, duplicate_reason, assigned_images, status
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `).run(
+            `, [
                 itemId,
                 importId,
                 targetManufacturerId,
@@ -245,32 +268,32 @@ async function processImportJob(importId) {
                 JSON.stringify(processed.extracted_data || {}),
                 processed.confidence_score || 0.8,
                 JSON.stringify(processed.validation_warnings || []),
-                processed.is_duplicate ? 1 : 0,
+                isDuplicateVal,
                 processed.duplicate_matched_id || null,
                 processed.duplicate_reason || null,
                 JSON.stringify(processed.assigned_images || []),
                 status
-            );
+            ], dbOpts);
 
             finalizedItems.push({ itemId, ...processed });
         }
 
         // 6. Complete Import Job
-        updateImportProgress(importId, 'REVIEW_READY', 100, {
+        await updateImportProgress(importId, 'REVIEW_READY', 100, {
             total_detected: extractedItems.length,
             total_valid: validCount,
             total_failed: failedCount,
             manufacturer_id: targetManufacturerId
-        });
+        }, dbOpts);
 
-        logImportStep(importId, 'COMPLETE', `اكتملت المعالجة بنجاح: تم التعرف على (${extractedItems.length}) منتجات، وجاهزة للمراجعة.`);
+        await logImportStep(importId, 'COMPLETE', `اكتملت المعالجة بنجاح: تم التعرف على (${extractedItems.length}) منتجات، وجاهزة للمراجعة.`, 'INFO', dbOpts);
 
     } catch (err) {
         console.error('Import processing error:', err);
-        logImportStep(importId, 'ERROR', `حدث خطأ أثناء معالجة الاستيراد: ${err.message}`, 'ERROR');
-        updateImportProgress(importId, 'FAILED', 100, {
+        await logImportStep(importId, 'ERROR', `حدث خطأ أثناء معالجة الاستيراد: ${err.message}`, 'ERROR', dbOpts);
+        await updateImportProgress(importId, 'FAILED', 100, {
             error_summary: err.message
-        });
+        }, dbOpts);
     }
 }
 

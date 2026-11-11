@@ -156,6 +156,78 @@
         </div>
     </div>
 
+    <!-- Add Manual Product Modal -->
+    <div id="manual-product-modal" class="fixed inset-0 z-50 bg-primary/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-surface-container-lowest rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-outline-variant space-y-4">
+            <div class="flex items-center justify-between pb-3 border-b border-outline-variant">
+                <h3 class="font-bold text-primary text-base flex items-center gap-2">
+                    <span class="material-symbols-outlined text-secondary">add_circle</span>
+                    <span>إضافة منتج يدوياً إلى هذه الدفعة</span>
+                </h3>
+                <button type="button" onclick="closeManualProductModal()" class="text-outline hover:text-rose-600">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <form id="manual-product-form" onsubmit="handleManualProductSubmit(event)" class="space-y-4 text-xs">
+                <div>
+                    <label class="block font-bold text-primary mb-1">اسم المنتج بالعربية *</label>
+                    <input type="text" id="manual-prod-name" required placeholder="مثال: رمان وندرفول طازج ممتاز" class="w-full h-10 px-3 rounded border border-outline-variant bg-surface-container-low text-xs"/>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold text-primary mb-1">كود الصنف (SKU)</label>
+                        <input type="text" id="manual-prod-sku" placeholder="EG-POM-01" class="w-full h-10 px-3 rounded border border-outline-variant bg-surface-container-low text-xs font-mono" dir="ltr"/>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-primary mb-1">التصنيف المستهدف</label>
+                        <select id="manual-prod-category" class="w-full h-10 px-3 rounded border border-outline-variant bg-surface-container-low text-xs">
+                            <option value="">-- اختياري (تلقائي) --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold text-primary mb-1">السعر التصديري التقريبي</label>
+                        <input type="number" step="0.01" id="manual-prod-price" placeholder="750.00" class="w-full h-10 px-3 rounded border border-outline-variant bg-surface-container-low text-xs font-mono"/>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-primary mb-1">العملة</label>
+                        <select id="manual-prod-currency" class="w-full h-10 px-3 rounded border border-outline-variant bg-surface-container-low text-xs font-bold">
+                            <option value="USD">USD ($)</option>
+                            <option value="EUR">EUR (€)</option>
+                            <option value="EGP">EGP (ج.م)</option>
+                            <option value="SAR">SAR (ر.س)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold text-primary mb-1">الحد الأدنى للطلب (MOQ)</label>
+                        <input type="text" id="manual-prod-moq" placeholder="1 Reefer Container (24 MT)" class="w-full h-10 px-3 rounded border border-outline-variant bg-surface-container-low text-xs"/>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-primary mb-1">نمط التعبئة والتغليف</label>
+                        <input type="text" id="manual-prod-packaging" placeholder="كرتون 5 كجم مفتوح (Open Top)" class="w-full h-10 px-3 rounded border border-outline-variant bg-surface-container-low text-xs"/>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-primary mb-1">الوصف والمواصفات التصديرية</label>
+                    <textarea id="manual-prod-desc" rows="2" placeholder="وصف الجودة، نسب النقاء، ومعايير الفحص المعتمدة..." class="w-full p-2.5 rounded border border-outline-variant bg-surface-container-low text-xs resize-none"></textarea>
+                </div>
+
+                <div class="pt-3 border-t border-outline-variant flex justify-end gap-3">
+                    <button type="button" onclick="closeManualProductModal()" class="px-4 py-2 rounded bg-surface-container text-on-surface-variant font-semibold">إلغاء</button>
+                    <button type="submit" class="px-6 py-2 rounded bg-secondary hover:bg-secondary/90 text-white font-bold shadow-sm">إضافة الصنف</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script src="/public/js/common.js"></script>
     <script>
         const importId = window.location.pathname.split('/').pop();
@@ -166,7 +238,7 @@
         let selectedItemIds = new Set();
 
         document.addEventListener('DOMContentLoaded', async () => {
-            await renderZarsevHeader('upload');
+            await renderZarsevHeader('review');
             document.getElementById('bulk-edit-link').href = `/importer/bulk-edit/${importId}`;
 
             try {
@@ -585,6 +657,51 @@
                 closeApprovalModal();
                 showToast(res.message, 'success');
                 setTimeout(() => window.location.href = '/importer/history', 1500);
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        function addNewProductModal() {
+            const catSelect = document.getElementById('manual-prod-category');
+            if (catSelect && categoriesData) {
+                catSelect.innerHTML = '<option value="">-- اختياري (تلقائي) --</option>' + 
+                    categoriesData.map(c => `<option value="${c.id}">${c.name_ar}</option>`).join('');
+            }
+            document.getElementById('manual-product-modal').classList.remove('hidden');
+        }
+
+        function closeManualProductModal() {
+            document.getElementById('manual-product-modal').classList.add('hidden');
+            document.getElementById('manual-product-form').reset();
+        }
+
+        async function handleManualProductSubmit(e) {
+            e.preventDefault();
+            const payload = {
+                name_ar: document.getElementById('manual-prod-name').value,
+                sku: document.getElementById('manual-prod-sku').value,
+                category_id: document.getElementById('manual-prod-category').value || null,
+                price: document.getElementById('manual-prod-price').value || null,
+                currency: document.getElementById('manual-prod-currency').value,
+                moq: document.getElementById('manual-prod-moq').value,
+                packaging_info: document.getElementById('manual-prod-packaging').value,
+                description_ar: document.getElementById('manual-prod-desc').value
+            };
+
+            try {
+                const res = await zarsevFetch(`/api/imports/${importId}/items`, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                closeManualProductModal();
+                showToast(res.message, 'success');
+                // Reload items
+                const itemsRes = await zarsevFetch(`/api/imports/${importId}/items`);
+                itemsData = itemsRes.items;
+                selectedItemIds.add(res.item_id);
+                updateSummaryStats();
+                renderItemsList();
             } catch (err) {
                 showToast(err.message, 'error');
             }

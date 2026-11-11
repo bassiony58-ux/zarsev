@@ -1,4 +1,14 @@
 const path = require('path');
+const fs = require('fs');
+
+try {
+    if (typeof process.loadEnvFile === 'function') {
+        const envPath = path.join(__dirname, '..', '..', '.env');
+        if (fs.existsSync(envPath)) {
+            process.loadEnvFile(envPath);
+        }
+    }
+} catch (_) {}
 
 const KNOWN_INSECURE_SECRETS = [
     'zarsev-platform-jwt-secret-secure-key-2026',
@@ -59,9 +69,12 @@ const config = {
     CSRF_HEADER_NAME: 'x-csrf-token',
     ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS
         ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim().toLowerCase())
-        : ['http://localhost:3000', 'http://127.0.0.1:3000'],
+        : ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:3001', 'http://127.0.0.1:3001'],
+    DB_ENGINE: (process.env.DB_ENGINE || 'sqlite').toLowerCase().trim(),
     ENABLE_DEMO_SEED: process.env.ENABLE_DEMO_SEED === 'true',
-    DB_PATH: process.env.DB_PATH || path.join(__dirname, '..', '..', 'zarsev.db'),
+    get DB_PATH() {
+        return require('../db/database').getDbPath();
+    },
     STORAGE_DIR: path.join(__dirname, '..', '..', 'storage'),
     UPLOADS_DIR: path.join(__dirname, '..', '..', 'storage', 'uploads'),
     EXTRACTED_IMAGES_DIR: path.join(__dirname, '..', '..', 'storage', 'extracted_images'),

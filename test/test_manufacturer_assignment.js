@@ -1,13 +1,12 @@
 const assert = require('assert');
-const { getDb, initDb } = require('../src/db/database');
-const { seedDatabase } = require('../src/db/seed');
+const { setupTestEnvironment, cleanupTestDatabase } = require('./test_helper');
 const { findMatchingManufacturer } = require('../src/services/duplicateDetectionService');
 
 async function runManufacturerAssignmentTests() {
     console.log('--- 🧪 Test Suite 2: Manufacturer Assignment & Multi-Model Business Logic ---');
-    initDb();
-    seedDatabase();
-    const db = getDb();
+    const { db, isolatedDbPath } = setupTestEnvironment('mfg_assignment');
+
+    try {
 
     // 1. Verify Seeded Direct Contract vs Marketing Subscription Manufacturers
     const bustan = db.prepare('SELECT * FROM manufacturers WHERE id = ?').get('mfg_bustan_citrus');
@@ -19,12 +18,12 @@ async function runManufacturerAssignmentTests() {
     console.log(`✓ Marketing Subscription Verified: ${nile.name_ar} (Model: ${nile.business_model})`);
 
     // 2. Test Manufacturer Suggestion / Fuzzy Matcher
-    const match1 = findMatchingManufacturer('شركة ثمار النيل للاستثمار');
+    const match1 = await findMatchingManufacturer('شركة ثمار النيل للاستثمار');
     assert.ok(match1, 'Should find match for Nile Fruits');
     assert.strictEqual(match1.id, 'mfg_nile_fruits');
     console.log(`✓ Auto-matching Match Found: "${match1.name_ar}" (Score: ${Math.round(match1.match_confidence * 100)}%)`);
 
-    const match2 = findMatchingManufacturer('محطة فرز وتعبئة البستان');
+    const match2 = await findMatchingManufacturer('محطة فرز وتعبئة البستان');
     assert.ok(match2, 'Should find match for Bustan');
     assert.strictEqual(match2.id, 'mfg_bustan_citrus');
     console.log(`✓ Auto-matching Match Found: "${match2.name_ar}" (Score: ${Math.round(match2.match_confidence * 100)}%)`);
@@ -55,6 +54,9 @@ async function runManufacturerAssignmentTests() {
     console.log('✓ Admin Check: Super Admin successfully assigns products under Direct Contract Manufacturer: mfg_damietta_agro');
 
     console.log('✅ ALL MANUFACTURER ASSIGNMENT TESTS PASSED!\n');
+    } finally {
+        cleanupTestDatabase(isolatedDbPath);
+    }
 }
 
 if (require.main === module) {

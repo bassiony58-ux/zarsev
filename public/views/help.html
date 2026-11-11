@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>ZARSEV - مركز المساعدة ودليل الاستخدام الشامل</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#001830",
+                        "primary-container": "#172D46",
+                        secondary: "#1F686E",
+                        "secondary-container": "#A8EBF2",
+                        tertiary: "#C5A46D",
+                        background: "#F9F9FF",
+                        surface: "#F9F9FF",
+                        "surface-container-low": "#F0F3FF",
+                        "surface-container": "#E7EEFF",
+                        "surface-container-lowest": "#FFFFFF",
+                        "on-surface": "#0F1C2E",
+                        "on-surface-variant": "#43474D",
+                        outline: "#74777E",
+                        "outline-variant": "#E4E7EC"
+                    },
+                    fontFamily: {
+                        sans: ["IBM Plex Sans Arabic", "IBM Plex Sans", "sans-serif"]
+                    }
+                }
+            }
+        };
+    </script>
+</head>
+<body class="bg-background font-sans text-on-surface antialiased min-h-screen flex flex-col">
+    <div id="zarsev-header-mount"></div>
+
+    <main class="flex-1 w-full max-w-[1440px] mx-auto px-4 md:px-8 py-8 space-y-8">
+        <!-- Hero Help Banner -->
+        <div class="bg-gradient-to-br from-[#172D46] to-[#001830] rounded-2xl p-8 md:p-12 text-white shadow-lg relative overflow-hidden">
+            <div class="relative z-10 space-y-3 max-w-2xl">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded bg-white/10 text-secondary-fixed text-xs font-semibold backdrop-blur-sm">
+                    <span class="material-symbols-outlined text-[16px]">menu_book</span>
+                    <span>مركز المعرفة والإرشاد التشغيلي | ZARSEV KNOWLEDGE BASE</span>
+                </div>
+                <h1 class="text-2xl md:text-4xl font-bold leading-tight">
+                    كيف تستخدم بوابات منصة زارسيف خطوة بخطوة؟
+                </h1>
+                <p class="text-white/80 text-xs md:text-sm leading-relaxed">
+                    دليل شامل يوضح لكل دور (المصنع، المدير العام، مسؤول العمليات، والمشتري الدولي) أين يذهب، ماذا يفعل، وكيف ينجز مهامه بدقة وسلاسة دون أي تعقيد.
+                </p>
+            </div>
+        </div>
+
+        <!-- Role Filter Tabs -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-2 border-b border-outline-variant/60">
+            <button type="button" onclick="switchHelpTab('mfg')" id="btn-tab-mfg" class="px-5 py-2.5 rounded-xl font-bold text-xs bg-secondary text-white transition-all shadow-sm">
+                🏭 دليل المصنع ومستورد الكتالوجات
+            </button>
+            <button type="button" onclick="switchHelpTab('admin')" id="btn-tab-admin" class="px-5 py-2.5 rounded-xl font-semibold text-xs bg-surface-container-lowest text-on-surface-variant hover:text-primary transition-all">
+                👑 دليل الإدارة العليا والرقابة
+            </button>
+            <button type="button" onclick="switchHelpTab('logistics')" id="btn-tab-logistics" class="px-5 py-2.5 rounded-xl font-semibold text-xs bg-surface-container-lowest text-on-surface-variant hover:text-primary transition-all">
+                ⚓ دليل العمليات واللوجستيات
+            </button>
+            <button type="button" onclick="switchHelpTab('buyer')" id="btn-tab-buyer" class="px-5 py-2.5 rounded-xl font-semibold text-xs bg-surface-container-lowest text-on-surface-variant hover:text-primary transition-all">
+                🌍 دليل المشتري والمستورد الدولي
+            </button>
+        </div>
+
+        <!-- Tab 1: Manufacturer Guide -->
+        <div id="content-mfg" class="space-y-6">
+            <div class="bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant shadow-sm space-y-4">
+                <h2 class="text-lg font-bold text-primary flex items-center gap-2">
+                    <span class="material-symbols-outlined text-secondary">cloud_upload</span>
+                    <span>مسار عمل المصنع: من رفع الملفات إلى ظهور منتجاتك للمشترين</span>
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2">
+                    <div class="p-4 rounded-xl bg-surface-container-low border border-outline-variant/40 space-y-2">
+                        <div class="w-8 h-8 rounded-full bg-secondary text-white flex items-center justify-center font-bold text-xs font-mono">1</div>
+                        <h3 class="font-bold text-primary text-sm">رفع الكتالوج</h3>
+                        <p class="text-xs text-on-surface-variant leading-relaxed">
+                            انتقل إلى <strong>/importer/upload</strong> وارفع ملف Excel أو CSV أو PDF. سيتم ربط الأصناف بحساب مصنعك تلقائياً.
+                        </p>
+                    </div>
+                    <div class="p-4 rounded-xl bg-surface-container-low border border-outline-variant/40 space-y-2">
+                        <div class="w-8 h-8 rounded-full bg-secondary text-white flex items-center justify-center font-bold text-xs font-mono">2</div>
+                        <h3 class="font-bold text-primary text-sm">متابعة الاستخراج</h3>
+                        <p class="text-xs text-on-surface-variant leading-relaxed">
+                            راقب شاشة التقدم الحية في <strong>/importer/progress</strong> حتى تكتمل المعالجة بنسبة 100% ويظهر زر المراجعة.
+                        </p>
+                    </div>
+                    <div class="p-4 rounded-xl bg-surface-container-low border border-outline-variant/40 space-y-2">
+                        <div class="w-8 h-8 rounded-full bg-secondary text-white flex items-center justify-center font-bold text-xs font-mono">3</div>
+                        <h3 class="font-bold text-primary text-sm">المراجعة والتدقيق</h3>
+                        <p class="text-xs text-on-surface-variant leading-relaxed">
+                            في <strong>/importer/review</strong>، افحص الأسعار والأوزان، أضف أصنافاً يدوية إذا رغبت، وصحح أي تنبيهات.
+                        </p>
+                    </div>
+                    <div class="p-4 rounded-xl bg-surface-container-low border border-outline-variant/40 space-y-2">
+                        <div class="w-8 h-8 rounded-full bg-secondary text-white flex items-center justify-center font-bold text-xs font-mono">4</div>
+                        <h3 class="font-bold text-primary text-sm">الإرسال للاعتماد</h3>
+                        <p class="text-xs text-on-surface-variant leading-relaxed">
+                            انقر على "إرسال للاعتماد". سيقوم فريق إدارة زارسيف بفحص الصنف ونشره فورياً في الكتالوج الدولي.
+                        </p>
+                    </div>
+                </div>
+                <div class="pt-4 border-t border-outline-variant/40 flex items-center justify-between">
+                    <span class="text-xs text-on-surface-variant">جاهز للبدء الآن؟</span>
+                    <a href="/portal/manufacturer" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg bg-secondary text-white font-bold text-xs">
+                        <span>الذهاب إلى لوحة المصنع</span>
+                        <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 2: Admin Guide -->
+        <div id="content-admin" class="space-y-6 hidden">
+            <div class="bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant shadow-sm space-y-4">
+                <h2 class="text-lg font-bold text-primary flex items-center gap-2">
+                    <span class="material-symbols-outlined text-amber-700">verified</span>
+                    <span>مسار عمل المدير العام: التدقيق، الرقابة، والاعتماد الفوري</span>
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                    <div class="p-4 rounded-xl bg-surface-container-low border border-outline-variant/40 space-y-2">
+                        <div class="w-8 h-8 rounded-full bg-amber-700 text-white flex items-center justify-center font-bold text-xs font-mono">1</div>
+                        <h3 class="font-bold text-primary text-sm">فحص طابور الاعتماد</h3>
+                        <p class="text-xs text-on-surface-variant leading-relaxed">
+                            ادخل على <strong>/admin/approvals</strong>، حيث تظهر كافة الأصناف المقدمة من المصانع بانتظار الفحص الجمركي والفني.
+                        </p>
+                    </div>
+                    <div class="p-4 rounded-xl bg-surface-container-low border border-outline-variant/40 space-y-2">
+                        <div class="w-8 h-8 rounded-full bg-amber-700 text-white flex items-center justify-center font-bold text-xs font-mono">2</div>
+                        <h3 class="font-bold text-primary text-sm">الاعتماد والنشر المباشر</h3>
+                        <p class="text-xs text-on-surface-variant leading-relaxed">
+                            انقر على "اعتماد ونشر في الكتالوج" للمنتج المطابق، ليصبح متاحاً في اللحظة نفسها للمشترين الدوليين.
+                        </p>
+                    </div>
+                    <div class="p-4 rounded-xl bg-surface-container-low border border-outline-variant/40 space-y-2">
+                        <div class="w-8 h-8 rounded-full bg-amber-700 text-white flex items-center justify-center font-bold text-xs font-mono">3</div>
+                        <h3 class="font-bold text-primary text-sm">الرفض مع التوجيه</h3>
+                        <p class="text-xs text-on-surface-variant leading-relaxed">
+                            إذا وُجد نقص في المواصفات، انقر على "رفض مع إبداء السبب" واكتب التوجيه للمصنع لإعادة التقديم.
+                        </p>
+                    </div>
+                </div>
+                <div class="pt-4 border-t border-outline-variant/40 flex items-center justify-between">
+                    <span class="text-xs text-on-surface-variant">العودة للوحة الإدارة العامة:</span>
+                    <a href="/portal/admin" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg bg-amber-700 text-white font-bold text-xs">
+                        <span>فتح لوحة الإدارة التنفيذية</span>
+                        <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 3: Logistics Guide -->
+        <div id="content-logistics" class="space-y-6 hidden">
+            <div class="bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant shadow-sm space-y-4">
+                <h2 class="text-lg font-bold text-primary flex items-center gap-2">
+                    <span class="material-symbols-outlined text-blue-700">psychology</span>
+                    <span>مسار عمل مسؤول اللوجستيات: محطات الفرز ومحرك المطابقة الذكي</span>
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                    <div class="p-4 rounded-xl bg-surface-container-low border border-outline-variant/40 space-y-2">
+                        <div class="w-8 h-8 rounded-full bg-blue-700 text-white flex items-center justify-center font-bold text-xs font-mono">1</div>
+                        <h3 class="font-bold text-primary text-sm">فحص المطابقة ومنع التكرار</h3>
+                        <p class="text-xs text-on-surface-variant leading-relaxed">
+                            قبل تسجيل أي منشأة، اكتب اسمها في محرك المطابقة بـ <strong>/importer/manufacturer-select</strong> للتأكد من عدم وجود ملف سابق لها.
+                        </p>
+                    </div>
+                    <div class="p-4 rounded-xl bg-surface-container-low border border-outline-variant/40 space-y-2">
+                        <div class="w-8 h-8 rounded-full bg-blue-700 text-white flex items-center justify-center font-bold text-xs font-mono">2</div>
+                        <h3 class="font-bold text-primary text-sm">تسجيل المنشأة وتحديد العقد</h3>
+                        <p class="text-xs text-on-surface-variant leading-relaxed">
+                            اختر نموذج العمل: "عقد مباشر" للشحن الحصري، أو "اشتراك تسويقي" للمصانع الراغبة في الترويج الذاتي.
+                        </p>
+                    </div>
+                    <div class="p-4 rounded-xl bg-surface-container-low border border-outline-variant/40 space-y-2">
+                        <div class="w-8 h-8 rounded-full bg-blue-700 text-white flex items-center justify-center font-bold text-xs font-mono">3</div>
+                        <h3 class="font-bold text-primary text-sm">ربط أرصفة الموانئ والتبريد</h3>
+                        <p class="text-xs text-on-surface-variant leading-relaxed">
+                            تنسيق حاويات التبريد مع مكاتب زارسيف في ميناء دمياط والإسكندرية وبورسعيد وفق جدول الإبحار.
+                        </p>
+                    </div>
+                </div>
+                <div class="pt-4 border-t border-outline-variant/40 flex items-center justify-between">
+                    <span class="text-xs text-on-surface-variant">العودة للوحة العمليات اللوجستية:</span>
+                    <a href="/portal/logistics" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg bg-blue-700 text-white font-bold text-xs">
+                        <span>فتح لوحة اللوجستيات</span>
+                        <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 4: Buyer Guide -->
+        <div id="content-buyer" class="space-y-6 hidden">
+            <div class="bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant shadow-sm space-y-4">
+                <h2 class="text-lg font-bold text-primary flex items-center gap-2">
+                    <span class="material-symbols-outlined text-secondary">shopping_cart</span>
+                    <span>مسار عمل المشتري الدولي: استكشاف الحاصلات وطلب عروض الأسعار</span>
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                    <div class="p-4 rounded-xl bg-surface-container-low border border-outline-variant/40 space-y-2">
+                        <div class="w-8 h-8 rounded-full bg-secondary text-white flex items-center justify-center font-bold text-xs font-mono">1</div>
+                        <h3 class="font-bold text-primary text-sm">البحث والتصفية</h3>
+                        <p class="text-xs text-on-surface-variant leading-relaxed">
+                            في <strong>/catalog</strong>، ابحث بالاسم (بصل، ليمون، رمان) أو فلتر بالأصناف الطازجة لمشاهدة الحاصلات المتاحة للتصدير.
+                        </p>
+                    </div>
+                    <div class="p-4 rounded-xl bg-surface-container-low border border-outline-variant/40 space-y-2">
+                        <div class="w-8 h-8 rounded-full bg-secondary text-white flex items-center justify-center font-bold text-xs font-mono">2</div>
+                        <h3 class="font-bold text-primary text-sm">فحص المواصفات والتعبئة</h3>
+                        <p class="text-xs text-on-surface-variant leading-relaxed">
+                            انقر على سهم التفاصيل لمشاهدة أوزان العبوات، اشتراطات التبريد، الحد الأدنى للطلب (MOQ)، والشهادات المعتمدة.
+                        </p>
+                    </div>
+                    <div class="p-4 rounded-xl bg-surface-container-low border border-outline-variant/40 space-y-2">
+                        <div class="w-8 h-8 rounded-full bg-secondary text-white flex items-center justify-center font-bold text-xs font-mono">3</div>
+                        <h3 class="font-bold text-primary text-sm">طلب عرض سعر رسمي (RFQ)</h3>
+                        <p class="text-xs text-on-surface-variant leading-relaxed">
+                            انقر على "طلب عرض سعر ومواصفات"، وسيتم تعبئة تفاصيل الصنف تلقائياً وإرسال الطلب لفريق المبيعات والعمليات.
+                        </p>
+                    </div>
+                </div>
+                <div class="pt-4 border-t border-outline-variant/40 flex items-center justify-between">
+                    <span class="text-xs text-on-surface-variant">استكشف الكتالوج الآن:</span>
+                    <a href="/catalog" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg bg-secondary text-white font-bold text-xs">
+                        <span>فتح كتالوج المنتجات</span>
+                        <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/public/js/common.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            await renderZarsevHeader('help');
+
+            const params = new URLSearchParams(window.location.search);
+            const role = params.get('role');
+            if (role) switchHelpTab(role);
+        });
+
+        function switchHelpTab(tab) {
+            ['mfg', 'admin', 'logistics', 'buyer'].forEach(t => {
+                const btn = document.getElementById(`btn-tab-${t}`);
+                const content = document.getElementById(`content-${t}`);
+                if (btn && content) {
+                    if (t === tab) {
+                        btn.className = 'px-5 py-2.5 rounded-xl font-bold text-xs bg-secondary text-white transition-all shadow-sm';
+                        content.classList.remove('hidden');
+                    } else {
+                        btn.className = 'px-5 py-2.5 rounded-xl font-semibold text-xs bg-surface-container-lowest text-on-surface-variant hover:text-primary transition-all';
+                        content.classList.add('hidden');
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

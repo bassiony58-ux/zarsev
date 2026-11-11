@@ -1,4 +1,4 @@
-const { getDb } = require('../db/database');
+const dbClient = require('../db/dbClient');
 const { hammingDistance } = require('./parsers/imageParser');
 
 /**
@@ -38,24 +38,26 @@ function jaccardSimilarity(setA, setB) {
 
 /**
  * Checks an extracted product item against the existing database for potential duplicates.
+ * Preserves exact duplicate detection semantics across SQLite and PostgreSQL.
  * @param {Object} item - Extracted item { extracted_data, assigned_images }
  * @param {string} targetManufacturerId - ID of the assigned manufacturer
+ * @param {Object} [dbOpts={}] - Database routing options
  */
-function checkForDuplicateProduct(item, targetManufacturerId) {
-    const db = getDb();
+async function checkForDuplicateProduct(item, targetManufacturerId, dbOpts = {}) {
     const data = item.extracted_data || {};
     const sku = data.sku ? data.sku.trim() : null;
     const nameAr = data.name_ar ? data.name_ar.trim() : '';
 
     // 1. Check exact SKU match (if SKU is provided)
     if (sku && sku.length > 2) {
-        const skuMatch = db.prepare(`
+        const skuSql = `
             SELECT p.id, p.name_ar, p.sku, m.name_ar as mfg_name
             FROM products p
             JOIN manufacturers m ON p.manufacturer_id = m.id
             WHERE LOWER(p.sku) = LOWER(?)
-        `).get(sku);
+        `;
 
+        const skuMatch = await dbClient.queryOne(skuSql, [sku], dbOpts);
         if (skuMatch) {
             return {
                 is_duplicate: true,
@@ -71,9 +73,9 @@ function checkForDuplicateProduct(item, targetManufacturerId) {
         const query = targetManufacturerId 
             ? 'SELECT id, name_ar, sku FROM products WHERE manufacturer_id = ?'
             : 'SELECT id, name_ar, sku FROM products';
-        const existingProducts = targetManufacturerId
-            ? db.prepare(query).all(targetManufacturerId)
-            : db.prepare(query).all();
+        const params = targetManufacturerId ? [targetManufacturerId] : [];
+
+        const existingProducts = await dbClient.queryAll(query, params, dbOpts);
 
         for (const existing of existingProducts) {
             const tokensExisting = tokenize(existing.name_ar);
@@ -90,12 +92,14 @@ function checkForDuplicateProduct(item, targetManufacturerId) {
 
     // 3. Check Image Perceptual Hash match against existing product images
     if (item.assigned_images && item.assigned_images.length > 0) {
-        const existingImages = db.prepare(`
+        const imagesSql = `
             SELECT pi.product_id, pi.dhash, p.name_ar
             FROM product_images pi
             JOIN products p ON pi.product_id = p.id
             WHERE pi.dhash IS NOT NULL
-        `).all();
+        `;
+
+        const existingImages = await dbClient.queryAll(imagesSql, [], dbOpts);
 
         for (const newImg of item.assigned_images) {
             if (!newImg.dhash) continue;
@@ -122,11 +126,14 @@ function checkForDuplicateProduct(item, targetManufacturerId) {
 /**
  * Searches existing manufacturers to suggest matching profiles for extracted names.
  * Prevents accidental duplication of manufacturer profiles.
+ * Preserves exact fuzzy matching semantics.
+ * @param {string} extractedName
+ * @param {Object} [dbOpts={}] - Database routing options
  */
-function findMatchingManufacturer(extractedName) {
+async function findMatchingManufacturer(extractedName, dbOpts = {}) {
     if (!extractedName || extractedName.length < 2) return null;
-    const db = getDb();
-    const manufacturers = db.prepare('SELECT id, name_ar, name_en, code, business_model FROM manufacturers').all();
+
+    const manufacturers = await dbClient.queryAll('SELECT id, name_ar, name_en, code, business_model FROM manufacturers', [], dbOpts);
     const tokensNew = tokenize(extractedName);
 
     let bestMatch = null;

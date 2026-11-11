@@ -1,0 +1,321 @@
+{
+  "timestamp": "2026-11-07T18:04:38.184Z",
+  "consoleLogs": {
+    "http://localhost:3001/": [
+      {
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      },
+      {
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      }
+    ],
+    "http://localhost:3001/portal/admin": [
+      {
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+      },
+      {
+        "type": "error",
+        "text": "Error: غير مسموح: ليس لديك الصلاحية لتنفيذ هذا الإجراء"
+      }
+    ]
+  },
+  "results": [
+    {
+      "page": "01_landing",
+      "title": "الصفحة الرئيسية",
+      "path": "/",
+      "viewport": "desktop_1280x900",
+      "httpStatus": 200,
+      "domMetrics": {
+        "isRtl": true,
+        "lang": "ar",
+        "linkCount": 43,
+        "brokenLinkCount": 8,
+        "brokenLinksSample": [
+          {
+            "text": "تعرف على تاريخنا ومجلس الإدارة\narrow_back",
+            "href": "#"
+          },
+          {
+            "text": "تفاصيل الخدمة\narrow_back",
+            "href": "#"
+          },
+          {
+            "text": "تفاصيل الخدمة\narrow_back",
+            "href": "#"
+          },
+          {
+            "text": "تفاصيل الخدمة\narrow_back",
+            "href": "#"
+          },
+          {
+            "text": "تفاصيل الخدمة\narrow_back",
+            "href": "#"
+          }
+        ],
+        "buttonCount": 2,
+        "unhandledButtonCount": 0,
+        "unhandledButtonsSample": [],
+        "fontFamily": "\"IBM Plex Sans Arabic\", \"IBM Plex Sans\""
+      },
+      "screenshot": "phase5_audit_desktop_01_landing.png"
+    },
+    {
+      "page": "02_catalog",
+      "title": "كتالوج المنتجات التصديرية",
+      "path": "/catalog",
+      "viewport": "desktop_1280x900",
+      "httpStatus": 200,
+      "domMetrics": {
+        "isRtl": true,
+        "lang": "ar",
+        "linkCount": 43,
+        "brokenLinkCount": 0,
+        "brokenLinksSample": [],
+        "buttonCount": 9,
+        "unhandledButtonCount": 0,
+        "unhandledButtonsSample": [],
+        "fontFamily": "\"IBM Plex Sans Arabic\", \"IBM Plex Sans\""
+      },
+      "screenshot": "phase5_audit_desktop_02_catalog.png"
+    },
+    {
+      "page": "03_product_details",
+      "title": "تفاصيل المنتج وطلب الأسعار",
+      "path": "/product-details?id=prod_0a5f39c560d6",
+      "viewport": "desktop_1280x900",
+      "httpStatus": 200,
+      "domMetrics": {
+        "isRtl": true,
+        "lang": "ar",
+        "linkCount": 38,
+        "brokenLinkCount": 8,
+        "brokenLinksSample": [
+          {
+            "text": "الرئيسية",
+            "href": "#"
+          },
+          {
+            "text": "كتالوج المنتجات",
+            "href": "#"
+          },
+          {
+            "text": "الحاصلات الزراعية",
+            "href": "#"
+          },
+          {
+            "text": "عرض كافة المنتجات التصديرية\narrow_back",
+            "href": "#"
+          },
+          {
+            "text": "تفاصيل الصنف\nchevron_left",
+            "href": "#"
+          }
+        ],
+        "buttonCount": 13,
+        "unhandledButtonCount": 0,
+        "unhandledButtonsSample": [],
+        "fontFamily": "\"IBM Plex Sans Arabic\", \"IBM Plex Sans\""
+      },
+      "screenshot": "phase5_audit_desktop_03_product_details.png"
+    },
+    {
+      "page": "04_services",
+      "title": "الخدمات والعمليات اللوجستية",
+      "path": "/services",
+      "viewport": "desktop_1280x900",
+      "httpStatus": 200,
+      "domMetrics": {
+        "isRtl": true,
+        "lang": "ar",
+        "linkCount": 30,
+        "brokenLinkCount": 0,
+        "brokenLinksSample": [],
+        "buttonCount": 21,
+        "unhandledButtonCount": 0,
+        "unhandledButtonsSample": [],
+        "fontFamily": "\"IBM Plex Sans Arabic\", \"IBM Plex Sans\""
+      },
+      "screenshot": "phase5_audit_desktop_04_services.png"
+    },
+    {
+      "page": "05_consulting",
+      "title": "الاستشارات التجارية والدولية",
+      "path": "/consulting",
+      "viewport": "desktop_1280x900",
+      "httpStatus": 200,
+      "domMetrics": {
+        "isRtl": true,
+        "lang": "ar",
+        "linkCount": 31,
+        "brokenLinkCount": 0,
+        "brokenLinksSample": [],
+        "buttonCount": 13,
+        "unhandledButtonCount": 0,
+        "unhandledButtonsSample": [],
+        "fontFamily": "\"IBM Plex Sans Arabic\", \"IBM Plex Sans\""
+      },
+      "screenshot": "phase5_audit_desktop_05_consulting.png"
+    },
+    {
+      "page": "06_about",
+      "title": "من نحن — السيادة والريادة",
+      "path": "/about",
+      "viewport": "desktop_1280x900",
+      "httpStatus": 200,
+      "domMetrics": {
+        "isRtl": true,
+        "lang": "ar",
+        "linkCount": 33,
+        "brokenLinkCount": 0,
+        "brokenLinksSample": [],
+        "buttonCount": 1,
+        "unhandledButtonCount": 0,
+        "unhandledButtonsSample": [],
+        "fontFamily": "\"IBM Plex Sans Arabic\", \"IBM Plex Sans\""
+      },
+      "screenshot": "phase5_audit_desktop_06_about.png"
+    },
+    {
+      "page": "07_contact",
+      "title": "تواصل معنا والمكتب التجاري",
+      "path": "/contact",
+      "viewport": "desktop_1280x900",
+      "httpStatus": 200,
+      "domMetrics": {
+        "isRtl": true,
+        "lang": "ar",
+        "linkCount": 36,
+        "brokenLinkCount": 0,
+        "brokenLinksSample": [],
+        "buttonCount": 2,
+        "unhandledButtonCount": 0,
+        "unhandledButtonsSample": [],
+        "fontFamily": "\"IBM Plex Sans Arabic\", \"IBM Plex Sans\""
+      },
+      "screenshot": "phase5_audit_desktop_07_contact.png"
+    },
+    {
+      "page": "08_portal_admin",
+      "title": "بوابة الإدارة العليا والاعتمادات",
+      "path": "/portal/admin",
+      "viewport": "desktop_1280x900",
+      "httpStatus": 200,
+      "domMetrics": {
+        "isRtl": true,
+        "lang": "ar",
+        "linkCount": 29,
+        "brokenLinkCount": 0,
+        "brokenLinksSample": [],
+        "buttonCount": 38,
+        "unhandledButtonCount": 0,
+        "unhandledButtonsSample": [],
+        "fontFamily": "\"IBM Plex Sans Arabic\", \"IBM Plex Sans\", sans-serif"
+      },
+      "screenshot": "phase5_audit_desktop_08_portal_admin.png"
+    },
+    {
+      "page": "09_portal_manufacturer",
+      "title": "بوابة المصنعين والمصدرين",
+      "path": "/portal/manufacturer",
+      "viewport": "desktop_1280x900",
+      "httpStatus": 200,
+      "domMetrics": {
+        "isRtl": true,
+        "lang": "ar",
+        "linkCount": 18,
+        "brokenLinkCount": 0,
+        "brokenLinksSample": [],
+        "buttonCount": 37,
+        "unhandledButtonCount": 0,
+        "unhandledButtonsSample": [],
+        "fontFamily": "\"IBM Plex Sans Arabic\", \"IBM Plex Sans\", sans-serif"
+      },
+      "screenshot": "phase5_audit_desktop_09_portal_manufacturer.png"
+    },
+    {
+      "page": "01_landing",
+      "title": "الصفحة الرئيسية",
+      "path": "/",
+      "viewport": "mobile_390x844",
+      "drawerToggled": true,
+      "drawerVisible": true,
+      "screenshot": "phase5_audit_mobile_01_landing.png"
+    },
+    {
+      "page": "02_catalog",
+      "title": "كتالوج المنتجات التصديرية",
+      "path": "/catalog",
+      "viewport": "mobile_390x844",
+      "drawerToggled": true,
+      "drawerVisible": true,
+      "screenshot": "phase5_audit_mobile_02_catalog.png"
+    },
+    {
+      "page": "03_product_details",
+      "title": "تفاصيل المنتج وطلب الأسعار",
+      "path": "/product-details?id=prod_0a5f39c560d6",
+      "viewport": "mobile_390x844",
+      "drawerToggled": true,
+      "drawerVisible": true,
+      "screenshot": "phase5_audit_mobile_03_product_details.png"
+    },
+    {
+      "page": "04_services",
+      "title": "الخدمات والعمليات اللوجستية",
+      "path": "/services",
+      "viewport": "mobile_390x844",
+      "drawerToggled": true,
+      "drawerVisible": true,
+      "screenshot": "phase5_audit_mobile_04_services.png"
+    },
+    {
+      "page": "05_consulting",
+      "title": "الاستشارات التجارية والدولية",
+      "path": "/consulting",
+      "viewport": "mobile_390x844",
+      "drawerToggled": true,
+      "drawerVisible": true,
+      "screenshot": "phase5_audit_mobile_05_consulting.png"
+    },
+    {
+      "page": "06_about",
+      "title": "من نحن — السيادة والريادة",
+      "path": "/about",
+      "viewport": "mobile_390x844",
+      "drawerToggled": true,
+      "drawerVisible": true,
+      "screenshot": "phase5_audit_mobile_06_about.png"
+    },
+    {
+      "page": "07_contact",
+      "title": "تواصل معنا والمكتب التجاري",
+      "path": "/contact",
+      "viewport": "mobile_390x844",
+      "drawerToggled": true,
+      "drawerVisible": true,
+      "screenshot": "phase5_audit_mobile_07_contact.png"
+    },
+    {
+      "page": "08_portal_admin",
+      "title": "بوابة الإدارة العليا والاعتمادات",
+      "path": "/portal/admin",
+      "viewport": "mobile_390x844",
+      "drawerToggled": true,
+      "drawerVisible": true,
+      "screenshot": "phase5_audit_mobile_08_portal_admin.png"
+    },
+    {
+      "page": "09_portal_manufacturer",
+      "title": "بوابة المصنعين والمصدرين",
+      "path": "/portal/manufacturer",
+      "viewport": "mobile_390x844",
+      "drawerToggled": true,
+      "drawerVisible": true,
+      "screenshot": "phase5_audit_mobile_09_portal_manufacturer.png"
+    }
+  ]
+}

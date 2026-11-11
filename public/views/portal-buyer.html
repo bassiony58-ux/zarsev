@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>ZARSEV - بوابة المشتري والمستورد الدولي | International Buyer Portal</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#172D46",
+                        "primary-container": "#0B1A2C",
+                        secondary: "#1F686E",
+                        "secondary-container": "#A8EBF2",
+                        tertiary: "#C5A46D",
+                        background: "#F9F9FF",
+                        surface: "#F9F9FF",
+                        "surface-container-low": "#F0F3FF",
+                        "surface-container": "#E7EEFF",
+                        "surface-container-lowest": "#FFFFFF",
+                        "on-surface": "#0F1C2E",
+                        "on-surface-variant": "#43474D",
+                        outline: "#74777E",
+                        "outline-variant": "#E4E7EC"
+                    },
+                    fontFamily: {
+                        sans: ["IBM Plex Sans Arabic", "IBM Plex Sans", "sans-serif"]
+                    }
+                }
+            }
+        };
+    </script>
+</head>
+<body class="bg-background font-sans text-on-surface antialiased min-h-screen flex flex-col">
+    <div id="zarsev-header-mount"></div>
+
+    <main class="flex-1 w-full max-w-[1440px] mx-auto px-4 md:px-8 py-8 space-y-8">
+        <!-- Orientation Banner -->
+        <div class="bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div class="space-y-2">
+                <div class="flex items-center gap-2">
+                    <span class="px-2.5 py-1 rounded bg-teal-100 text-secondary text-xs font-bold font-mono">
+                        بوابة المشتري الدولي | BUYER CONSOLE
+                    </span>
+                    <span class="text-xs text-on-surface-variant">الجهة المشغلة: <strong class="text-primary font-semibold">كونسورتيوم الصادرات الزراعية السيادية المصرية</strong></span>
+                </div>
+                <h1 class="text-2xl font-bold text-primary flex items-center gap-2">
+                    <span>متابعة الصفقات، عروض الأسعار، وتتبع الشحنات المبردة</span>
+                </h1>
+                <p class="text-xs text-on-surface-variant leading-relaxed max-w-3xl">
+                    مرحباً بكم في منصة زارسيف لتجارة وتصدير الحاصلات الزراعية. من هنا يمكنك استعراض عروض الأسعار المقدمة من كبرى المحطات والمصانع المصرية، مراجعة الفواتير الأولية (Proforma Invoices)، تتبع مراحل الإنتاج والجودة، ومراقبة درجات حرارة الحاويات المبردة في الوقت الحقيقي.
+                </p>
+            </div>
+
+            <div class="flex items-center gap-3 shrink-0">
+                <a href="/catalog" class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-secondary hover:bg-secondary/90 text-white font-bold text-xs shadow-md transition-all">
+                    <span class="material-symbols-outlined text-[19px]">storefront</span>
+                    <span>تصفح الكتالوج وطلب عرض سعر</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Buyer KPIs -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div class="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant shadow-sm">
+                <div class="flex items-center justify-between pb-3">
+                    <span class="text-xs text-on-surface-variant font-semibold">طلبات الأسعار (RFQs)</span>
+                    <div class="w-10 h-10 rounded-xl bg-teal-50 text-secondary flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[22px]">request_quote</span>
+                    </div>
+                </div>
+                <h3 id="buyer-stat-rfqs" class="text-3xl font-bold text-primary font-mono">0</h3>
+                <p class="text-[11px] text-on-surface-variant mt-2 border-t border-outline-variant/40 pt-2">طلبات معتمدة وموجهة للمصانع</p>
+            </div>
+
+            <div class="bg-surface-container-lowest p-5 rounded-2xl border border-amber-200 shadow-sm">
+                <div class="flex items-center justify-between pb-3">
+                    <span class="text-xs text-amber-800 font-bold">عروض الأسعار المستلمة</span>
+                    <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[22px]">local_offer</span>
+                    </div>
+                </div>
+                <h3 id="buyer-stat-quotes" class="text-3xl font-bold text-amber-800 font-mono">0</h3>
+                <p class="text-[11px] text-on-surface-variant mt-2 border-t border-amber-100 pt-2">عروض سارية للمقارنة والقبول</p>
+            </div>
+
+            <div class="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant shadow-sm">
+                <div class="flex items-center justify-between pb-3">
+                    <span class="text-xs text-on-surface-variant font-semibold">العقود التجارية الجارية</span>
+                    <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[22px]">handshake</span>
+                    </div>
+                </div>
+                <h3 id="buyer-stat-contracts" class="text-3xl font-bold text-primary font-mono">0</h3>
+                <p class="text-[11px] text-on-surface-variant mt-2 border-t border-outline-variant/40 pt-2">عقود قيد التصنيع والتجهيز</p>
+            </div>
+
+            <div class="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant shadow-sm">
+                <div class="flex items-center justify-between pb-3">
+                    <span class="text-xs text-on-surface-variant font-semibold">الشحنات البحرية النشطة</span>
+                    <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[22px]">directions_boat</span>
+                    </div>
+                </div>
+                <h3 id="buyer-stat-shipments" class="text-3xl font-bold text-primary font-mono">0</h3>
+                <p class="text-[11px] text-on-surface-variant mt-2 border-t border-outline-variant/40 pt-2">تتبع حراري لحظي للحاويات</p>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="bg-surface-container-lowest p-2 rounded-2xl border border-outline-variant shadow-sm flex items-center gap-2 overflow-x-auto">
+            <button type="button" onclick="switchBuyerTab('quotes')" id="buyer-tab-btn-quotes" class="buyer-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 bg-primary text-white shadow-xs">
+                <span class="material-symbols-outlined text-[18px]">local_offer</span>
+                <span>عروض الأسعار المستلمة والمفاوضات</span>
+            </button>
+            <button type="button" onclick="switchBuyerTab('rfqs')" id="buyer-tab-btn-rfqs" class="buyer-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 text-primary hover:bg-surface-container-low">
+                <span class="material-symbols-outlined text-[18px]">request_quote</span>
+                <span>طلبات الأسعار (My RFQs)</span>
+            </button>
+            <button type="button" onclick="switchBuyerTab('contracts')" id="buyer-tab-btn-contracts" class="buyer-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 text-primary hover:bg-surface-container-low">
+                <span class="material-symbols-outlined text-[18px]">assignment</span>
+                <span>العقود والإنتاج والجودة</span>
+            </button>
+            <button type="button" onclick="switchBuyerTab('shipping')" id="buyer-tab-btn-shipping" class="buyer-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 text-primary hover:bg-surface-container-low">
+                <span class="material-symbols-outlined text-[18px]">ac_unit</span>
+                <span>تتبع الحاويات المبردة والمستندات</span>
+            </button>
+        </div>
+
+        <!-- TAB 1: Quotations Review & Comparison -->
+        <div id="buyer-content-quotes" class="space-y-6">
+            <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm p-5 space-y-4">
+                <div class="flex items-center justify-between flex-wrap gap-4 pb-4 border-b border-outline-variant/60">
+                    <div>
+                        <h2 class="font-bold text-primary text-base">عروض الأسعار التجارية الرسمية (Commercial Quotations)</h2>
+                        <p class="text-[11px] text-on-surface-variant">عروض مطابقة لقواعد Incoterms 2020 تشمل الأسعار وموانئ التحميل وفترات الصلاحية</p>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right text-xs">
+                        <thead class="bg-surface-container-low text-primary font-bold border-b border-outline-variant">
+                            <tr>
+                                <th class="p-3.5">رقم العرض</th>
+                                <th class="p-3.5">المنتج والمصنع</th>
+                                <th class="p-3.5 font-mono">السعر للوحدة</th>
+                                <th class="p-3.5 text-center">شرط Incoterm</th>
+                                <th class="p-3.5">الحد الأدنى وميناء الشحن</th>
+                                <th class="p-3.5">فترة الصلاحية</th>
+                                <th class="p-3.5 text-center">الحالة</th>
+                                <th class="p-3.5 text-center">القرار والإجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody id="buyer-quotes-tbody" class="divide-y divide-outline-variant/40">
+                            <tr>
+                                <td colspan="8" class="p-8 text-center text-on-surface-variant">جاري تحميل عروض الأسعار...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: RFQs List -->
+        <div id="buyer-content-rfqs" class="hidden space-y-6">
+            <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm p-5 space-y-4">
+                <div class="flex items-center justify-between flex-wrap gap-4 pb-4 border-b border-outline-variant/60">
+                    <div>
+                        <h2 class="font-bold text-primary text-base">سجل طلبات الأسعار الدولية (My RFQs)</h2>
+                        <p class="text-[11px] text-on-surface-variant">متابعة مسار طلباتك من الاستلام حتى التسعير وتعيين المصنع</p>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right text-xs">
+                        <thead class="bg-surface-container-low text-primary font-bold border-b border-outline-variant">
+                            <tr>
+                                <th class="p-3.5">الرقم المرجعي</th>
+                                <th class="p-3.5">المنتج</th>
+                                <th class="p-3.5">الكمية المطلوبة</th>
+                                <th class="p-3.5">وجهة الوصول والميناء</th>
+                                <th class="p-3.5">المصنع المسند</th>
+                                <th class="p-3.5 text-center">حالة الطلب</th>
+                                <th class="p-3.5">تاريخ الإرسال</th>
+                            </tr>
+                        </thead>
+                        <tbody id="buyer-rfqs-tbody" class="divide-y divide-outline-variant/40">
+                            <tr>
+                                <td colspan="7" class="p-8 text-center text-on-surface-variant">جاري تحميل الطلبات...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: Contracts, Production & QC -->
+        <div id="buyer-content-contracts" class="hidden space-y-6">
+            <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm p-5 space-y-4">
+                <div class="flex items-center justify-between pb-4 border-b border-outline-variant/60">
+                    <div>
+                        <h2 class="font-bold text-primary text-base">العقود التجارية المبرمة ومراحل التجهيز</h2>
+                        <p class="text-[11px] text-on-surface-variant">العقود الرسمية المنفذة مع الفواتير الأولية (Proforma) ومتابعة الجودة</p>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right text-xs">
+                        <thead class="bg-surface-container-low text-primary font-bold border-b border-outline-variant">
+                            <tr>
+                                <th class="p-3.5">رقم العقد</th>
+                                <th class="p-3.5">المصنع المصدر</th>
+                                <th class="p-3.5 font-mono">القيمة الإجمالية</th>
+                                <th class="p-3.5 text-center">Incoterm</th>
+                                <th class="p-3.5">موعد التسليم</th>
+                                <th class="p-3.5 text-center">الحالة</th>
+                                <th class="p-3.5 text-center">الفاتورة الأولية</th>
+                            </tr>
+                        </thead>
+                        <tbody id="buyer-contracts-tbody" class="divide-y divide-outline-variant/40">
+                            <tr>
+                                <td colspan="7" class="p-8 text-center text-on-surface-variant">جاري تحميل العقود...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: Ocean Shipping & Reefer Monitoring -->
+        <div id="buyer-content-shipping" class="hidden space-y-6">
+            <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm p-5 space-y-4">
+                <div class="flex items-center justify-between pb-4 border-b border-outline-variant/60">
+                    <div>
+                        <h2 class="font-bold text-primary text-base">تتبع الشحنات البحرية والحاويات المبردة (Reefer Cold-Chain)</h2>
+                        <p class="text-[11px] text-on-surface-variant">تتبع درجات الحرارة الحية للحاويات وسجلات بوالص الشحن (B/L) وشهادات التحليل</p>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right text-xs">
+                        <thead class="bg-surface-container-low text-primary font-bold border-b border-outline-variant">
+                            <tr>
+                                <th class="p-3.5">رقم الشحنة</th>
+                                <th class="p-3.5">الحاوية والسفينة</th>
+                                <th class="p-3.5">مسار الإبحار (POL ← POD)</th>
+                                <th class="p-3.5">تاريخ الإبحار (ETD)</th>
+                                <th class="p-3.5">تاريخ الوصول (ETA)</th>
+                                <th class="p-3.5 text-center">حالة الشحنة</th>
+                                <th class="p-3.5 text-center">التتبع الحراري</th>
+                            </tr>
+                        </thead>
+                        <tbody id="buyer-shipments-tbody" class="divide-y divide-outline-variant/40">
+                            <tr>
+                                <td colspan="7" class="p-8 text-center text-on-surface-variant">جاري تحميل الشحنات...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal: Proforma Invoice Viewer -->
+    <div id="buyer-proforma-modal" class="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-surface-container-lowest rounded-2xl max-w-2xl w-full border border-outline-variant shadow-2xl p-6 space-y-5 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between pb-3 border-b border-outline-variant">
+                <h3 class="font-bold text-primary text-sm flex items-center gap-2">
+                    <span class="material-symbols-outlined text-secondary">receipt_long</span>
+                    <span>الفاتورة الأولية الرسمية: <span id="modal-pi-number" class="font-mono text-secondary">-</span></span>
+                </h3>
+                <button type="button" onclick="document.getElementById('buyer-proforma-modal').classList.add('hidden')" class="text-on-surface-variant hover:text-primary">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div id="modal-pi-content" class="space-y-4 text-xs">
+                <!-- Dynamically populated -->
+            </div>
+            <div class="flex justify-end gap-2 pt-2 border-t border-outline-variant">
+                <button type="button" onclick="document.getElementById('buyer-proforma-modal').classList.add('hidden')" class="px-5 py-2 rounded-lg bg-primary text-white text-xs font-bold">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Counter-Offer Negotiation -->
+    <div id="buyer-counter-offer-modal" class="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-surface-container-lowest rounded-2xl max-w-md w-full border border-outline-variant shadow-2xl p-6 space-y-4">
+            <div class="flex items-center justify-between pb-3 border-b border-outline-variant">
+                <h3 class="font-bold text-primary text-sm flex items-center gap-2">
+                    <span class="material-symbols-outlined text-secondary">swap_horiz</span>
+                    <span>تقديم عرض تجاري مضاد (Counter-Offer)</span>
+                </h3>
+                <button type="button" onclick="document.getElementById('buyer-counter-offer-modal').classList.add('hidden')" class="text-on-surface-variant hover:text-primary">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <input type="hidden" id="counter-quote-id" />
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="font-semibold text-primary block pb-1">السعر المقترح للوحدة:</label>
+                    <input id="counter-price" type="number" step="0.01" placeholder="1250.00" class="w-full h-9 px-3 rounded-lg border border-outline-variant bg-surface-container-low font-mono" />
+                </div>
+                <div>
+                    <label class="font-semibold text-primary block pb-1">شرط التسليم المطلوب (Incoterm):</label>
+                    <select id="counter-incoterm" class="w-full h-9 px-2 rounded-lg border border-outline-variant bg-surface-container-low font-mono">
+                        <option value="FOB">FOB (Free On Board - ميناء الإسكندرية)</option>
+                        <option value="CIF">CIF (Cost, Insurance & Freight)</option>
+                        <option value="CFR">CFR (Cost and Freight)</option>
+                        <option value="EXW">EXW (Ex Works - أرض المصنع)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="font-semibold text-primary block pb-1">الكمية المقترحة (طن / حاوية):</label>
+                    <input id="counter-qty" type="number" placeholder="50" class="w-full h-9 px-3 rounded-lg border border-outline-variant bg-surface-container-low font-mono" />
+                </div>
+                <div>
+                    <label class="font-semibold text-primary block pb-1">ملاحظات وشروط الدفع المقترحة:</label>
+                    <textarea id="counter-notes" rows="2" placeholder="اكتب ملاحظات التفاوض للمصنع..." class="w-full p-2.5 rounded-lg border border-outline-variant bg-surface-container-low text-xs"></textarea>
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="document.getElementById('buyer-counter-offer-modal').classList.add('hidden')" class="px-4 py-2 rounded-lg bg-surface-container-low text-xs font-semibold">إلغاء</button>
+                <button type="button" onclick="submitCounterOfferAction()" id="btn-submit-counter" class="px-5 py-2 rounded-lg bg-secondary text-white font-bold text-xs shadow-xs">إرسال العرض المضاد</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Reefer Live Telemetry Graph & Details -->
+    <div id="buyer-telemetry-modal" class="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-surface-container-lowest rounded-2xl max-w-xl w-full border border-outline-variant shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between pb-3 border-b border-outline-variant">
+                <h3 class="font-bold text-primary text-sm flex items-center gap-2">
+                    <span class="material-symbols-outlined text-secondary">thermostat</span>
+                    <span>القراءات الحرارية الحية للحاوية: <span id="modal-container-no" class="font-mono text-secondary">-</span></span>
+                </h3>
+                <button type="button" onclick="document.getElementById('buyer-telemetry-modal').classList.add('hidden')" class="text-on-surface-variant hover:text-primary">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="space-y-4 text-xs">
+                <div id="modal-telemetry-summary" class="p-3.5 rounded-xl bg-surface-container-low border border-outline-variant/60 flex items-center justify-between">
+                    <div>
+                        <div class="text-[11px] text-on-surface-variant">درجة الحرارة المستهدفة (Setpoint):</div>
+                        <div id="modal-setpoint-temp" class="text-lg font-bold font-mono text-primary">0°C</div>
+                    </div>
+                    <div>
+                        <div class="text-[11px] text-on-surface-variant">حرارة الهواء الراجع (Return Temp):</div>
+                        <div id="modal-return-temp" class="text-lg font-bold font-mono text-secondary">0°C</div>
+                    </div>
+                    <div id="modal-breach-badge">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">مستقر تماماً</span>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <h4 class="font-bold text-primary text-xs">سجل القراءات الساعية المحدثة:</h4>
+                    <div id="modal-telemetry-readings-list" class="space-y-2 max-h-48 overflow-y-auto divide-y divide-outline-variant/40 border border-outline-variant rounded-xl p-3 bg-surface-container-lowest">
+                        <div class="text-on-surface-variant text-center py-2">جاري فحص القراءات...</div>
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-end pt-2">
+                <button type="button" onclick="document.getElementById('buyer-telemetry-modal').classList.add('hidden')" class="px-5 py-2 rounded-lg bg-primary text-white text-xs font-bold">تم</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/public/js/common.js"></script>
+    <script>
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        const BUYER_TABS = ['quotes', 'rfqs', 'contracts', 'shipping'];
+
+        function switchBuyerTab(target) {
+            BUYER_TABS.forEach(t => {
+                const btn = document.getElementById(`buyer-tab-btn-${t}`);
+                const content = document.getElementById(`buyer-content-${t}`);
+                if (btn) {
+                    if (t === target) {
+                        btn.className = 'buyer-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 bg-primary text-white shadow-xs';
+                    } else {
+                        btn.className = 'buyer-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 text-primary hover:bg-surface-container-low';
+                    }
+                }
+                if (content) {
+                    if (t === target) content.classList.remove('hidden');
+                    else content.classList.add('hidden');
+                }
+            });
+        }
+
+        let buyerOverviewData = null;
+
+        async function initBuyerPortal() {
+            try {
+                if (typeof renderZarsevHeader === 'function') {
+                    await renderZarsevHeader('buyer');
+                }
+
+                const res = await zarsevFetch('/api/buyer/overview');
+                buyerOverviewData = res;
+
+                // Update KPIs
+                document.getElementById('buyer-stat-rfqs').textContent = res.stats?.total_rfqs || 0;
+                document.getElementById('buyer-stat-quotes').textContent = res.stats?.total_quotations || 0;
+                document.getElementById('buyer-stat-contracts').textContent = res.stats?.active_contracts || 0;
+                document.getElementById('buyer-stat-shipments').textContent = res.stats?.active_shipments || 0;
+
+                renderQuotations(res.quotations || []);
+                renderRfqs(res.rfqs || []);
+                renderContracts(res.contracts || []);
+                renderShipments(res.shipments || []);
+
+            } catch (err) {
+                console.error('[BuyerPortal] Init error:', err);
+                showToast('يرجى تسجيل الدخول أو إدخال رمز المشتري', 'error');
+            }
+        }
+
+        function renderQuotations(quotes) {
+            const tbody = document.getElementById('buyer-quotes-tbody');
+            if (quotes.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="p-8 text-center text-on-surface-variant text-xs">لا توجد عروض أسعار مستلمة حالياً. يمكنك إرسال طلب عرض سعر جديد من الكتالوج.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = quotes.map(q => {
+                const isActionable = q.status === 'SUBMITTED';
+                return `
+                    <tr class="hover:bg-surface-container-low transition-colors">
+                        <td class="p-3.5 font-mono font-bold text-secondary">${escapeHtml(q.reference_no)}</td>
+                        <td class="p-3.5">
+                            <div class="font-bold text-primary">${escapeHtml(q.product_name_ar)}</div>
+                            <div class="text-[11px] text-on-surface-variant font-medium">${escapeHtml(q.mfg_name_ar)}</div>
+                        </td>
+                        <td class="p-3.5 font-mono font-bold text-primary">${Number(q.price_per_unit).toLocaleString()} ${escapeHtml(q.currency)}</td>
+                        <td class="p-3.5 text-center"><span class="px-2 py-0.5 rounded bg-surface-container font-mono text-xs font-bold text-secondary">${escapeHtml(q.incoterm)}</span></td>
+                        <td class="p-3.5 text-on-surface-variant text-[11px]">${q.min_order_quantity} ${q.min_order_unit}<br/><span class="text-primary font-semibold">${escapeHtml(q.port_of_loading || '-')}</span></td>
+                        <td class="p-3.5 font-mono text-on-surface-variant text-[11px]">${escapeHtml(q.validity_date ? q.validity_date.substring(0, 10) : '-')}</td>
+                        <td class="p-3.5 text-center">
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${q.status === 'ACCEPTED' ? 'bg-emerald-100 text-emerald-800' : (q.status === 'REJECTED' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800')}">
+                                ${q.status}
+                            </span>
+                        </td>
+                        <td class="p-3.5 text-center">
+                            ${isActionable ? `
+                                <div class="flex items-center justify-center gap-1.5">
+                                    <button type="button" onclick="handleBuyerDecision('${q.id}', 'ACCEPTED')" class="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all">قبول</button>
+                                    <button type="button" onclick="openCounterOfferModal('${q.id}')" class="px-2.5 py-1.5 rounded-lg bg-secondary hover:bg-secondary/90 text-white font-bold text-xs shadow-xs transition-all">تفاوض</button>
+                                    <button type="button" onclick="handleBuyerDecision('${q.id}', 'REJECTED')" class="px-2 py-1.5 rounded-lg bg-surface-container-low text-rose-700 hover:bg-rose-50 font-bold text-xs border border-outline-variant transition-all">رفض</button>
+                                </div>
+                            ` : `<span class="text-on-surface-variant text-[11px] font-mono">تم اتخاذ القرار</span>`}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderRfqs(rfqs) {
+            const tbody = document.getElementById('buyer-rfqs-tbody');
+            if (rfqs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-on-surface-variant text-xs">لا توجد طلبات أسعار مسجلة.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = rfqs.map(r => `
+                <tr class="hover:bg-surface-container-low transition-colors">
+                    <td class="p-3.5 font-mono font-bold text-secondary">${escapeHtml(r.reference_no)}</td>
+                    <td class="p-3.5 font-bold text-primary">${escapeHtml(r.product_name_ar || '-')}</td>
+                    <td class="p-3.5 font-mono text-primary font-bold">${r.requested_quantity} ${escapeHtml(r.unit_of_measurement)}</td>
+                    <td class="p-3.5 text-on-surface-variant">${escapeHtml(r.destination_country)} (${escapeHtml(r.destination_port || '-')})</td>
+                    <td class="p-3.5 font-semibold text-secondary">${escapeHtml(r.mfg_name_ar || 'قيد الإسناد')}</td>
+                    <td class="p-3.5 text-center"><span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#EBF5F5] text-secondary">${r.status}</span></td>
+                    <td class="p-3.5 font-mono text-on-surface-variant text-[11px]">${new Date(r.created_at).toLocaleDateString('ar-EG')}</td>
+                </tr>
+            `).join('');
+        }
+
+        function renderContracts(contracts) {
+            const tbody = document.getElementById('buyer-contracts-tbody');
+            if (contracts.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-on-surface-variant text-xs">لا توجد عقود تجارية مبرمة بعد. عند قبول أحد عروض الأسعار يتم إبرام العقد وتوليد الفاتورة الأولية فورياً.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = contracts.map(c => `
+                <tr class="hover:bg-surface-container-low transition-colors">
+                    <td class="p-3.5 font-mono font-bold text-secondary">${escapeHtml(c.contract_no)}</td>
+                    <td class="p-3.5 font-bold text-primary">${escapeHtml(c.mfg_name_ar || '-')}</td>
+                    <td class="p-3.5 font-mono font-bold text-primary">${Number(c.total_amount).toLocaleString()} ${escapeHtml(c.currency)}</td>
+                    <td class="p-3.5 text-center"><span class="px-2 py-0.5 rounded bg-surface-container font-mono text-xs font-bold text-secondary">${escapeHtml(c.incoterm)}</span></td>
+                    <td class="p-3.5 font-mono text-on-surface-variant text-[11px]">${escapeHtml(c.delivery_deadline || '-')}</td>
+                    <td class="p-3.5 text-center"><span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">${escapeHtml(c.status)}</span></td>
+                    <td class="p-3.5 text-center">
+                        <button type="button" onclick="viewProformaInvoice('${c.id}')" class="px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface text-secondary font-bold text-xs border border-outline-variant flex items-center justify-center gap-1 mx-auto">
+                            <span class="material-symbols-outlined text-[16px]">receipt_long</span>
+                            <span>استعراض الفاتورة</span>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderShipments(shipments) {
+            const tbody = document.getElementById('buyer-shipments-tbody');
+            if (shipments.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-on-surface-variant text-xs">لا توجد شحنات بحرية محجوزة بعد.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = shipments.map(s => `
+                <tr class="hover:bg-surface-container-low transition-colors">
+                    <td class="p-3.5 font-mono font-bold text-secondary">${escapeHtml(s.shipment_no)}</td>
+                    <td class="p-3.5">
+                        <div class="font-mono font-bold text-primary">${escapeHtml(s.container_no)}</div>
+                        <div class="text-[11px] text-on-surface-variant">${escapeHtml(s.vessel_name)} (${escapeHtml(s.carrier_name)})</div>
+                    </td>
+                    <td class="p-3.5 text-on-surface-variant text-[11px]">${escapeHtml(s.pol)} ← ${escapeHtml(s.pod)}</td>
+                    <td class="p-3.5 font-mono text-on-surface-variant text-[11px]">${escapeHtml(s.etd)}</td>
+                    <td class="p-3.5 font-mono text-on-surface-variant text-[11px]">${escapeHtml(s.eta)}</td>
+                    <td class="p-3.5 text-center"><span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-teal-100 text-teal-800">${escapeHtml(s.status)}</span></td>
+                    <td class="p-3.5 text-center">
+                        <button type="button" onclick="viewContainerTelemetry('${s.id}', '${s.container_no}')" class="px-3 py-1.5 rounded-lg bg-secondary text-white font-bold text-xs shadow-xs hover:bg-secondary/90 flex items-center justify-center gap-1 mx-auto">
+                            <span class="material-symbols-outlined text-[16px]">thermostat</span>
+                            <span>التتبع الحراري</span>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function handleBuyerDecision(quoteId, decision) {
+            if (!confirm(`هل أنت متأكد من ${decision === 'ACCEPTED' ? 'قبول' : 'رفض'} عرض السعر التجاري؟`)) return;
+
+            try {
+                const res = await zarsevFetch(`/api/quotations/${quoteId}/decision`, {
+                    method: 'POST',
+                    body: JSON.stringify({ decision })
+                });
+
+                showToast(res.message, 'success');
+
+                if (decision === 'ACCEPTED') {
+                    // Trigger contract creation
+                    await zarsevFetch(`/api/contracts/from-quotation/${quoteId}`, { method: 'POST' }).catch(() => null);
+                }
+
+                await initBuyerPortal();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        function openCounterOfferModal(quoteId) {
+            document.getElementById('counter-quote-id').value = quoteId;
+            document.getElementById('buyer-counter-offer-modal').classList.remove('hidden');
+        }
+
+        async function submitCounterOfferAction() {
+            const quoteId = document.getElementById('counter-quote-id').value;
+            const price = document.getElementById('counter-price').value;
+            const incoterm = document.getElementById('counter-incoterm').value;
+            const qty = document.getElementById('counter-qty').value;
+            const notes = document.getElementById('counter-notes').value;
+            const btn = document.getElementById('btn-submit-counter');
+
+            if (!price) {
+                showToast('يرجى إدخال السعر المقترح', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'جاري الإرسال...';
+
+            try {
+                const res = await zarsevFetch('/api/settlement/counter-offer', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        quotation_id: quoteId,
+                        proposed_price: parseFloat(price),
+                        incoterm,
+                        proposed_quantity: qty ? parseFloat(qty) : null,
+                        notes
+                    })
+                });
+
+                showToast(res.message, 'success');
+                document.getElementById('buyer-counter-offer-modal').classList.add('hidden');
+                await initBuyerPortal();
+            } catch (err) {
+                showToast(err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'إرسال العرض المضاد';
+            }
+        }
+
+        async function viewProformaInvoice(contractId) {
+            try {
+                let res = await zarsevFetch(`/api/settlement/proforma/${contractId}`).catch(() => null);
+                if (!res || !res.invoice) {
+                    res = await zarsevFetch(`/api/settlement/proforma/${contractId}`, { method: 'POST' });
+                }
+
+                const inv = res.invoice;
+                document.getElementById('modal-pi-number').textContent = inv.invoice_no;
+
+                const content = document.getElementById('modal-pi-content');
+                content.innerHTML = `
+                    <div class="p-4 rounded-xl bg-surface-container-low border border-outline-variant space-y-2">
+                        <div class="flex justify-between border-b border-outline-variant/60 pb-2">
+                            <span>المصدر المعتمد: <strong>${escapeHtml(inv.exporter_name)}</strong></span>
+                            <span class="font-mono">التسجيل الضريبي: ${escapeHtml(inv.exporter_tax_no)}</span>
+                        </div>
+                        <div class="flex justify-between pt-1">
+                            <span>المشتري: <strong>${escapeHtml(inv.buyer_company)}</strong></span>
+                            <span class="font-mono">شرط التسليم: ${escapeHtml(inv.incoterm)}</span>
+                        </div>
+                    </div>
+                    <div class="p-4 rounded-xl bg-[#EBF5F5] border border-secondary/20 flex justify-between items-center">
+                        <span class="font-bold text-secondary">القيمة الإجمالية المعتمدة:</span>
+                        <span class="font-mono font-bold text-lg text-primary">${Number(inv.total_amount).toLocaleString()} ${escapeHtml(inv.currency)}</span>
+                    </div>
+                    <div class="p-4 rounded-xl bg-gray-50 border border-outline-variant space-y-1">
+                        <label class="font-bold text-primary block">بيانات الحساب البنكي المعتمد للتحويل التجاري:</label>
+                        <pre class="font-mono text-[11px] text-primary whitespace-pre-wrap leading-relaxed">${escapeHtml(inv.exporter_bank_details)}</pre>
+                    </div>
+                `;
+
+                document.getElementById('buyer-proforma-modal').classList.remove('hidden');
+            } catch (err) {
+                showToast('خطأ في استرجاع الفاتورة: ' + err.message, 'error');
+            }
+        }
+
+        async function viewContainerTelemetry(shipmentId, containerNo) {
+            try {
+                document.getElementById('modal-container-no').textContent = containerNo;
+                const res = await zarsevFetch(`/api/shipping/shipments/${shipmentId}`);
+                const telemetry = res.telemetry || [];
+                const breaches = res.breaches || [];
+
+                if (telemetry.length > 0) {
+                    const latest = telemetry[0];
+                    document.getElementById('modal-setpoint-temp').textContent = `${latest.setpoint_temp}°C`;
+                    document.getElementById('modal-return-temp').textContent = `${latest.return_temp}°C`;
+                }
+
+                const badge = document.getElementById('modal-breach-badge');
+                if (breaches.length > 0) {
+                    badge.innerHTML = '<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800">تحذير تجاوز حراري مسجل</span>';
+                } else {
+                    badge.innerHTML = '<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">سلسلة التبريد مستقرة تماماً</span>';
+                }
+
+                const list = document.getElementById('modal-telemetry-readings-list');
+                if (telemetry.length === 0) {
+                    list.innerHTML = '<div class="text-on-surface-variant text-center py-2 text-xs">لا توجد قراءات حساسات مسجلة بعد.</div>';
+                } else {
+                    list.innerHTML = telemetry.map(t => `
+                        <div class="py-1.5 flex justify-between items-center text-[11px]">
+                            <span class="font-mono text-on-surface-variant">${new Date(t.recorded_at_utc).toLocaleString('ar-EG')}</span>
+                            <span class="font-mono font-bold text-primary">Setpoint: ${t.setpoint_temp}°C | Return: ${t.return_temp}°C</span>
+                            <span class="font-bold ${t.breach_flag ? 'text-rose-600' : 'text-emerald-700'}">${t.breach_flag ? 'انحراف' : 'مطابق'}</span>
+                        </div>
+                    `).join('');
+                }
+
+                document.getElementById('buyer-telemetry-modal').classList.remove('hidden');
+            } catch (err) {
+                showToast('خطأ في استرجاع القراءات: ' + err.message, 'error');
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', initBuyerPortal);
+    </script>
+</body>
+</html>

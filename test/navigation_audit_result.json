@@ -1,0 +1,431 @@
+{
+  "timestamp": "2026-11-07T16:29:06.499Z",
+  "summary": {
+    "totalTests": 22,
+    "passedTests": 22,
+    "failedTests": 0,
+    "passRate": "100.0%",
+    "consoleErrors": 19,
+    "networkFailures": 1
+  },
+  "auditLog": [
+    {
+      "id": 1,
+      "page": "Home (/)",
+      "element": "Standardized Public Header",
+      "role": "PUBLIC_BUYER",
+      "action": "Verify Header presence and links",
+      "expected": "Header, brand anchor, catalog link, importer CTA all present",
+      "actual": "Header: true, CatalogLink: true, ImporterCTA: true",
+      "status": "PASS",
+      "notes": ""
+    },
+    {
+      "id": 2,
+      "page": "Catalog (/catalog)",
+      "element": "Product Catalog Browser",
+      "role": "PUBLIC_BUYER",
+      "action": "Navigate via header link and check search bar",
+      "expected": "URL ends with /catalog and search input is interactive",
+      "actual": "URL: http://localhost:3001/catalog, SearchInput present: true",
+      "status": "PASS",
+      "notes": ""
+    },
+    {
+      "id": 3,
+      "page": "Catalog (/catalog)",
+      "element": "Search Input",
+      "role": "PUBLIC_BUYER",
+      "action": "Type query into search input",
+      "expected": "Input retains typed text",
+      "actual": "Query typed: برتقال",
+      "status": "PASS",
+      "notes": ""
+    },
+    {
+      "id": 4,
+      "page": "Product Details (/product-details)",
+      "element": "Specifications & RFQ trigger",
+      "role": "PUBLIC_BUYER",
+      "action": "Verify specifications layout and RFQ trigger",
+      "expected": "Page loads with RFQ contact link",
+      "actual": "RFQ Element exists: true",
+      "status": "PASS",
+      "notes": ""
+    },
+    {
+      "id": 5,
+      "page": "Services & Terminals (/services)",
+      "element": "Public Editorial Page",
+      "role": "PUBLIC_BUYER",
+      "action": "Verify HTTP 200 and DOM rendering on /services",
+      "expected": "Loads successfully without 404/500",
+      "actual": "Loaded: http://localhost:3001/services",
+      "status": "PASS",
+      "notes": ""
+    },
+    {
+      "id": 6,
+      "page": "Quality Consulting (/consulting)",
+      "element": "Public Editorial Page",
+      "role": "PUBLIC_BUYER",
+      "action": "Verify HTTP 200 and DOM rendering on /consulting",
+      "expected": "Loads successfully without 404/500",
+      "actual": "Loaded: http://localhost:3001/consulting",
+      "status": "PASS",
+      "notes": ""
+    },
+    {
+      "id": 7,
+      "page": "About ZARSEV (/about)",
+      "element": "Public Editorial Page",
+      "role": "PUBLIC_BUYER",
+      "action": "Verify HTTP 200 and DOM rendering on /about",
+      "expected": "Loads successfully without 404/500",
+      "actual": "Loaded: http://localhost:3001/about",
+      "status": "PASS",
+      "notes": ""
+    },
+    {
+      "id": 8,
+      "page": "Contact & RFQ Center (/contact)",
+      "element": "Public Editorial Page",
+      "role": "PUBLIC_BUYER",
+      "action": "Verify HTTP 200 and DOM rendering on /contact",
+      "expected": "Loads successfully without 404/500",
+      "actual": "Loaded: http://localhost:3001/contact",
+      "status": "PASS",
+      "notes": ""
+    },
+    {
+      "id": 9,
+      "page": "Manufacturer Portal (/portal/manufacturer)",
+      "element": "Role KPIs & Profile Banner",
+      "role": "MANUFACTURER (Nile Fruits)",
+      "action": "Verify manufacturer name and live KPI cards",
+      "expected": "Company name and KPI stats displayed",
+      "actual": "Name: شركة ثمار النيل للتصدير والاستثمار الزراعي, ActiveProducts: 0, Pending: 6, Quota: 9, Batches: 19",
+      "status": "PASS",
+      "notes": ""
+    },
+    {
+      "id": 10,
+      "page": "Manufacturer Portal (/portal/manufacturer)",
+      "element": "Collapsible Sidebar & Role Filtering",
+      "role": "MANUFACTURER",
+      "action": "Open sidebar and check links for role isolation",
+      "expected": "Sidebar opens, contains Mfg links, does NOT contain admin links",
+      "actual": "Open: true, HasAdminLinks: false",
+      "status": "PASS",
+      "notes": ""
+    },
+    {
+      "id": 11,
+      "page": "Manufacturer Portal (/portal/manufacturer)",
+      "element": "Topbar Universal Help Modal",
+      "role": "MANUFACTURER",
+      "action": "Open help modal from topbar button",
+      "expected": "Modal opens with Manufacturer guide",
+      "actual": "Help modal visible with guide: true",
+      "status": "PASS",
+      "notes": ""
+    },
+    {
+      "id": 12,
+      "page": "Upload Screen (/importer/upload)",
+      "element": "Auto-Orientation Banner (Answers 4 Questions)",
+      "role": "MANUFACTURER",
+      "action": "Verify dynamic injection of orientation guidance banner",
+      "expected": "Answers: Where am I? What does it do? Next step? How to return?",
+      "actual": "Title: true, Purpose: true, Next: true, Back: true",
+      "status": "PASS",
+      "notes": ""
+    },
+    {
+      "id": 13,
+      "page": "Upload Screen (/importer/upload)",
+      "element": "Topbar Breadcrumb Trail",
+      "role": "MANUFACTURER",
+      "action": "Verify hierarchical breadcrumb trail",
+      "expected": "Shows: الرئيسية / لوحة المصنع / رفع الكتالوجات (خطوة 1)",
+      "actual": "Breadcrumb Text: الرئيسية\n/\nلوحة المصنع\n/\nرفع الكتالوجات (خطوة 1)",
+      "status": "PASS",
+      "notes": ""
+    },
+    {
+      "id": 14,
+      "page": "History Screen (/importer/history)",
+      "element": "Auto-Orientation Banner & Batches Archive",
+      "role": "MANUFACTURER",
+      "action": "Verify orientation banner on history screen",
+      "expected": "Banner explains history and next steps",
+      "actual": "Contains history title: true",
+      "status": "PASS",
+      "notes": ""
+    },
+    {
+      "id": 15,
+      "page": "Admin Portal (/portal/admin)",
+      "element": "Executive Governance KPIs",
+      "role": "SUPER_ADMIN",
+      "action": "Verify executive platform statistics and approvals queue",
+      "expected": "KPI values populated and queue preview rendered",
+      "actual": "ActiveProducts: 20, Pending: 21, Mfgs: 4, Batches: 60, QueueRows: 0",
+      "status": "PASS",
+      "notes": ""
+    },
+    {
+      "id": 16,
+      "page": "Admin Portal (/portal/admin)",
+      "element": "Admin Collapsible Sidebar",
+      "role": "SUPER_ADMIN",
+      "action": "Verify presence of executive links (Approvals, Manufacturer Management)",
+      "expected": "Sidebar includes approvals queue and manufacturer management",
+      "actual": "HasApprovals: true, HasMfgSelect: true",
+      "status": "PASS",
+      "notes": ""
+    },
+    {
+      "id": 17,
+      "page": "Approvals Queue (/admin/approvals)",
+      "element": "Auto-Orientation Banner",
+      "role": "SUPER_ADMIN",
+      "action": "Verify orientation banner in approvals queue",
+      "expected": "Guidance explaining approval and rejection actions",
+      "actual": "Contains approvals guidance: true",
+      "status": "PASS",
+      "notes": ""
+    },
+    {
+      "id": 18,
+      "page": "Manufacturer Select (/importer/manufacturer-select)",
+      "element": "Auto-Orientation Banner",
+      "role": "SUPER_ADMIN",
+      "action": "Verify orientation guidance on manufacturer directory",
+      "expected": "Explains direct contract vs marketing subscription",
+      "actual": "Contains directory guidance: true",
+      "status": "PASS",
+      "notes": ""
+    },
+    {
+      "id": 19,
+      "page": "Logistics Portal (/portal/logistics)",
+      "element": "Maritime Operations KPIs",
+      "role": "LOGISTICS_OFFICER",
+      "action": "Verify logistics packhouse statistics and seaport links",
+      "expected": "Total packhouses, direct contracts, marketing subs loaded",
+      "actual": "Total: 4, Direct: 2, Marketing: 2",
+      "status": "PASS",
+      "notes": ""
+    },
+    {
+      "id": 20,
+      "page": "Help Center (/help)",
+      "element": "Role-Based Knowledge Tabs",
+      "role": "ALL_ROLES",
+      "action": "Verify presence of 4 persona help tabs",
+      "expected": "Mfg, Admin, Logistics, Buyer tabs exist",
+      "actual": "Mfg: true, Admin: true, Logistics: true, Buyer: true",
+      "status": "PASS",
+      "notes": ""
+    },
+    {
+      "id": 21,
+      "page": "Help Center (/help)",
+      "element": "Tab Switching Mechanism",
+      "role": "ALL_ROLES",
+      "action": "Switch between Admin and Buyer guides",
+      "expected": "Appropriate pane becomes active and unhidden",
+      "actual": "AdminPaneActive: true, BuyerPaneActive: true",
+      "status": "PASS",
+      "notes": ""
+    },
+    {
+      "id": 22,
+      "page": "Mobile Viewport (375x812)",
+      "element": "Mobile Workspace Sidebar & Backdrop",
+      "role": "MANUFACTURER",
+      "action": "Toggle sidebar on mobile viewport",
+      "expected": "Sidebar drawer slides in with touch-friendly backdrop",
+      "actual": "Sidebar: true, Overlay: true",
+      "status": "PASS",
+      "notes": ""
+    }
+  ],
+  "consoleLogs": [
+    {
+      "type": "warn",
+      "text": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "location": {
+        "url": "https://cdn.tailwindcss.com/",
+        "lineNumber": 63,
+        "columnNumber": 1710
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "location": {
+        "url": "http://localhost:3001/api/auth/me"
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "location": {
+        "url": "http://localhost:3001/favicon.ico"
+      }
+    },
+    {
+      "type": "warn",
+      "text": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "location": {
+        "url": "https://cdn.tailwindcss.com/",
+        "lineNumber": 63,
+        "columnNumber": 1710
+      }
+    },
+    {
+      "type": "warn",
+      "text": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "location": {
+        "url": "https://cdn.tailwindcss.com/",
+        "lineNumber": 63,
+        "columnNumber": 1710
+      }
+    },
+    {
+      "type": "warn",
+      "text": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "location": {
+        "url": "https://cdn.tailwindcss.com/",
+        "lineNumber": 63,
+        "columnNumber": 1710
+      }
+    },
+    {
+      "type": "warn",
+      "text": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "location": {
+        "url": "https://cdn.tailwindcss.com/",
+        "lineNumber": 63,
+        "columnNumber": 1710
+      }
+    },
+    {
+      "type": "warn",
+      "text": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "location": {
+        "url": "https://cdn.tailwindcss.com/",
+        "lineNumber": 63,
+        "columnNumber": 1710
+      }
+    },
+    {
+      "type": "warn",
+      "text": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "location": {
+        "url": "https://cdn.tailwindcss.com/",
+        "lineNumber": 63,
+        "columnNumber": 1710
+      }
+    },
+    {
+      "type": "warn",
+      "text": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "location": {
+        "url": "https://cdn.tailwindcss.com/",
+        "lineNumber": 63,
+        "columnNumber": 1710
+      }
+    },
+    {
+      "type": "warn",
+      "text": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "location": {
+        "url": "https://cdn.tailwindcss.com/",
+        "lineNumber": 63,
+        "columnNumber": 1710
+      }
+    },
+    {
+      "type": "warn",
+      "text": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "location": {
+        "url": "https://cdn.tailwindcss.com/",
+        "lineNumber": 63,
+        "columnNumber": 1710
+      }
+    },
+    {
+      "type": "warn",
+      "text": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "location": {
+        "url": "https://cdn.tailwindcss.com/",
+        "lineNumber": 63,
+        "columnNumber": 1710
+      }
+    },
+    {
+      "type": "warn",
+      "text": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "location": {
+        "url": "https://cdn.tailwindcss.com/",
+        "lineNumber": 63,
+        "columnNumber": 1710
+      }
+    },
+    {
+      "type": "warn",
+      "text": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "location": {
+        "url": "https://cdn.tailwindcss.com/",
+        "lineNumber": 63,
+        "columnNumber": 1710
+      }
+    },
+    {
+      "type": "warn",
+      "text": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "location": {
+        "url": "https://cdn.tailwindcss.com/",
+        "lineNumber": 63,
+        "columnNumber": 1710
+      }
+    },
+    {
+      "type": "warn",
+      "text": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "location": {
+        "url": "https://cdn.tailwindcss.com/",
+        "lineNumber": 63,
+        "columnNumber": 1710
+      }
+    },
+    {
+      "type": "warn",
+      "text": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "location": {
+        "url": "https://cdn.tailwindcss.com/",
+        "lineNumber": 63,
+        "columnNumber": 1710
+      }
+    },
+    {
+      "type": "warn",
+      "text": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "location": {
+        "url": "https://cdn.tailwindcss.com/",
+        "lineNumber": 63,
+        "columnNumber": 1710
+      }
+    }
+  ],
+  "networkFailures": [
+    {
+      "url": "http://localhost:3001/api/auth/me",
+      "status": 401,
+      "statusText": "Unauthorized"
+    }
+  ]
+}

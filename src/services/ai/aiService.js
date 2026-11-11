@@ -5,13 +5,16 @@ const { checkForDuplicateProduct } = require('../duplicateDetectionService');
 /**
  * Universal AI Processing & Normalization Service.
  * Validates, normalizes, detects duplicates, and assigns categories.
+ * @param {Object} item
+ * @param {string} targetManufacturerId
+ * @param {Object} [dbOpts={}] - Database routing options
  */
-async function processAndNormalizeItem(item, targetManufacturerId) {
+async function processAndNormalizeItem(item, targetManufacturerId, dbOpts = {}) {
     // 1. Normalize fields (prevent hallucinations, clean strings, check completeness)
     const normalized = normalizeExtractedProduct(item);
 
-    // 2. Perform Duplicate Detection against DB
-    const duplicateCheck = checkForDuplicateProduct(normalized, targetManufacturerId);
+    // 2. Perform Duplicate Detection against DB asynchronously
+    const duplicateCheck = await checkForDuplicateProduct(normalized, targetManufacturerId, dbOpts);
     normalized.is_duplicate = duplicateCheck.is_duplicate ? 1 : 0;
     normalized.duplicate_matched_id = duplicateCheck.matched_id;
     normalized.duplicate_reason = duplicateCheck.reason;

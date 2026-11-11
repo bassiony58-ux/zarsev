@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { getDb } = require('../db/database');
-const { authMiddleware, optionalAuthMiddleware } = require('../middlewares/auth');
+const dbClient = require('../db/dbClient');
+const { authMiddleware, optionalAuthMiddleware, isEntityActive } = require('../middlewares/auth');
 const {
     generateToken,
     verifyPassword,
@@ -13,6 +13,7 @@ const {
     serializeAdminManufacturer
 } = require('../utils/authUtils');
 const config = require('../config');
+const invitationService = require('../services/invitationService');
 
 // In-memory dual rate limiting:
 // 1. Per Email: max 5 failed attempts per 15 minutes
@@ -56,8 +57,8 @@ router.get('/me', authMiddleware, (req, res) => {
 });
 
 // Standard production login endpoint
-router.post('/login', (req, res) => {
-    const { email, password } = req.body;
+router.post('/login', async (req, res) => {
+    const { email, password } = req.body || {};
     if (!email || !password) {
         return res.status(400).json({
             success: false,
@@ -85,10 +86,24 @@ router.post('/login', (req, res) => {
         });
     }
 
-    const db = getDb();
-    const user = db.prepare('SELECT * FROM users WHERE LOWER(email) = LOWER(?)').get(normalizedEmail);
+    const dbOpts = req.dbClientOptions || {};
+    let user = null;
 
-    if (!user || user.is_active !== 1) {
+    try {
+        user = await dbClient.queryOne(
+            'SELECT * FROM users WHERE LOWER(email) = LOWER(?)',
+            [normalizedEmail],
+            dbOpts
+        );
+    } catch (err) {
+        console.error('[authRoutes] Database error during login query:', err.message);
+        return res.status(500).json({
+            success: false,
+            error: 'خطأ في خادم قاعدة البيانات أثناء التحقق من بيانات الدخول'
+        });
+    }
+
+    if (!user || !isEntityActive(user.is_active)) {
         // Run dummy hash check to eliminate timing side-channel user enumeration
         verifyPassword(password, DUMMY_HASH);
         recordFailure(ipAttempts, clientIp, MAX_FAILED_PER_IP);
@@ -114,13 +129,51 @@ router.post('/login', (req, res) => {
     emailAttempts.delete(normalizedEmail);
     ipAttempts.delete(clientIp);
 
+    // Verify manufacturer status if user has MANUFACTURER role
+    if (user.role === 'MANUFACTURER') {
+        if (!user.manufacturer_id) {
+            return res.status(403).json({
+                success: false,
+                code: 'MANUFACTURER_UNLINKED',
+                error: 'غير مصرح: حساب المصنع غير مرتبط بمنشأة صالحة'
+            });
+        }
+        let mfg = null;
+        try {
+            mfg = await dbClient.queryOne('SELECT * FROM manufacturers WHERE id = ?', [user.manufacturer_id], dbOpts);
+        } catch (mfgErr) {
+            console.error('[authRoutes] Error verifying manufacturer status during login:', mfgErr.message);
+            return res.status(500).json({
+                success: false,
+                error: 'خطأ في خادم قاعدة البيانات أثناء التحقق من منشأة المصنع'
+            });
+        }
+        if (!mfg) {
+            return res.status(403).json({
+                success: false,
+                code: 'MANUFACTURER_NOT_FOUND',
+                error: 'غير مصرح: المنشأة غير مسجلة بالنظام'
+            });
+        }
+        if (mfg.is_active !== undefined && !isEntityActive(mfg.is_active)) {
+            return res.status(403).json({
+                success: false,
+                code: 'MANUFACTURER_SUSPENDED',
+                error: 'غير مصرح: تم تعليق أو تجميد منشأة المصنع'
+            });
+        }
+    }
+
     // Concurrency-safe gradual rehash: If hash is legacy or under 210,000 iterations, upgrade seamlessly
     if (needsRehash(user.password_hash)) {
         try {
             const upgradedHash = hashPassword(password);
             // Optimistic concurrency check: only update if password_hash matches what was verified
-            db.prepare('UPDATE users SET password_hash = ? WHERE id = ? AND password_hash = ?')
-                .run(upgradedHash, user.id, user.password_hash);
+            await dbClient.execute(
+                'UPDATE users SET password_hash = ? WHERE id = ? AND password_hash = ?',
+                [upgradedHash, user.id, user.password_hash],
+                dbOpts
+            );
         } catch (rehashErr) {
             console.error('Failed to automatically upgrade password hash:', rehashErr);
         }
@@ -145,7 +198,7 @@ router.post('/login', (req, res) => {
         maxAge: 24 * 3600 * 1000
     });
 
-    res.json({
+    return res.json({
         success: true,
         token,
         csrf_token: csrfToken,
@@ -153,17 +206,17 @@ router.post('/login', (req, res) => {
     });
 });
 
-// Dev-only authenticated test login mechanism
-// Strictly disabled and inaccessible in production mode!
-router.post('/dev-login', (req, res) => {
-    if (config.NODE_ENV === 'production') {
+// Dev-only authenticated test login mechanism (SEC-11)
+// Strictly disabled and inaccessible unless NOT production AND explicitly enabled via ENABLE_DEV_LOGIN=true!
+router.post('/dev-login', async (req, res) => {
+    if (config.NODE_ENV === 'production' || process.env.ENABLE_DEV_LOGIN !== 'true') {
         return res.status(404).json({
             success: false,
-            error: 'غير متاح في بيئة الإنتاج'
+            error: 'مسار تسجيل الدخول التجريبي غير متاح في هذه البيئة'
         });
     }
 
-    const { user_id } = req.body;
+    const { user_id } = req.body || {};
     if (!user_id) {
         return res.status(400).json({
             success: false,
@@ -171,14 +224,58 @@ router.post('/dev-login', (req, res) => {
         });
     }
 
-    const db = getDb();
-    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(user_id);
+    const dbOpts = req.dbClientOptions || {};
+    let user = null;
 
-    if (!user || user.is_active !== 1) {
+    try {
+        user = await dbClient.queryOne('SELECT * FROM users WHERE id = ?', [user_id], dbOpts);
+    } catch (err) {
+        console.error('[authRoutes] Database error during dev-login:', err.message);
+        return res.status(500).json({
+            success: false,
+            error: 'خطأ في خادم قاعدة البيانات أثناء تسجيل الدخول التجريبي'
+        });
+    }
+
+    if (!user || !isEntityActive(user.is_active)) {
         return res.status(404).json({
             success: false,
             error: 'المستخدم غير موجود أو غير نشط'
         });
+    }
+
+    if (user.role === 'MANUFACTURER') {
+        if (!user.manufacturer_id) {
+            return res.status(403).json({
+                success: false,
+                code: 'MANUFACTURER_UNLINKED',
+                error: 'غير مصرح: حساب المصنع غير مرتبط بمنشأة صالحة'
+            });
+        }
+        let mfg = null;
+        try {
+            mfg = await dbClient.queryOne('SELECT * FROM manufacturers WHERE id = ?', [user.manufacturer_id], dbOpts);
+        } catch (mfgErr) {
+            console.error('[authRoutes] Error verifying manufacturer status during dev-login:', mfgErr.message);
+            return res.status(500).json({
+                success: false,
+                error: 'خطأ في خادم قاعدة البيانات أثناء التحقق من منشأة المصنع'
+            });
+        }
+        if (!mfg) {
+            return res.status(403).json({
+                success: false,
+                code: 'MANUFACTURER_NOT_FOUND',
+                error: 'غير مصرح: المنشأة غير مسجلة بالنظام'
+            });
+        }
+        if (mfg.is_active !== undefined && !isEntityActive(mfg.is_active)) {
+            return res.status(403).json({
+                success: false,
+                code: 'MANUFACTURER_SUSPENDED',
+                error: 'غير مصرح: تم تعليق أو تجميد منشأة المصنع'
+            });
+        }
     }
 
     const token = generateToken(user);
@@ -198,7 +295,7 @@ router.post('/dev-login', (req, res) => {
         maxAge: 24 * 3600 * 1000
     });
 
-    res.json({
+    return res.json({
         success: true,
         token,
         csrf_token: csrfToken,
@@ -207,11 +304,15 @@ router.post('/dev-login', (req, res) => {
 });
 
 // Logout endpoint with stateful token invalidation (increments token_version)
-router.post('/logout', optionalAuthMiddleware, (req, res) => {
+router.post('/logout', optionalAuthMiddleware, async (req, res) => {
     if (req.user) {
         try {
-            const db = getDb();
-            db.prepare('UPDATE users SET token_version = token_version + 1 WHERE id = ?').run(req.user.id);
+            const dbOpts = req.dbClientOptions || {};
+            await dbClient.execute(
+                'UPDATE users SET token_version = token_version + 1 WHERE id = ?',
+                [req.user.id],
+                dbOpts
+            );
         } catch (err) {
             console.error('Failed to increment token_version during logout:', err);
         }
@@ -219,33 +320,89 @@ router.post('/logout', optionalAuthMiddleware, (req, res) => {
 
     res.clearCookie(config.AUTH_COOKIE_NAME);
     res.clearCookie(config.CSRF_COOKIE_NAME);
-    res.json({
+    return res.json({
         success: true,
         message: 'تم تسجيل الخروج وإبطال جميع الجلسات والرموز السابقة بنجاح'
     });
 });
 
-// List available demo personas (strictly dev-only, disabled in production)
-router.get('/personas', (req, res) => {
-    if (config.NODE_ENV === 'production') {
+// List available demo personas (strictly dev-only, disabled unless ENABLE_DEV_LOGIN=true)
+router.get('/personas', async (req, res) => {
+    if (config.NODE_ENV === 'production' || process.env.ENABLE_DEV_LOGIN !== 'true') {
         return res.status(404).json({
             success: false,
-            error: 'غير متاح في بيئة الإنتاج'
+            error: 'قائمة الحسابات التجريبية غير متاحة في هذه البيئة'
         });
     }
 
-    const db = getDb();
-    const users = db.prepare(`
-        SELECT u.id, u.name, u.role, u.manufacturer_id, m.name_ar as mfg_name
-        FROM users u
-        LEFT JOIN manufacturers m ON u.manufacturer_id = m.id
-        WHERE u.is_active = 1
-    `).all();
+    const dbOpts = req.dbClientOptions || {};
+    const personasQuery = {
+        sqlite: `
+            SELECT u.id, u.name, u.role, u.manufacturer_id, m.name_ar as mfg_name
+            FROM users u
+            LEFT JOIN manufacturers m ON u.manufacturer_id = m.id
+            WHERE u.is_active = 1
+        `,
+        postgres: `
+            SELECT u.id, u.name, u.role, u.manufacturer_id, m.name_ar as mfg_name
+            FROM users u
+            LEFT JOIN manufacturers m ON u.manufacturer_id = m.id
+            WHERE u.is_active = true
+        `
+    };
 
-    res.json({
-        success: true,
-        personas: users
-    });
+    try {
+        const users = await dbClient.queryAll(personasQuery, [], dbOpts);
+        return res.json({
+            success: true,
+            personas: users
+        });
+    } catch (err) {
+        console.error('[authRoutes] Database error during personas fetch:', err.message);
+        return res.status(500).json({
+            success: false,
+            error: 'خطأ في خادم قاعدة البيانات أثناء استرجاع الحسابات التجريبية'
+        });
+    }
+});
+
+// ==========================================
+// INVITATION VERIFICATION & ACCEPTANCE
+// ==========================================
+
+// Verify invitation token
+router.get('/invitations/verify', async (req, res) => {
+    const { token } = req.query || {};
+    if (!token) {
+        return res.status(400).json({ success: false, error: 'رمز الدعوة مطلوب' });
+    }
+    const result = await invitationService.verifyInvitationToken(token, req.dbClientOptions || {});
+    if (!result.valid) {
+        return res.status(400).json({ success: false, error: result.error });
+    }
+    return res.json({ success: true, invitation: result.invitation });
+});
+
+// Accept invitation and create user account
+router.post('/invitations/accept', async (req, res) => {
+    const { token, full_name, password } = req.body || {};
+    const clientIp = req.ip || req.connection?.remoteAddress;
+    try {
+        const user = await invitationService.acceptInvitation({
+            rawToken: token,
+            fullName: full_name,
+            password,
+            ipAddress: clientIp,
+            dbOpts: req.dbClientOptions || {}
+        });
+        return res.status(201).json({
+            success: true,
+            message: 'تم تفعيل الحساب وقبول الدعوة بنجاح. يمكنك الآن تسجيل الدخول',
+            user
+        });
+    } catch (err) {
+        return res.status(400).json({ success: false, error: err.message });
+    }
 });
 
 module.exports = router;

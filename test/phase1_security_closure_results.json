@@ -1,0 +1,132 @@
+{
+  "timestamp": "2026-11-09T17:15:08.948Z",
+  "totalCount": 13,
+  "passedCount": 13,
+  "failedCount": 0,
+  "baselineHash": "5D4A93343B61F82EDA558CF0B5310E6CEC84F819CBA22BFFF65F78813C3E7CFC",
+  "finalDbHash": "5D4A93343B61F82EDA558CF0B5310E6CEC84F819CBA22BFFF65F78813C3E7CFC",
+  "tests": [
+    {
+      "id": "TC-SEC-01",
+      "name": "Early Transport Guard: 50MB gzip stream rejected with 415 before decompression (Memory delta < 5MB)",
+      "status": "PASSED",
+      "passed": true,
+      "details": {
+        "deltaMb": 0.4053497314453125
+      },
+      "error": null,
+      "timestamp": "2026-11-09T17:15:08.442Z"
+    },
+    {
+      "id": "TC-SEC-02",
+      "name": "Cryptographic HMAC Verification: 1-bit corrupted signature rejected with 401 INVALID_SIGNATURE",
+      "status": "PASSED",
+      "passed": true,
+      "details": {
+        "meanMs": "1.11",
+        "varianceMs": "1.75"
+      },
+      "error": null,
+      "timestamp": "2026-11-09T17:15:08.454Z"
+    },
+    {
+      "id": "TC-SEC-03",
+      "name": "Replay Attack Defense: Re-submitting identical nonce rejected with 401 NONCE_ALREADY_USED & saturation defense",
+      "status": "PASSED",
+      "passed": true,
+      "details": {},
+      "error": null,
+      "timestamp": "2026-11-09T17:15:08.585Z"
+    },
+    {
+      "id": "TC-SEC-04",
+      "name": "Query Parameter Rejection: GET and POST with query params rejected with 400 QUERY_PARAMETERS_FORBIDDEN",
+      "status": "PASSED",
+      "passed": true,
+      "details": {},
+      "error": null,
+      "timestamp": "2026-11-09T17:15:08.587Z"
+    },
+    {
+      "id": "TC-AUTH-01",
+      "name": "B/L Status RBAC: Unauthenticated rejected with 401; Manufacturer rejected with 403; Logistics & Admin authorized with 200",
+      "status": "PASSED",
+      "passed": true,
+      "details": {},
+      "error": null,
+      "timestamp": "2026-11-09T17:15:08.628Z"
+    },
+    {
+      "id": "TC-FSM-01",
+      "name": "B/L FSM Concurrency: Serialized via FOR UPDATE; exactly 1 transition succeeds, second rejected with 409",
+      "status": "PASSED",
+      "passed": true,
+      "details": {},
+      "error": null,
+      "timestamp": "2026-11-09T17:15:08.655Z"
+    },
+    {
+      "id": "TC-GATE-01",
+      "name": "Shipping Gate Anti-Reversion: Latest QC inspection REJECTED blocks dispatch with 400 QC_INSPECTION_REJECTED",
+      "status": "PASSED",
+      "passed": true,
+      "details": {},
+      "error": null,
+      "timestamp": "2026-11-09T17:15:08.669Z"
+    },
+    {
+      "id": "TC-GATE-02",
+      "name": "QA Review Override: Latest signed QA review REJECTED blocks dispatch with 400 QA_REVIEW_REJECTED",
+      "status": "PASSED",
+      "passed": true,
+      "details": {},
+      "error": null,
+      "timestamp": "2026-11-09T17:15:08.675Z"
+    },
+    {
+      "id": "TC-GATE-03",
+      "name": "Unsigned Draft Exclusion: Unsigned draft review ignored; official signed review clears gate",
+      "status": "PASSED",
+      "passed": true,
+      "details": {},
+      "error": null,
+      "timestamp": "2026-11-09T17:15:08.680Z"
+    },
+    {
+      "id": "TC-GATE-04",
+      "name": "Ambiguous Batch Relation Guard: Multiple batches without batch_id rejected with 400 AMBIGUOUS_BATCH_RELATIONSHIP",
+      "status": "PASSED",
+      "passed": true,
+      "details": {},
+      "error": null,
+      "timestamp": "2026-11-09T17:15:08.682Z"
+    },
+    {
+      "id": "TC-STAGE-01",
+      "name": "Production Stage Skipping: Jumping from intake to packing blocked with 400 STAGE_SKIPPED",
+      "status": "PASSED",
+      "passed": true,
+      "details": {},
+      "error": null,
+      "timestamp": "2026-11-09T17:15:08.687Z"
+    },
+    {
+      "id": "TC-STAGE-02",
+      "name": "Upstream Completion Guard: Transition to DISPATCH_READY without logs blocked with 400 STAGE_COMPLETION_MISSING",
+      "status": "PASSED",
+      "passed": true,
+      "details": {},
+      "error": null,
+      "timestamp": "2026-11-09T17:15:08.690Z"
+    },
+    {
+      "id": "TC-STAGE-03",
+      "name": "Fresh Horticultural Pipeline: Legitimate 4-stage progression skips PROCESSING; invalid stage rejected",
+      "status": "PASSED",
+      "passed": true,
+      "details": {},
+      "error": null,
+      "timestamp": "2026-11-09T17:15:08.701Z"
+    }
+  ]
+}
